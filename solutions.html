@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حلول الكتاب المدرسي - Borooj Way</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* خلفية هادئة ومريحة للقراءة والمذاكرة */
+        body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #fff; padding: 20px; overflow-x: hidden; }
+        
+        .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; width: 100%; max-width: 800px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); margin-bottom: 20px; }
+        
+        h1 { text-align: center; color: #f1c40f; margin-bottom: 5px; font-size: 2.2rem; }
+        p.subtitle { text-align: center; color: #d1d8e0; margin-bottom: 25px; }
+
+        /* فلاتر البحث عن الدرس */
+        .search-box { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 25px; }
+        .lesson-selectors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: right; margin-bottom: 20px; }
+        .lesson-selectors label { font-size: 0.95rem; color: #fdbb2d; font-weight: bold; margin-bottom: 5px; display: block; }
+        select { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 12px; font-size: 1.1rem; border-radius: 8px; width: 100%; cursor: pointer; }
+        select option { background: #2c3e50; color: #fff; }
+        
+        .btn-search { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
+        .btn-search:hover { background: #219653; transform: translateY(-2px); }
+
+        /* 🔴 تصميم الأسئلة القابلة للطي (Accordion) 🔴 */
+        #solutions-container { margin-top: 20px; }
+        .lesson-title-display { text-align: center; color: #3498db; margin-bottom: 20px; font-size: 1.5rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: none; }
+        
+        .accordion-item { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin-bottom: 15px; overflow: hidden; transition: all 0.3s ease; }
+        .accordion-header { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); font-size: 1.2rem; font-weight: bold; color: #fff; transition: 0.3s; }
+        .accordion-header:hover { background: rgba(255,255,255,0.1); }
+        .accordion-header.active { background: #2980b9; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        
+        .question-num { background: #f39c12; color: #000; padding: 5px 12px; border-radius: 20px; font-size: 1rem; margin-left: 15px; }
+        .toggle-icon { font-size: 1.5rem; transition: transform 0.3s; }
+        .accordion-header.active .toggle-icon { transform: rotate(180deg); }
+
+        .accordion-content { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease; background: rgba(0,0,0,0.2); }
+        .accordion-content.active { padding: 20px; max-height: 1000px; /* للأنيميشن */ }
+        
+        .answer-box { background: rgba(39, 174, 96, 0.1); border-right: 4px solid #27ae60; padding: 15px; border-radius: 5px; font-size: 1.15rem; line-height: 1.6; color: #dcfd8b; }
+        .page-badge { display: inline-block; margin-top: 15px; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 0.9rem; color: #ccc; }
+
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #f1c40f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .error-msg { text-align: center; color: #e74c3c; font-size: 1.2rem; font-weight: bold; margin-top: 20px; display: none; }
+        .btn-back { margin-top: 20px; background: transparent; border: 1px solid #fff; color: #fff; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="google_translate_element" style="position: absolute; top: 20px; left: 20px; z-index: 9999; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 10px;"></div>
+
+    <div class="glass-panel">
+        <h1>📖 دليل حلول الكتاب المدرسي</h1>
+        <p class="subtitle">اختر الدرس لعرض الأسئلة والإجابات النموذجية</p>
+
+        <div class="search-box">
+            <div class="lesson-selectors">
+                <div><label>الصف</label><select id="sel-grade"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                <div><label>الفصل</label><select id="sel-term"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                <div><label>الوحدة</label><select id="sel-unit"><option value="U1">U1</option><option value="U2">U2</option><option value="U3">U3</option><option value="U4">U4</option><option value="U5">U5</option><option value="U6">U6</option></select></div>
+                <div><label>الدرس</label><select id="sel-lesson"><option value="L1">L1</option><option value="L2">L2</option><option value="L3">L3</option><option value="L4">L4</option><option value="L5">L5</option><option value="L6">L6</option></select></div>
+            </div>
+            <button id="btn-fetch-solutions" class="btn-search">🔍 جلب الحلول</button>
+        </div>
+
+        <div class="loader" id="loading-spinner"></div>
+        <div class="error-msg" id="error-message">⚠️ عذراً، لم يتم إدراج حلول هذا الدرس حتى الآن.</div>
+
+        <h2 class="lesson-title-display" id="display-lesson-title">عنوان الدرس</h2>
+        <div id="solutions-container">
+            </div>
+
+        <button class="btn-back" onclick="window.location.href='lobby.html'">العودة لمنصة التحديات 🎮</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('btn-fetch-solutions').addEventListener('click', async () => {
+            const grade = document.getElementById('sel-grade').value;
+            const term = document.getElementById('sel-term').value;
+            const unit = document.getElementById('sel-unit').value;
+            const lesson = document.getElementById('sel-lesson').value;
+            
+            // تكوين كود الدرس (Lesson ID)
+            const lessonId = `Islamic_${grade}_${term}_${unit}_${lesson}`;
+            
+            const container = document.getElementById('solutions-container');
+            const spinner = document.getElementById('loading-spinner');
+            const errorMsg = document.getElementById('error-message');
+            const titleDisplay = document.getElementById('display-lesson-title');
+
+            // تصفير الواجهة
+            container.innerHTML = '';
+            errorMsg.style.display = 'none';
+            titleDisplay.style.display = 'none';
+            spinner.style.display = 'block';
+
+            try {
+                // 🔴 قراءة البيانات من جدول الحلول (textbook_solutions) 🔴
+                const docRef = doc(db, 'textbook_solutions', lessonId);
+                const docSnap = await getDoc(docRef);
+
+                spinner.style.display = 'none';
+
+                if (docSnap.exists() && docSnap.data().solutions) {
+                    const data = docSnap.data();
+                    
+                    if(data.lessonTitle) {
+                        titleDisplay.textContent = `📌 ${data.lessonTitle}`;
+                        titleDisplay.style.display = 'block';
+                    }
+
+                    // بناء كروت الأسئلة التفاعلية
+                    data.solutions.forEach((sol, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'accordion-item';
+
+                        const pageBadge = sol.pageNumber ? `<div class="page-badge">📄 صفحة: ${sol.pageNumber}</div>` : '';
+
+                        item.innerHTML = `
+                            <div class="accordion-header">
+                                <div style="display:flex; align-items:center;">
+                                    <span class="question-num">س ${sol.questionNum || index + 1}</span>
+                                    <span>${sol.questionText}</span>
+                                </div>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="answer-box">
+                                    <strong>💡 الإجابة:</strong><br><br>
+                                    ${sol.answerText.replace(/\n/g, '<br>')}
+                                </div>
+                                ${pageBadge}
+                            </div>
+                        `;
+
+                        // تفعيل حركة الطي والانزلاق (Accordion Logic)
+                        const header = item.querySelector('.accordion-header');
+                        const content = item.querySelector('.accordion-content');
+                        
+                        header.addEventListener('click', () => {
+                            // إغلاق كل الكروت الأخرى
+                            document.querySelectorAll('.accordion-header').forEach(h => {
+                                if(h !== header) {
+                                    h.classList.remove('active');
+                                    h.nextElementSibling.classList.remove('active');
+                                }
+                            });
+                            
+                            // فتح/إغلاق الكارت الحالي
+                            header.classList.toggle('active');
+                            content.classList.toggle('active');
+                        });
+
+                        container.appendChild(item);
+                    });
+
+                } else {
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error fetching solutions:", error);
+                spinner.style.display = 'none';
+                errorMsg.textContent = "⚠️ حدث خطأ في الاتصال بالخادم. حاول مجدداً.";
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+    
+    <script type="text/javascript">
+        function googleTranslateElementInit() { 
+            new google.translate.TranslateElement({ pageLanguage: 'ar', includedLanguages: 'ar,en,fr,ur,hi,tl,ml,es,zh-CN,zh-TW,ru,tr,de,it,ja,ko', layout: google.translate.TranslateElement.InlineLayout.SIMPLE }, 'google_translate_element'); 
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <style> body { top: 0 !important; } .skiptranslate iframe { display: none !important; } </style>
+</body>
+</html>

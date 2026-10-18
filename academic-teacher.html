@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة المعلم - المركز الأكاديمي الشامل</title>
+
+    <!-- 🛡️ حارس الصلاحيات: هذه الصفحة لحسابات المعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; }
+        body { background: #f3f6f9; color: #2c3e50; padding-bottom: 50px; }
+        .header { background: #1a2a6c; color: white; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 30px auto; padding: 20px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { flex: 1; padding: 15px; text-align: center; background: #e1e8ed; border: none; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; color: #7f8c8d; min-width: 220px; transition: 0.3s; }
+        .tab-btn.active { background: #fff; color: #1a2a6c; border-bottom: 4px solid #f1c40f; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .tab-btn:hover:not(.active) { background: #d5dce1; }
+        
+        .tab-content { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        .input-group input, .input-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        
+        .question-card { background: #f8f9fa; border: 2px solid #e1e8ed; border-radius: 8px; padding: 20px; margin-bottom: 20px; position: relative; border-right: 5px solid #3498db; }
+        .remove-q-btn { position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+        
+        .btn-primary { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
+        .btn-primary:hover { background: #219653; }
+        
+        .controls-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        .controls-row button { flex: 1; min-width: 150px; padding: 10px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; color: white; }
+        .file-input-wrapper { background: #e8f4f8; padding: 10px; border-radius: 5px; border: 1px dashed #3498db; margin-bottom: 15px; }
+        .opt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .opt-row input[type="radio"] { width: 20px; height: 20px; cursor: pointer; }
+        .match-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #1a2a6c; color: white; }
+        .preview-img { max-width: 100px; max-height: 100px; display: none; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        
+        /* تنسيقات الحائط في لوحة المعلم */
+        .dashboard-note { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-top: 4px solid #3498db; }
+        .btn-delete-note { position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+        .btn-delete-note:hover { background: #c0392b; }
+
+        /* شارة كود المعلم الجديدة */
+        .teacher-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 20px;
+            border-radius: 30px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .teacher-badge:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+        .teacher-badge span { color: #f1c40f; font-weight: 900; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎓 مركز التحكم الأكاديمي للمعلمين</h1>
+        <p>إدارة الاختبارات والتقييمات الخاصة بطلابك</p>
+        <div class="teacher-badge" onclick="copyTeacherCode()" title="اضغط لنسخ الكود">
+            الكود الأكاديمي الخاص بك: <span id="teacher-id-display">جاري التحميل...</span> 📋
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('create-tab', this)">📝 إنشاء اختبار مخصص</button>
+            <button class="tab-btn" onclick="switchTab('manage-tab', this)">📊 نتائج الاختبارات المخصصة</button>
+            <button class="tab-btn" onclick="switchTab('standard-results-tab', this)">🏆 نتائج التحديات المعيارية</button>
+            <button class="tab-btn" onclick="switchTab('manage-walls-tab', this)">📌 إدارة حوائطي التفاعلية</button>
+            <button class="tab-btn" onclick="switchTab('summary-tab', this)">📑 جلب ملخصات الدروس</button>
+        </div>
+
+        <div id="create-tab" class="tab-content active">
+            <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; border: 2px solid #3498db; margin-bottom: 25px;">
+                <h3 style="color: #2980b9; margin-bottom: 5px;">📚 هل تفضل استخدام الاختبارات الجاهزة؟</h3>
+                <p style="margin-bottom: 15px; color: #34495e;">يمكنك توفير وقتك والانتقال مباشرة إلى "بوابة الاختبارات المعيارية" لاختيار درس جاهز من المنهج وإطلاق تحدي لطلابك فوراً.</p>
+                <button onclick="window.location.href='academic-lobby.html'" style="background: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold;">انتقل لبنك الاختبارات الجاهزة 🚀</button>
+            </div>
+            
+            <div class="input-group">
+                <label>عنوان الاختبار:</label>
+                <input type="text" id="quiz-title" placeholder="مثال: التقييم الختامي لدرس أحكام النون الساكنة">
+            </div>
+
+            <div id="questions-container"></div>
+
+            <div class="controls-row">
+                <button onclick="addQuestionCard('mcq')" style="background: #3498db;">+ اختيار من متعدد</button>
+                <button onclick="addQuestionCard('tf')" style="background: #9b59b6;">+ صح وخطأ</button>
+                <button onclick="addQuestionCard('essay')" style="background: #e67e22;">+ سؤال كتابي (مقالي)</button>
+                <button onclick="addQuestionCard('match')" style="background: #16a085;">+ سؤال توصيل</button>
+            </div>
+
+            <hr style="margin: 30px 0;">
+            <button id="btn-save-quiz" class="btn-primary" style="width: 100%;">💾 حفظ الاختبار وإنشاء الرابط</button>
+            
+            <div id="success-share-area" style="display: none; background: #d5f5e3; border: 1px solid #2ecc71; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+                <h3 style="color: #27ae60; margin-bottom: 10px;">✅ تم إنشاء الاختبار بنجاح!</h3>
+                <input type="text" id="quiz-link-output" readonly style="width: 100%; text-align: left; direction: ltr; padding: 10px; margin-bottom: 15px; font-family: monospace; border: 1px solid #bdc3c7; border-radius: 5px;">
+                
+                <button onclick="copyLink()" style="background: #2c3e50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 15px; width: 100%;">📋 نسخ الرابط للطلاب</button>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; border-top: 1px solid #a9dfbf; padding-top: 15px;">
+                    <button onclick="shareToTeams()" style="background: #5c5fc8; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; min-width: 140px;">مشاركة Teams 💜</button>
+                    <button onclick="sendToMyEmail()" style="background: #e74c3c; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; min-width: 140px;">إرسال لبريدي 📧</button>
+                    <button onclick="generateQRCode()" style="background: #34495e; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; min-width: 140px;">إنشاء QR Code 📱</button>
+                </div>
+
+                <div id="qr-code-container" style="margin-top: 20px; display: none;">
+                    <p style="font-size: 0.9rem; color: #2c3e50; font-weight: bold; margin-bottom: 10px;">امسح الكود بالكاميرا للدخول مباشرة:</p>
+                    <img id="qr-code-img" src="" alt="QR Code" style="border: 4px solid #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 180px; height: 180px;">
+                </div>
+            </div>
+        </div>
+
+        <div id="manage-tab" class="tab-content">
+            <h2>نتائج اختباراتي المخصصة:</h2>
+            <div class="input-group" style="margin-top: 15px;">
+                <select id="my-quizzes-select"><option value="">جاري تحميل الاختبارات...</option></select>
+            </div>
+            <button onclick="fetchResults()" class="btn-primary">🔍 عرض النتائج</button>
+            <button onclick="exportToExcel()" style="background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px;">📥 تحميل كملف Excel</button>
+
+            <table id="results-table" style="display: none;">
+                <thead><tr><th>اسم الطالب</th><th>الدرجة</th><th>إجابة المقالي</th><th>وقت التسليم</th></tr></thead>
+                <tbody id="results-body"></tbody>
+            </table>
+        </div>
+
+        <div id="standard-results-tab" class="tab-content">
+            <h2 style="color: #1a2a6c; border-bottom: 2px solid #eee; padding-bottom: 10px;">🏆 نتائج الاختبارات المعيارية وغرف التحديات</h2>
+            <p style="color: #7f8c8d; margin-top: 10px;">هنا تظهر نتائج الطلاب الذين خاضوا التحديات المباشرة أو الاختبارات الجاهزة عبر اللوبي.</p>
+            
+            <button onclick="fetchStandardResults()" class="btn-primary" style="margin-top: 20px;">🔍 جلب كافة النتائج</button>
+            <button onclick="exportStandardToExcel()" style="background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px;">📥 تحميل كملف Excel</button>
+
+            <div style="overflow-x: auto;">
+                <table id="standard-results-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>اسم الطالب</th>
+                            <th>كود الغرفة</th>
+                            <th>المقرر / الدرس الدراسي</th>
+                            <th>اللغة</th>
+                            <th>الدرجة (%)</th>
+                            <th>وقت التسليم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standard-results-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="manage-walls-tab" class="tab-content">
+            <h2 style="color: #1a2a6c; border-bottom: 2px solid #eee; padding-bottom: 10px;">📌 إدارة حوائطي التفاعلية (Padlet)</h2>
+            <p style="color: #7f8c8d; margin-top: 10px;">قم باختيار الحائط الذي أنشأته مسبقاً لاستعراض إجابات طلابك ومراقبتها.</p>
+            
+            <div class="input-group" style="margin-top: 20px;">
+                <label>اختر الحائط الخاص بك:</label>
+                <select id="my-walls-select"><option value="">جاري تحميل حوائطك...</option></select>
+            </div>
+            
+            <button onclick="fetchWallNotes()" class="btn-primary">🔍 عرض ملصقات الطلاب</button>
+
+            <div id="wall-notes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 30px;">
+            </div>
+        </div>
+        
+        <!-- 🔴 قسم جلب الملخصات الجاهزة (السريع والمجاني) 🔴 -->
+        <div id="summary-tab" class="tab-content">
+            <h2 style="color: #1a2a6c; border-bottom: 2px solid #eee; padding-bottom: 10px;">📑 استخراج ملخص الدرس (الصف المقلوب)</h2>
+            <p style="color: #7f8c8d; margin-top: 10px; margin-bottom: 20px;">اختر الدرس المستهدف، وسيقوم النظام بجلب الملخص المعتمد والمعد مسبقاً من قِبل خبراء المنصة بطريقة منسقة ومزدوجة اللغة للطلاب.</p>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e1e8ed; margin-bottom: 20px;">
+                <div class="lesson-selectors" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: right;">
+                    <div><label style="font-weight: 600; color: #34495e; display: block; margin-bottom: 5px;">الصف</label><select id="sum-grade" style="padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ccc;"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                    <div><label style="font-weight: 600; color: #34495e; display: block; margin-bottom: 5px;">الفصل</label><select id="sum-term" style="padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ccc;"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                    <div><label style="font-weight: 600; color: #34495e; display: block; margin-bottom: 5px;">الوحدة</label><select id="sum-unit" style="padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ccc;"><option value="U1">U1</option><option value="U2">U2</option><option value="U3">U3</option><option value="U4">U4</option><option value="U5">U5</option><option value="U6">U6</option></select></div>
+                    <div><label style="font-weight: 600; color: #34495e; display: block; margin-bottom: 5px;">الدرس</label><select id="sum-lesson" style="padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ccc;"></select></div>
+                </div>
+            </div>
+
+            <button id="btn-generate-summary" class="btn-primary" style="width: 100%; background: #27ae60; font-size: 1.2rem; padding: 15px; border-radius: 8px;">🔍 جلب رابط الملخص الآن</button>
+            
+            <div id="summary-loading" style="display: none; text-align: center; margin-top: 20px; font-weight: bold; color: #e67e22;">
+                <div style="font-size: 1.5rem; margin-bottom: 10px; animation: spin 1s linear infinite;">⏳</div>
+                جاري البحث عن الملخص في قاعدة البيانات... يرجى الانتظار.
+            </div>
+
+            <div id="summary-success-area" style="display: none; background: #d5f5e3; border: 1px solid #2ecc71; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+                <h3 style="color: #27ae60; margin-bottom: 10px;">✅ تم جلب الملخص بنجاح!</h3>
+                <input type="text" id="summary-link-output" readonly style="width: 100%; text-align: left; direction: ltr; padding: 10px; margin-bottom: 15px; font-family: monospace; border: 1px solid #bdc3c7; border-radius: 5px; cursor: copy;" onclick="copySummaryLink()">
+                <button onclick="copySummaryLink()" style="background: #2c3e50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 15px; width: 100%;">📋 نسخ الرابط للطلاب</button>
+                <p style="font-size: 0.9rem; color: #2c3e50; font-weight: bold;">أو اجعل الطلاب يمسحون هذا الكود:</p>
+                <div id="summary-qr-container" style="margin-top: 15px; display: flex; justify-content: center; background: white; padding: 15px; border-radius: 10px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, deleteDoc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let teacherUid = null;
+        let qCounter = 0;
+        
+        let currentResultsData = []; 
+        let currentStandardResultsData = []; 
+
+        const lessonDecoder = {
+            "G4_T1_U1_L1": "الصف 4 - آداب الدخول والخروج من المنزل",
+            "G4_T1_U1_L2": "الصف 4 - سورة البروج",
+            "G4_T1_U1_L3": "الصف 4 - من أحكام التجويد",
+            "G4_T1_U1_L4": "الصف 4 - المؤمن القوي",
+            "G4_T1_U1_L5": "الصف 4 - بدء الدعوة للإسلام",
+            "G4_T1_U1_L6": "الصف 4 - السيدة زينب بنت خزيمة",
+            "G4_T1_U2_L1": "الصف 4 - الإيمان بالكتب السماوية",
+            "G4_T1_U2_L2": "الصف 4 - سورة الطارق",
+            "G4_T1_U2_L3": "الصف 4 - التثبت من الأخبار",
+            "G4_T1_U2_L4": "الصف 4 - أهمية الصلاة المفروضة وآدابها",
+            "G4_T1_U2_L5": "الصف 4 - أحسنكم أخلاقا",
+            "G5_T1_U1_L1": "الصف 5 - سورة الانفطار",
+            "G5_T1_U1_L2": "الصف 5 - المفلس الحقيقي",
+            "G5_T1_U1_L3": "الصف 5 - أحب الأعمال إلى الله",
+            "G5_T1_U1_L4": "الصف 5 - محبة الله تعالى",
+            "G5_T1_U1_L5": "الصف 5 - دعوة أهل الطائف",
+            "G5_T1_U2_L1": "الصف 5 - سورة التكوير",
+            "G5_T1_U2_L2": "الصف 5 - الإحسان إلى الناس",
+            "G5_T1_U2_L3": "الصف 5 - الإيمان باليوم الآخر",
+            "G5_T1_U2_L4": "الصف 5 - صلاة الجماعة",
+            "G5_T1_U2_L5": "الصف 5 - الإسراء والمعراج"
+        };
+
+        window.switchTab = function(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            
+            if(tabId === 'manage-tab') loadMyQuizzes();
+            if(tabId === 'manage-walls-tab') loadMyWalls(); 
+        }
+
+        // ==========================================
+        // أكواد إنشاء الاختبار المخصص
+        // ==========================================
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    let width = img.width; let height = img.height;
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', 0.6));
+                }
+            }
+        }
+
+        window.handleImageUpload = function(input) {
+            const file = input.files[0];
+            const preview = input.parentElement.querySelector('.preview-img');
+            if(file) {
+                compressImage(file, (base64) => {
+                    input.dataset.base64 = base64;
+                    preview.src = base64;
+                    preview.style.display = 'block';
+                });
+            }
+        }
+
+        window.addMatchRow = function(btn) {
+            const container = btn.previousElementSibling;
+            const div = document.createElement('div');
+            div.className = 'match-row';
+            div.innerHTML = `<input type="text" class="match-a" placeholder="العنصر (مثال: عاصمة مصر)"><input type="text" class="match-b" placeholder="المطابق له (مثال: القاهرة)">`;
+            container.appendChild(div);
+        }
+
+        window.addQuestionCard = function(type) {
+            qCounter++;
+            const container = document.getElementById('questions-container');
+            const card = document.createElement('div');
+            card.className = 'question-card q-item';
+            card.dataset.type = type;
+
+            let typeLabel = type === 'mcq' ? 'اختيار من متعدد' : type === 'tf' ? 'صح وخطأ' : type === 'essay' ? 'سؤال كتابي' : 'سؤال توصيل';
+            
+            let specificHtml = '';
+            if(type === 'mcq') {
+                specificHtml = `
+                    <div style="background:#fdfdfd; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        <label style="color:#e74c3c;">اختر الدائرة بجوار الإجابة الصحيحة:</label>
+                        <div class="opt-row"><input type="radio" name="corr_${qCounter}" value="0" checked> <input type="text" class="q-opt" placeholder="الخيار الأول"></div>
+                        <div class="opt-row"><input type="radio" name="corr_${qCounter}" value="1"> <input type="text" class="q-opt" placeholder="الخيار الثاني"></div>
+                        <div class="opt-row"><input type="radio" name="corr_${qCounter}" value="2"> <input type="text" class="q-opt" placeholder="الخيار الثالث"></div>
+                        <div class="opt-row"><input type="radio" name="corr_${qCounter}" value="3"> <input type="text" class="q-opt" placeholder="الخيار الرابع"></div>
+                    </div>`;
+            } else if(type === 'tf') {
+                specificHtml = `<div class="input-group"><label>الإجابة الصحيحة هي:</label><select class="q-tf-answer"><option value="true">صواب</option><option value="false">خطأ</option></select></div>`;
+            } else if(type === 'essay') {
+                specificHtml = `<p style="color:#7f8c8d; font-size:0.9rem;">سيظهر للطالب مربع نصي لكتابة إجابته بحرية، وستراها في ملف الإكسيل.</p>`;
+            } else if(type === 'match') {
+                specificHtml = `
+                    <div class="match-container">
+                        <div class="match-row"><input type="text" class="match-a" placeholder="الكلمة"><input type="text" class="match-b" placeholder="المطابق لها"></div>
+                        <div class="match-row"><input type="text" class="match-a" placeholder="الكلمة"><input type="text" class="match-b" placeholder="المطابق لها"></div>
+                    </div>
+                    <button onclick="addMatchRow(this)" style="background:#ecf0f1; border:1px solid #ccc; padding:5px; margin-top:5px; cursor:pointer;">+ إضافة زوج آخر</button>`;
+            }
+
+            card.innerHTML = `
+                <button class="remove-q-btn" onclick="this.parentElement.remove()">حذف</button>
+                <span style="background:#34495e; color:white; padding:3px 10px; border-radius:15px; font-size:0.8rem; position:absolute; top:10px; right:10px;">${typeLabel}</span>
+                
+                <div class="input-group" style="margin-top:25px;">
+                    <label>نص السؤال:</label>
+                    <input type="text" class="q-text" placeholder="اكتب سؤالك هنا..." required>
+                </div>
+                <div class="file-input-wrapper">
+                    <label>إرفاق صورة للسؤال (اختياري):</label>
+                    <input type="file" class="q-img" accept="image/*" onchange="handleImageUpload(this)">
+                    <img class="preview-img" src="">
+                </div>
+                ${specificHtml}
+            `;
+            container.appendChild(card);
+        }
+
+        document.getElementById('btn-save-quiz').addEventListener('click', async () => {
+            const title = document.getElementById('quiz-title').value.trim();
+            if(!title) { alert('اكتب عنوان الاختبار!'); return; }
+            
+            const qElements = document.querySelectorAll('.q-item');
+            if(qElements.length === 0) { alert('أضف سؤالاً واحداً على الأقل!'); return; }
+
+            const btn = document.getElementById('btn-save-quiz');
+            btn.disabled = true; btn.textContent = "جاري الحفظ والضغط...";
+
+            const questions = [];
+            qElements.forEach((el, index) => {
+                const type = el.dataset.type;
+                const text = el.querySelector('.q-text').value;
+                const imgInput = el.querySelector('.q-img');
+                const imageBase64 = imgInput ? imgInput.dataset.base64 || null : null;
+
+                let qObj = { type: type, textAr: text, image: imageBase64 };
+
+                if(type === 'mcq') {
+                    const opts = el.querySelectorAll('.q-opt');
+                    const correctVal = el.querySelector(`input[type="radio"]:checked`).value;
+                    qObj.options = [
+                        { ar: opts[0].value, correct: correctVal === "0" },
+                        { ar: opts[1].value, correct: correctVal === "1" },
+                        { ar: opts[2].value, correct: correctVal === "2" },
+                        { ar: opts[3].value, correct: correctVal === "3" }
+                    ];
+                } else if(type === 'tf') {
+                    const ans = el.querySelector('.q-tf-answer').value === "true";
+                    qObj.options = [{ ar: "صواب", correct: ans }, { ar: "خطأ", correct: !ans }];
+                } else if(type === 'match') {
+                    const pairs = [];
+                    el.querySelectorAll('.match-row').forEach(row => {
+                        const a = row.querySelector('.match-a').value;
+                        const b = row.querySelector('.match-b').value;
+                        if(a && b) pairs.push({ a: a, b: b });
+                    });
+                    qObj.pairs = pairs;
+                }
+                questions.push(qObj);
+            });
+
+            try {
+                const quizRef = await addDoc(collection(db, "custom_quizzes"), {
+                    teacherUid: teacherUid, title: title, questions: questions, createdAt: new Date()
+                });
+                const quizLink = `https://education-bazaar.com/academic-localized-engine.html?customId=${quizRef.id}`;
+                document.getElementById('quiz-link-output').value = quizLink;
+                document.getElementById('success-share-area').style.display = 'block';
+                btn.style.display = 'none';
+            } catch (e) { alert("حدث خطأ: " + e.message); btn.disabled = false; btn.textContent = "حفظ الاختبار"; }
+        });
+
+        window.copyLink = function() {
+            const copyText = document.getElementById("quiz-link-output");
+            copyText.select(); document.execCommand("copy");
+            alert("تم نسخ الرابط! أرسله لطلابك الآن.");
+        }
+
+        window.shareToTeams = function() {
+            const link = document.getElementById("quiz-link-output").value;
+            const text = encodeURIComponent("أعزائي الطلاب، يرجى الدخول إلى هذا الرابط لحل الاختبار المعياري المخصص لكم:");
+            const teamsUrl = `https://teams.microsoft.com/share?href=${encodeURIComponent(link)}&msgText=${text}`;
+            window.open(teamsUrl, '_blank');
+        }
+
+        window.sendToMyEmail = function() {
+            const link = document.getElementById("quiz-link-output").value;
+            const teacherEmail = auth.currentUser ? auth.currentUser.email : "";
+            const subject = encodeURIComponent("رابط الاختبار المعياري - منصة Borooj Way");
+            const body = encodeURIComponent(`مرحباً،\n\nلقد قمت بإنشاء اختبار مخصص بنجاح. يمكنك إرسال هذا الرابط لطلابك:\n\n${link}\n\nبالتوفيق!\nفريق Education Bazaar`);
+            window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+        }
+
+        window.generateQRCode = function() {
+            const link = document.getElementById("quiz-link-output").value;
+            const qrContainer = document.getElementById("qr-code-container");
+            const qrImg = document.getElementById("qr-code-img");
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(link)}`;
+            qrContainer.style.display = 'block';
+        }
+
+        // ==========================================
+        // نتائج الاختبارات المخصصة
+        // ==========================================
+        async function loadMyQuizzes() {
+            const q = query(collection(db, "custom_quizzes"), where("teacherUid", "==", teacherUid));
+            const snap = await getDocs(q);
+            const select = document.getElementById('my-quizzes-select');
+            select.innerHTML = '<option value="">-- اختر الاختبار لعرض نتائجه --</option>';
+            snap.forEach(doc => { select.innerHTML += `<option value="${doc.id}">${doc.data().title}</option>`; });
+        }
+
+        window.fetchResults = async function() {
+            const quizId = document.getElementById('my-quizzes-select').value;
+            if(!quizId) return;
+
+            const q = query(collection(db, "custom_results"), where("quizId", "==", quizId));
+            const snap = await getDocs(q);
+            
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = ''; currentResultsData = []; 
+
+            if(snap.empty) {
+                tbody.innerHTML = '<tr><td colspan="4">لا توجد إجابات بعد.</td></tr>';
+            } else {
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const dateStr = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleString('ar-EG') : '';
+                    let essayAns = d.essayAnswers ? Object.values(d.essayAnswers).join(" | ") : "لا يوجد";
+                    
+                    tbody.innerHTML += `<tr><td>${d.studentName}</td><td style="font-weight:bold; color:#27ae60;">${d.score}</td><td>${essayAns}</td><td>${dateStr}</td></tr>`;
+                    currentResultsData.push({ "اسم الطالب": d.studentName, "الدرجة (من 100)": d.score, "إجابات الأسئلة المقالية": essayAns, "وقت التسليم": dateStr });
+                });
+            }
+            document.getElementById('results-table').style.display = 'table';
+        }
+
+        window.exportToExcel = function() {
+            if(currentResultsData.length === 0) { alert('لا توجد نتائج!'); return; }
+            const ws = XLSX.utils.json_to_sheet(currentResultsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "النتائج");
+            XLSX.writeFile(wb, `نتائج_الطلاب.xlsx`);
+        }
+
+        // ==========================================
+        // جلب وتصدير نتائج التحديات المعيارية (مجانية ومدفوعة)
+        // ==========================================
+       window.fetchStandardResults = async function() {
+            const currentSearchCode = window.myTchCode || teacherUid;
+            const qStandard = query(collection(db, "standard_results"), where("teacherUid", "==", currentSearchCode));
+            const snapStandard = await getDocs(qStandard);
+            const qPremium = query(collection(db, "premium_results"), where("teacherUid", "==", currentSearchCode));
+            const snapPremium = await getDocs(qPremium);
+            const tbody = document.getElementById('standard-results-body');
+            tbody.innerHTML = ''; currentStandardResultsData = [];
+
+            if(snapStandard.empty && snapPremium.empty) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #7f8c8d; font-weight: bold;">لا توجد أي نتائج مسجلة لطلابك حتى الآن.</td></tr>';
+            } else {
+                const processDoc = (doc, isPremium) => {
+                    const d = doc.data();
+                    const dateStr = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleString('ar-EG') : '';
+                    let decodedLessonName = "تقييم معياري عام";
+                    if(d.lessonId) {
+                        const cleanKey = d.lessonId.replace("Islamic_", "");
+                        decodedLessonName = lessonDecoder[cleanKey] || `مقرر معياري (${cleanKey})`;
+                    }
+                    let langLabel = d.interfaceLanguage === 'en' ? "إنجليزية" : "العربية";
+                    let studentNameHtml = isPremium ? `<span style="color:#d35400;">👑</span> ${d.studentName}` : d.studentName;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: bold; color: #2c3e50;">${studentNameHtml}</td>
+                            <td style="direction: ltr; font-family: monospace; font-weight: bold;">${d.roomId || 'بدون غرفة'}</td>
+                            <td style="text-align: right; font-weight: 600; color: #1a2a6c;">${decodedLessonName}</td>
+                            <td><span style="font-size:0.85rem; padding:3px 8px; background:#eee; border-radius:10px;">${langLabel}</span></td>
+                            <td style="font-weight:bold; color:#27ae60; font-size: 1.1rem;">${d.score}%</td>
+                            <td style="color: #7f8c8d; font-size:0.85rem;">${dateStr}</td>
+                        </tr>`;
+
+                    currentStandardResultsData.push({
+                        "نوع التقييم": isPremium ? "رسمي (VIP)" : "مجاني",
+                        "اسم الطالب": d.studentName,
+                        "كود الغرفة": d.roomId || "بدون غرفة",
+                        "المقرر / الدرس التعليمي": decodedLessonName,
+                        "اللغة المستخدمة": langLabel,
+                        "الدرجة المئوية": d.score + "%",
+                        "وقت التسليم": dateStr
+                    });
+                };
+                snapStandard.forEach(doc => processDoc(doc, false));
+                snapPremium.forEach(doc => processDoc(doc, true));
+            }
+            document.getElementById('standard-results-table').style.display = 'table';
+        }
+
+        window.exportStandardToExcel = function() {
+            if(currentStandardResultsData.length === 0) { alert('لا توجد نتائج للتصدير!'); return; }
+            const ws = XLSX.utils.json_to_sheet(currentStandardResultsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "النتائج_المعيارية");
+            XLSX.writeFile(wb, `نتائج_الطلاب_المعيارية.xlsx`);
+        }
+
+        // ==========================================
+        // إدارة حوائط Padlet الخاصة بالمعلم
+        // ==========================================
+        window.loadMyWalls = async function() {
+            const q = query(collection(db, "wall_topics"), where("teacherUid", "==", teacherUid));
+            const snap = await getDocs(q);
+            const select = document.getElementById('my-walls-select');
+            
+            select.innerHTML = '<option value="">-- اختر الحائط لاستعراض المشاركات --</option>';
+            
+            if (snap.empty) {
+                select.innerHTML = '<option value="">لم تقم بإنشاء أي حوائط خاصة بعد</option>';
+            } else {
+                snap.forEach(doc => { 
+                    select.innerHTML += `<option value="${doc.id}">${doc.data().title} (كود الحائط: ${doc.id})</option>`; 
+                });
+            }
+        }
+
+        window.fetchWallNotes = async function() {
+            const wallId = document.getElementById('my-walls-select').value;
+            if(!wallId) { alert("الرجاء اختيار الحائط أولاً"); return; }
+            
+            const q = query(collection(db, "wall_notes"), where("wallId", "==", wallId));
+            const snap = await getDocs(q);
+            const container = document.getElementById('wall-notes-container');
+            container.innerHTML = '';
+            
+            if(snap.empty) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 20px;">لا توجد أي ملصقات أو مشاركات في هذا الحائط حتى الآن.</p>';
+            } else {
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const noteId = docSnap.id;
+                    const dateStr = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleString('ar-EG') : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'dashboard-note';
+                    
+                    if(d.color === 'note-yellow') div.style.borderTopColor = '#fbc02d';
+                    if(d.color === 'note-blue') div.style.borderTopColor = '#1976d2';
+                    if(d.color === 'note-green') div.style.borderTopColor = '#388e3c';
+                    if(d.color === 'note-pink') div.style.borderTopColor = '#c2185b';
+
+                    div.innerHTML = `
+                        <button class="btn-delete-note" onclick="deleteWallNote('${noteId}')">❌ حذف</button>
+                        <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #ddd; padding-bottom: 5px; color: #2c3e50;">
+                            <span style="font-size: 1.2rem;">👤</span> ${d.author}
+                        </div>
+                        <div style="font-size: 1.05rem; color: #444; margin-bottom: 15px; white-space: pre-wrap; line-height: 1.6;">${d.text}</div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d; border-top: 1px solid #f0f2f5; padding-top: 10px;">🕒 ${dateStr}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        window.deleteWallNote = async function(noteId) {
+            if(!confirm("⚠️ هل أنت متأكد من حذف هذه المشاركة؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+            try {
+                await deleteDoc(doc(db, "wall_notes", noteId));
+                fetchWallNotes();
+            } catch(e) {
+                alert("حدث خطأ أثناء الحذف: " + e.message);
+            }
+        }
+
+        // ==========================================
+        // التحقق الذكي من حالة المعلم
+        // ==========================================
+        window.myTchCode = null;
+        window.copyTeacherCode = function() {
+            if(window.myTchCode) {
+                navigator.clipboard.writeText(window.myTchCode);
+                alert("تم نسخ الكود بنجاح! يمكنك إرساله للإدارة أو الطلاب.");
+            } else {
+                alert("جاري تحميل الكود، يرجى الانتظار قليلاً.");
+            }
+        }
+
+        // ==========================================
+        // 🧠 خريطة المناهج الكاملة
+        // ==========================================
+        const lessonMapFull = {
+            "G1": { "T1": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}},
+            "G4": {
+                "T1": {
+                    "U1": {"L1": "آداب الدخول والخروج من المنزل", "L2": "سورة البروج", "L3": "من أحكام التجويد", "L4": "المؤمن القوي", "L5": "بدء الدعوة للإسلام", "L6": "السيدة زينب بنت خزيمة", "L7": ""},
+                    "U2": {"L1": "الإيمان بالكتب السماوية", "L2": "سورة الطارق", "L3": "التثبت من الأخبار", "L4": "أهمية الصلاة المفروضة وآدابها", "L5": "أحسنكم أخلاقا", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "السنن الرواتب", "L2": "الهجرة إلى الحبشة", "L3": "حسن المعاملة", "L4": "سورة الأعلى", "L5": "صلاة الجماعة", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة الغاشية", "L2": "البحث والتفكير العلمي", "L3": "حمد الله عز وجل على نعمه", "L4": "عام الحزن", "L5": "أخلاق المتقين", "L6": "صبر النبي صلى الله عليه وسلم", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "سورة الانشقاق", "L2": "المرافق العامة", "L3": "الرفق", "L4": "صيامي لربي", "L5": "في ظل صدقتي", "L6": "", "L7": ""},
+                    "U6": {"L1": "سورة المطففين", "L2": "الكرم", "L3": "من كمال الإيمان", "L4": "بيئتي مسؤوليتي", "L5": "ذو النوريين سيدنا عثمان", "L6": "", "L7": ""}
+                }
+            },
+            "G5": {
+                "T1": {
+                    "U1": {"L1": "سورة الانفطار", "L2": "المفلس الحقيقي", "L3": "أحب الأعمال إلى الله", "L4": "محبة الله تعالى", "L5": "دعوة أهل الطائف", "L6": "", "L7": ""},
+                    "U2": {"L1": "سورة التكوير", "L2": "الإحسان إلى الناس", "L3": "الإيمان باليوم الآخر", "L4": "صلاة الجماعة", "L5": "الإسراء والمعراج", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "سورة عبس", "L2": "القلقلة", "L3": "القرآن شفيعي", "L4": "آداب ركوب وسائل النقل", "L5": "فاطمة بنت عبد الملك", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة النازعات", "L2": "القلب الرحيم حديث شريف", "L3": "الرفق خير", "L4": "يسروا ولا تعسروا حديث شريف", "L5": "الهجرة إلى المدينة", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "الله القادر ( سورة النبأ 1-16)", "L2": "الطريق إلى الجنة", "L3": "نعمة العقل", "L4": "آداب الطريق", "L5": "صلاة الجمعة وصلاة العيدين", "L6": "", "L7": ""},
+                    "U6": {"L1": "الله الحكم العدل سورة النبأ 17-40", "L2": "مع رسولي صلى الله عليه وسلم في الجنة", "L3": "الشجاعة", "L4": "سيدنا عمر بن الخطاب رضي الله عنه", "L5": "الإنسان والكون", "L6": "", "L7": ""}
+                }
+            },
+            "G6": {
+                "T1": {
+                    "U1": {"L1": "الكتاب الحق ( سورة السجدة 1-12)", "L2": "من وصايا الرسول صلى الله عليه وسلم", "L3": "التطوع عبادة وانتماء", "L4": "حرمة المسلم", "L5": "فرائض الصلاة وسننها ومكروهاتها", "L6": "الإمارات في خدمة العالم", "L7": ""},
+                    "U2": {"L1": "صفات المؤمنين وجزاؤهم ( السجدة 13-22)", "L2": "أحكام النون الساكنة والتنوين ( الإظهار الحلقي )", "L3": "حاسبو أنفسكم", "L4": "آداب المسجد", "L5": "الحياة في المدينة المنورة بعد الهجرة", "L6": "سجود السهو وسجود التلاوة", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "الصبر واليقين ( السجدة 23-30)", "L2": "حكم الإدغام", "L3": "المؤمن بين الشكر والصبر", "L4": "من علامات الساعة", "L5": "الإمام مالك بن أنس رحمه الله تعالى ", "L6": "", "L7": ""},
+                    "U4": {"L1": "سبيل الهداية  ( سورة الملك 1-14 )", "L2": "الإقلاب", "L3": "أخلاق حميدة", "L4": "أنا متسامح", "L5": "غزوة بدر الكبرى", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "قدرة الله تعالى ( سورة الملك 15-24)", "L2": "الإخفاء الحقيقي", "L3": "اختيار الجليس", "L4": "التفكير العلمي", "L5": "غزوة أحد", "L6": "بيئتي أمانة", "L7": ""},
+                    "U6": {"L1": "دروس وعبر ( سورة الملك 25-30)", "L2": "يُسر الإسلام", "L3": "آداب الدعاء", "L4": "صيام التطوع", "L5": "السيدة عائشة أم المؤمنين رضي الله عنها", "L6": "", "L7": ""}
+                }
+            },
+            "G7": {
+                "T1": {
+                    "U1": {"L1": "البعث والنشور", "L2": "المستظلون في ظل الرحمن", "L3": "من بشائر المصلين", "L4": "أدلة وحدانية الله تعالى", "L5": "مراقبة الله تعالى", "L6": "سنن الفطرة", "L7": ""},
+                    "U2": {"L1": "الخلاق العليم", "L2": "التوبة فرصة العمر", "L3": "المغيث الحليم جل جلاله", "L4": "الغُسل", "L5": "التيمم والمسح على الخفين", "L6": "غزوة الأحزاب", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "بشارة ومواساه", "L2": "أحكام الميم الساكنة", "L3": "الاعتدال في الإنفاق", "L4": "الإمام أبو حنيفة النعمان رحمه الله تعالى ", "L5": "الحضارة العربية الإسلامية", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة الرحمن", "L2": "القلب وصلاح الإنسان", "L3": "الدين يُسر", "L4": "التفكر في الإسلام", "L5": "العمل عبادة وحضارة", "L6": "صلاة المسافر وصلاة المريض", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "نعيمُ الحياة", "L2": "كفالة اليتيم", "L3": "التواضع", "L4": "صلاة التطوع الضحى والليل", "L5": "الفتح المبين", "L6": "", "L7": ""},
+                    "U6": {"L1": "جزاء الإحسان", "L2": "التعايش بين الناس", "L3": "المجالس وآدابها", "L4": "السيدة روفيدة الأسلمية ( رائدة العمل التطوعي )", "L5": "مشكلة الفقر في العالم الإسلامي", "L6": "", "L7": ""}
+                }
+            },
+            "G8": {
+                "T1": {
+                    "U1": {"L1": "صدق الرسول صلى اله عليه وسلم سورة يس 1-12", "L2": "أحكام المد: المد الأصلي", "L3": "الأعمال بالنيات", "L4": "الإخلاص ", "L5": "الكسب الطيب", "L6": "نعمة الأمن", "L7": ""},
+                    "U2": {"L1": "أصحاب القرية سورة يس 13-19", "L2": "التقرب إلى الله تعالى", "L3": "الإيمان بالقضاء والقدر", "L4": "الصلوات ذاتُ الأسباب الكسوف والاستسقاء والاستخارة", "L5": "الشفاء بنت عبد الله العدوية رضي الله عنها", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "قصة مؤمن آل يس سورة (يس 20-32)", "L2": "أقدس المساجد", "L3": "فتح مكة", "L4": "آداب السفر", "L5": "أحكام العمرة", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "الطريق إلى الجنة سورة يس 55-68", "L2": "الاقتداء في الخير", "L3": "الأيمان والنذور", "L4": "غزوة حُنين", "L5": "صحتي مسؤوليتي", "L6": "", "L7": ""},
+                    "U6": {"L1": "أدلة وحدانية اله تعالى سورة يس 69-83", "L2": "صلة الأرحام", "L3": "العلم نور ورفعة", "L4": "أقرأ باسم ربي", "L5": "الإمام الشافعي", "L6": "", "L7": ""}
+                }
+            },
+            "G9": {
+                "T1": {
+                    "U1": {"L1": "مع الله ورسوله وولي الأمر", "L2": "السبع الموبقات", "L3": "الغفور العدلسبحانه", "L4": "التناصح في الإسلام", "L5": "الزكاة في الإسلام", "L6": "", "L7": ""},
+                    "U2": {"L1": "سلامة المجتمع ووحدة أبنائه", "L2": "الحلال بيَن", "L3": "الدين النصيحة", "L4": "الحج", "L5": "حجة الوداع ووفاة النبي صلى الله عليه وسلم", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "الإيمان فضل من الله تعالى ", "L2": "للمجتمع رجاله ونسائه", "L3": "العدل في الإسلام", "L4": "ما يحل وما يحرم من الطعام والشراب", "L5": "الإمام مسلم رحمه الله تعالى", "L6": "الأمن والأمان", "L7": ""},
+                    "U4": {"L1": "سورة الواقعة 1-26", "L2": "سورة الواقعة 27-56", "L3": "تبشير وتحذير", "L4": "لا...للانتحار", "L5": "المنهج النبوي في تربية الجيل", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "سورة الواقعة 57-74", "L2": "أحكام الراء", "L3": "لا ضرر ولا ضرار", "L4": "السنن الاجتماعية في القرآن الكريم", "L5": "التسامح الفكري", "L6": "الحكم الشرعي", "L7": ""},
+                    "U6": {"L1": "سورة الواقعة 75-96", "L2": "حق المسلم على المسلم", "L3": "آداب السوق والمرافق العامة", "L4": "الإمام أحمد بن حنبل رحمه ا", "L5": "التقليد الأعمى", "L6": "", "L7": ""}
+                }
+            },
+            "G10": {
+                "T1": {
+                    "U1": { "L1": "سورة الكهف 1-8", "L2": "القرآن المكي والمدني", "L3": "العقل في الإسلام", "L4": "المدارس الفقهية", "L5": "سكينة بنت الحسين", "L6": "", "L7": "" },
+                    "U2": { "L1": "أصحاب الكهف", "L2": "مراحل جمع القرآن", "L3": "منهجية التفكير في الإسلام", "L4": "الوقف عطاء ونماء", "L5": "التنمية البشرية في الإسلام", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U3": { "L1": "صاحب الجنتين", "L2": "السُنة النبوية", "L3": "آداب اللباس", "L4": "اختلاف الفقهاء", "L5": "منهج النبي صلى الله عليه وسلم في الدعوة", "L6": "", "L7": "" },
+                    "U4": { "L1": "الدنيا دار عمل", "L2": "تدوين السنة", "L3": "العفة", "L4": "أحكام الزواج", "L5": "رعاية الرسول صلى الله عليه وسلم لأهل بيته", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U5": { "L1": "موسى نبي الله عليه السلام", "L2": "جهود العلماء في حفظ السُنة", "L3": "الإيمان بالغيب", "L4": "طاعة ولي الأمر", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "ذو القرنين الرجل الصالح", "L2": "التسامح", "L3": "الجهاد في سبيل الله تعالى (1)", "L4": "الجهاد في سبيل الله تعالى  ( 2)", "L5": "الشيخ أحمد بن عبد العزيز آل مبارك", "L6": "", "L7": "" }
+                }
+            },
+            "G11": {
+                "T1": {
+                    "U1": { "L1": "الثبات على الحق", "L2": "العقل والنقل", "L3": "الاستعفاف", "L4": "العقود المالية في الإسلام", "L5": "اللغة والثقافة العربية", "L6": "", "L7": "" },
+                    "U2": { "L1": "غزوة الأحزاب", "L2": "القرآن الكريم والإعجاز العلمي", "L3": "أدب الحوار", "L4": "مصادر التشريع الإسلامي", "L5": "معالم التخطيط في سيرة الرسول صلى الله عليه وسلم", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U3": { "L1": "الاقتداء برسول الله صلى الله عليه وسلم", "L2": "أقسام الحديث الشريف", "L3": "منهجية التشريع في بناء الأسرة", "L4": "أم سلمة رضي الله عنها", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "وصايا وتوجيهات أخلاقية", "L2": "أقسام الحديث الشريف", "L3": "الشورى في الإسلام", "L4": "القواعد الفقهية", "L5": "الاستدامة في المنهج الإسلامي", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U5": { "L1": "رسول الله صلى الله عليه وسلم وخاتم النبيين", "L2": "أحكام وآداب بيت النبوة", "L3": "الإنصاف في الإسلام", "L4": "المحرمات من النساء", "L5": "من معالم الرسول صلى الله عليه وسلم", "L6": "", "L7": "" },
+                    "U6": { "L1": "ضوابط اجتماعية", "L2": "الإنسان والأمانة", "L3": "منهج التفكير في الإسلام", "L4": "الإسلام والتواصل الاجتماعي", "L5": "الإمام البخاري أمير المؤمنين في الحديث", "L6": "", "L7": "" }
+                }
+            },
+            "G12": {
+                "T1": {
+                    "U1": { "L1": "وقاية المجتمع من الجرائم الأخلاقية", "L2": "مناهج المفسرين", "L3": "الإسلام ينبذ التطرف", "L4": "الفراق بين الزوجين", "L5": "رسول اله صلى الله عليه وسلم والحياة الاجتماعية", "L6": "", "L7": "" },
+                    "U2": { "L1": "حديث الإفك - عظة وعبرة", "L2": "السُنن الربانية", "L3": "المسؤولية في الإٍسلام", "L4": "مقاصد التشريع الخمسة", "L5": "الشيخة فاطمة بنت مبارك - حفظها الله تعالى", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U3": { "L1": "التواصل الاجتماعي - سلوك وآداب", "L2": "المنهج النبوي في الرعاية الصحية", "L3": "البيوع المحرمة", "L4": "الخدمة الوطنية واجب شرعي ومطلب وطني", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "الزواج طريق الاستعفاف", "L2": "التفكير الابداعي في الإسلام", "L3": "فقه ترتيب الأعمال بحسب مقاصدها", "L4": "العولمة", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U5": { "L1": "الله نور السموات والأرض - سورة النور 35-45", "L2": "الطاعة والامتثال طريق الإيمان - سورة النو 46-57", "L3": "التسامح مع المخالفين في العقيدة", "L4": "آداب الإسلام في الرؤى والأحلام", "L5": "النظام الاقتصادي في الإسلام", "L6": "", "L7": "" },
+                    "U6": { "L1": "بيوت طاهرة - مجتمع نقي سورة النور 58-61", "L2": "الأدب مع الرسول صلى الله عليه وسلم - سورة النور 62-64", "L3": "الاتباع والتقليد", "L4": "الشيخ زايد بن سلطان رحمه الله تعالى ", "L5": "الإسلام واقتصاد المعرفة", "L6": "", "L7": "" }
+                }
+            }
+        };
+
+        function populateSummaryLessons() {
+            const grade = document.getElementById('sum-grade').value;
+            const term = document.getElementById('sum-term').value;
+            const unit = document.getElementById('sum-unit').value;
+            const lessonSelect = document.getElementById('sum-lesson');
+            
+            lessonSelect.innerHTML = ''; 
+            
+            const defaultLessons = ["L1", "L2", "L3", "L4", "L5", "L6", "L7"];
+            const namedLessons = (lessonMapFull[grade] && lessonMapFull[grade][term] && lessonMapFull[grade][term][unit]) ? lessonMapFull[grade][term][unit] : {};
+
+            defaultLessons.forEach(lCode => {
+                const option = document.createElement('option');
+                option.value = lCode;
+                const name = namedLessons[lCode] ? ` - ${namedLessons[lCode]}` : "";
+                option.textContent = lCode + name; 
+                lessonSelect.appendChild(option);
+            });
+        }
+
+        ['sum-grade', 'sum-term', 'sum-unit'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('change', populateSummaryLessons);
+        });
+
+        populateSummaryLessons();
+
+        window.copySummaryLink = function() {
+            const copyText = document.getElementById("summary-link-output");
+            copyText.select(); document.execCommand("copy");
+            alert("تم نسخ رابط الملخص بنجاح! يمكنك إرساله لطلابك الآن.");
+        }
+
+        const btnGenerateSummary = document.getElementById('btn-generate-summary');
+        if (btnGenerateSummary) {
+            btnGenerateSummary.addEventListener('click', async () => {
+                const grade = document.getElementById('sum-grade').value;
+                const term = document.getElementById('sum-term').value;
+                const unit = document.getElementById('sum-unit').value;
+                const lessonCode = document.getElementById('sum-lesson').value;
+
+                const namedLessons = (lessonMapFull[grade] && lessonMapFull[grade][term] && lessonMapFull[grade][term][unit]) ? lessonMapFull[grade][term][unit] : {};
+                const lessonName = namedLessons[lessonCode];
+
+                if (!lessonName || lessonName.trim() === "") {
+                    alert("⚠️ عذراً! هذا الدرس غير متوفر حالياً.");
+                    return; 
+                }
+
+                const lessonId = `Islamic_${grade}_${term}_${unit}_${lessonCode}`;
+                
+                btnGenerateSummary.disabled = true;
+                document.getElementById('summary-loading').style.display = 'block';
+                document.getElementById('summary-success-area').style.display = 'none';
+
+                try {
+                    // 🚀 المحرك البديل: جلب الملخص الجاهز من الفايربيس مباشرة بدون أي API خارجي
+                    const qSum = query(collection(db, "lesson_summaries"), where("lessonId", "==", lessonId));
+                    const sumSnap = await getDocs(qSum);
+
+                    if (sumSnap.empty) {
+                        alert("⏳ جاري العمل على إعداد ملخص هذا الدرس من قِبل خبراء المنصة.. سيكون متاحاً قريباً جداً!");
+                        btnGenerateSummary.disabled = false;
+                        document.getElementById('summary-loading').style.display = 'none';
+                        return;
+                    }
+
+                    // جلب الـ ID الخاص بالملخص المعتمد وعرضه فوراً
+                    const summaryDoc = sumSnap.docs[0];
+                    const summaryId = summaryDoc.id;
+
+                    const summaryLink = `https://education-bazaar.com/lesson-summary.html?id=${summaryId}`;
+                    document.getElementById('summary-link-output').value = summaryLink;
+                    
+                    const qrContainer = document.getElementById('summary-qr-container');
+                    qrContainer.innerHTML = ''; 
+                    new QRCode(qrContainer, { text: summaryLink, width: 180, height: 180, colorDark: "#1a2a6c", colorLight: "#ffffff" });
+
+                    document.getElementById('summary-success-area').style.display = 'block';
+
+                } catch (err) {
+                    alert("⚠️ حدث خطأ أثناء الاتصال بقاعدة البيانات: " + err.message);
+                    console.error("تفاصيل الخطأ الكاملة:", err);
+                } finally {
+                    btnGenerateSummary.disabled = false;
+                    document.getElementById('summary-loading').style.display = 'none';
+                }
+            });
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                teacherUid = user.uid;
+                addQuestionCard('mcq');
+
+                try {
+                    const userRef = doc(db, "users", teacherUid);
+                    const userDoc = await getDoc(userRef);
+
+                    // 🛡️ إصلاح أمني: لم تعد هذه الصفحة تُرقّي أحداً إلى معلم.
+                    // سابقاً كان أي طالب يفتح هذا الرابط يتحوّل تلقائياً إلى معلم.
+                    // الآن نتحقق أولاً من دوره المسجّل، ولا نكتب حقل role إطلاقاً.
+                    // (منح دور المعلم يتم فقط عبر كود التفعيل في complete-profile.html
+                    //  أو يدوياً من صفحة admin-users.html)
+                    const storedRole = userDoc.exists() ? (userDoc.data().role || 'student') : 'student';
+                    const isTeacherAccount = (storedRole === 'teacher' || storedRole === 'admin');
+
+                    if (!isTeacherAccount) {
+                        // الحارس auth-guard.js يعرض شاشة المنع، وهذا صمّام أمان إضافي
+                        document.getElementById('teacher-id-display').textContent = "غير متاح";
+                        console.warn("[BoRooJ] هذا الحساب ليس حساب معلم — لم يتم إصدار كود أكاديمي.");
+                        return;
+                    }
+
+                    if (userDoc.exists() && userDoc.data().myTeacherCode) {
+                        window.myTchCode = userDoc.data().myTeacherCode;
+                        document.getElementById('teacher-id-display').textContent = window.myTchCode;
+                    } else {
+                        // حساب معلم معتمد لكن بلا كود أكاديمي => نولّد له الكود فقط (بدون لمس الدور)
+                        const randomNum = Math.floor(1000 + Math.random() * 9000);
+                        const generatedCode = `TCH-${randomNum}`;
+
+                        await updateDoc(userRef, { myTeacherCode: generatedCode });
+
+                        window.myTchCode = generatedCode;
+                        document.getElementById('teacher-id-display').style.fontSize = "inherit";
+                        document.getElementById('teacher-id-display').textContent = generatedCode;
+                    }
+                } catch(e) { console.log("Error fixing teacher code:", e); }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تصحيح التسميع | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 🛡️ للمعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1150px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#0b6e4f,#16a085,#f39c12);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a { background:rgba(255,255,255,.22); color:#fff; padding:9px 16px; border-radius:9px;
+                       text-decoration:none; font-weight:bold; font-size:.92rem; transition:.25s; }
+        .top-links a:hover { background:rgba(255,255,255,.36); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#0b6e4f; margin-bottom:4px; border-right:5px solid #16a085; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:15px; margin-bottom:20px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center;
+                box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.a { border-color:#16a085; } .stat.a .v { color:#16a085; }
+        .stat.b { border-color:#e74c3c; } .stat.b .v { color:#e74c3c; }
+        .stat.c { border-color:#27ae60; } .stat.c .v { color:#27ae60; }
+        .stat.d { border-color:#8e44ad; } .stat.d .v { color:#8e44ad; }
+
+        .filters { display:flex; gap:11px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+        .filters select, .filters input {
+            padding:11px 14px; border:1px solid #ccd1d9; border-radius:8px;
+            font-family:'Cairo',sans-serif; font-size:.94rem; outline:none;
+        }
+        .filters input { flex:1; min-width:190px; }
+
+        .item { border:1px solid #e6edf3; border-radius:16px; margin-bottom:16px; overflow:hidden; background:#fff; }
+        .item.pending { border-right:6px solid #f39c12; }
+        .item.reviewed { border-right:6px solid #27ae60; }
+        .item-head { padding:16px 20px; background:#f8fafc; display:flex; justify-content:space-between;
+                     align-items:flex-start; flex-wrap:wrap; gap:12px; }
+        .stu-name { font-weight:900; font-size:1.12rem; color:#0b6e4f; }
+        .item-title { font-weight:700; margin-top:5px; }
+        .item-meta { color:#7f8c8d; font-size:.85rem; margin-top:4px; }
+        .pill { display:inline-block; padding:4px 13px; border-radius:20px; font-size:.8rem; font-weight:bold; white-space:nowrap; }
+        .p-pending  { background:#fef5e7; color:#b9770e; }
+        .p-reviewed { background:#eafaf1; color:#1e8449; }
+        .p-grade    { background:#eaf4fd; color:#2471a3; }
+
+        .item-body { padding:18px 20px; }
+        .item-body audio { width:100%; border-radius:9px; }
+
+        .grade-form { margin-top:16px; padding-top:16px; border-top:1px dashed #e1e8ed;
+                      display:grid; grid-template-columns:130px 1fr auto; gap:12px; align-items:start; }
+        @media (max-width:640px) { .grade-form { grid-template-columns:1fr; } }
+        .grade-form label { display:block; font-weight:700; font-size:.88rem; color:#34495e; margin-bottom:6px; }
+        .grade-form input, .grade-form textarea {
+            width:100%; padding:11px 13px; border:1px solid #ccd1d9; border-radius:8px;
+            font-family:'Cairo',sans-serif; font-size:.96rem; outline:none; resize:vertical;
+        }
+        .grade-form input:focus, .grade-form textarea:focus { border-color:#16a085; }
+        .btn-save { background:#16a085; color:#fff; border:none; padding:11px 22px; border-radius:8px;
+                    font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.96rem;
+                    align-self:end; white-space:nowrap; transition:.25s; }
+        .btn-save:hover:not(:disabled) { background:#0e8271; }
+        .btn-save:disabled { background:#95a5a6; cursor:not-allowed; }
+        .level-hint { font-size:.85rem; font-weight:800; margin-top:6px; text-align:center; }
+
+        .btn { background:#16a085; color:#fff; border:none; padding:12px 24px; border-radius:8px;
+               font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.98rem; }
+        .btn.g { background:#27ae60; }
+
+        .empty { text-align:center; color:#95a5a6; padding:40px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #16a085; border-radius:50%;
+                   width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .warn { background:#fff9e6; border:1px solid #f1c40f; border-radius:9px; padding:13px 16px;
+                color:#7d6608; font-size:.92rem; line-height:1.8; margin-bottom:18px; }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>🎧 تصحيح التسميع</h1>
+        <div class="top-links">
+            <a href="profile-teacher.html">ملف المعلم 👨‍🏫</a>
+            <a href="index.html">الرئيسية 🏠</a>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <div id="warn-box" class="warn hidden"></div>
+
+    <div class="stats">
+        <div class="stat a"><div class="v" id="s-total">0</div><div class="k">إجمالي التسميعات</div></div>
+        <div class="stat b"><div class="v" id="s-pending">0</div><div class="k">بانتظار تصحيحك</div></div>
+        <div class="stat c"><div class="v" id="s-reviewed">0</div><div class="k">تم تصحيحها</div></div>
+        <div class="stat d"><div class="v" id="s-avg">—</div><div class="k">متوسط الدرجات</div></div>
+    </div>
+
+    <div class="card">
+        <h2>🎙️ تسميعات طلابي</h2>
+        <p class="sub">استمع لكل تسميع، وأعطِ الدرجة والملاحظة — ستظهر للطالب فوراً في ملفه الشخصي.</p>
+
+        <div class="filters">
+            <select id="f-status">
+                <option value="pending">⏳ بانتظار التصحيح</option>
+                <option value="">كل الحالات</option>
+                <option value="reviewed">✅ تم تصحيحها</option>
+            </select>
+            <select id="f-grade"><option value="">كل الصفوف</option></select>
+            <select id="f-type"><option value="">كل الأنواع</option></select>
+            <input type="text" id="f-search" placeholder="🔍 ابحث باسم الطالب أو العنوان...">
+            <button class="btn g" id="btn-export">تصدير Excel 📊</button>
+        </div>
+
+        <div id="spin" class="spinner"></div>
+        <div id="list"></div>
+        <div id="empty" class="empty hidden"></div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { db } from "./firebase-shared.js";
+    import { onAuthReady } from "./roles.js";
+    import { GRADE_LABELS } from "./lesson-map.js";
+    import { RECITATION_TYPES, loadTeacherRecitations, recitationStats,
+             levelFromScore, scoreColor, fmtDuration } from "./recitation-engine.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+
+    let me = null, myCode = null, all = [];
+
+    function buildFilters() {
+        const grades = [...new Set(all.map(r => r.studentGrade).filter(Boolean))]
+            .sort((a, b) => (parseInt(a.slice(1)) || 0) - (parseInt(b.slice(1)) || 0));
+        document.getElementById('f-grade').innerHTML = '<option value="">كل الصفوف</option>' +
+            grades.map(g => `<option value="${esc(g)}">${esc(GRADE_LABELS[g] || g)}</option>`).join('');
+
+        const types = [...new Set(all.map(r => r.type))];
+        document.getElementById('f-type').innerHTML = '<option value="">كل الأنواع</option>' +
+            types.map(t => {
+                const info = RECITATION_TYPES[t] || RECITATION_TYPES.other;
+                return `<option value="${esc(t)}">${info.icon} ${esc(info.label)}</option>`;
+            }).join('');
+
+        ['f-status','f-grade','f-type'].forEach(id => document.getElementById(id).onchange = render);
+        document.getElementById('f-search').oninput = render;
+    }
+
+    function currentRows() {
+        const status = document.getElementById('f-status').value;
+        const grade  = document.getElementById('f-grade').value;
+        const type   = document.getElementById('f-type').value;
+        const term   = document.getElementById('f-search').value.trim().toLowerCase();
+
+        return all.filter(r => {
+            if (status === 'pending'  && r.status === 'reviewed') return false;
+            if (status === 'reviewed' && r.status !== 'reviewed') return false;
+            if (grade && r.studentGrade !== grade) return false;
+            if (type && r.type !== type) return false;
+            if (term && !((r.studentName + ' ' + r.title).toLowerCase().includes(term))) return false;
+            return true;
+        });
+    }
+
+    function render() {
+        const rows = currentRows();
+        const listEl = document.getElementById('list');
+        const emptyEl = document.getElementById('empty');
+
+        emptyEl.classList.toggle('hidden', rows.length > 0);
+        if (!rows.length) {
+            emptyEl.innerHTML = all.length
+                ? 'لا توجد تسميعات مطابقة لهذه الفلترة.'
+                : 'لم يرسل طلابك أي تسميع بعد.<br>أعطهم كودك الأكاديمي ووجّههم لصفحة «ركن التسميع» من ملفهم الشخصي.';
+        }
+
+        listEl.innerHTML = rows.map(r => {
+            const t = RECITATION_TYPES[r.type] || RECITATION_TYPES.other;
+            const reviewed = r.status === 'reviewed' && r.score !== null;
+            const player = `<audio controls preload="none" src="${esc(r.downloadURL)}"></audio>`;
+
+            return `<div class="item ${reviewed ? 'reviewed' : 'pending'}">
+                <div class="item-head">
+                    <div>
+                        <div class="stu-name">👤 ${esc(r.studentName)}</div>
+                        <div class="item-title">${t.icon} ${esc(r.title)}${r.reference ? ' — ' + esc(r.reference) : ''}</div>
+                        <div class="item-meta">${esc(t.label)} · ${fmtDuration(r.durationSec)} · ${esc(fmtDate(r.createdAt))}</div>
+                    </div>
+                    <div style="display:flex; gap:7px; flex-wrap:wrap; align-items:center;">
+                        ${r.studentGrade ? `<span class="pill p-grade">${esc(GRADE_LABELS[r.studentGrade] || r.studentGrade)}</span>` : ''}
+                        ${reviewed
+                            ? `<span class="pill p-reviewed">${r.score}% — ${esc(r.level)}</span>`
+                            : `<span class="pill p-pending">⏳ يحتاج تصحيحاً</span>`}
+                    </div>
+                </div>
+                <div class="item-body">
+                    ${player}
+                    <div class="grade-form">
+                        <div>
+                            <label>الدرجة (من 100)</label>
+                            <input type="number" min="0" max="100" id="score-${esc(r.id)}"
+                                   value="${r.score === null ? '' : r.score}" placeholder="0-100">
+                            <div class="level-hint" id="hint-${esc(r.id)}"></div>
+                        </div>
+                        <div>
+                            <label>ملاحظتك للطالب</label>
+                            <textarea rows="3" id="fb-${esc(r.id)}"
+                                      placeholder="مثال: أحسنت، انتبه لمخرج حرف الضاد في الآية الثالثة.">${esc(r.feedback)}</textarea>
+                        </div>
+                        <button class="btn-save" data-save="${esc(r.id)}">💾 حفظ التقييم</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+        // تفعيل التلميح الحي للمستوى + أزرار الحفظ
+        rows.forEach(r => {
+            const inp = document.getElementById('score-' + r.id);
+            const hint = document.getElementById('hint-' + r.id);
+            const updateHint = () => {
+                const v = inp.value;
+                if (v === '') { hint.textContent = ''; return; }
+                hint.textContent = levelFromScore(v);
+                hint.style.color = scoreColor(v);
+            };
+            inp.oninput = updateHint;
+            updateHint();
+        });
+
+        listEl.querySelectorAll('[data-save]').forEach(b => {
+            b.onclick = () => saveReview(b.dataset.save, b);
+        });
+    }
+
+    async function saveReview(id, btn) {
+        const scoreEl = document.getElementById('score-' + id);
+        const fbEl    = document.getElementById('fb-' + id);
+        const score   = parseInt(scoreEl.value, 10);
+
+        if (!isFinite(score) || score < 0 || score > 100) {
+            alert('⚠️ أدخل درجة صحيحة بين 0 و 100.');
+            scoreEl.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'جاري الحفظ...';
+
+        try {
+            await updateDoc(doc(db, 'recitations', id), {
+                score:      score,
+                level:      levelFromScore(score),
+                feedback:   fbEl.value.trim(),
+                status:     'reviewed',
+                reviewedAt: new Date(),
+                reviewedBy: me.uid
+            });
+
+            const rec = all.find(r => r.id === id);
+            if (rec) {
+                rec.score = score;
+                rec.level = levelFromScore(score);
+                rec.feedback = fbEl.value.trim();
+                rec.status = 'reviewed';
+                rec.reviewedAt = new Date();
+            }
+
+            btn.textContent = 'تم الحفظ ✓';
+            btn.style.background = '#27ae60';
+            updateStats();
+            setTimeout(render, 800);
+
+        } catch (e) {
+            console.error(e);
+            const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+            alert(denied
+                ? 'تعذّر الحفظ: قواعد الحماية ترفض التعديل.\n\nتأكد من نشر أحدث نسخة من firestore.rules التي تحتوي قواعد مجموعة recitations.'
+                : 'تعذّر الحفظ: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = '💾 حفظ التقييم';
+        }
+    }
+
+    function updateStats() {
+        const st = recitationStats(all);
+        document.getElementById('s-total').textContent    = st.total;
+        document.getElementById('s-pending').textContent  = st.pending;
+        document.getElementById('s-reviewed').textContent = st.reviewed;
+        document.getElementById('s-avg').textContent      = st.avgScore === null ? '—' : st.avgScore + '%';
+    }
+
+    document.getElementById('btn-export').onclick = () => {
+        const rows = currentRows();
+        if (!rows.length) return alert('لا توجد بيانات للتصدير.');
+        const data = rows.map(r => ({
+            'اسم الطالب': r.studentName,
+            'الصف': r.studentGrade ? (GRADE_LABELS[r.studentGrade] || r.studentGrade) : '-',
+            'النوع': (RECITATION_TYPES[r.type] || RECITATION_TYPES.other).label,
+            'العنوان': r.title,
+            'التحديد': r.reference || '-',
+            'المدة': fmtDuration(r.durationSec),
+            'الحالة': r.status === 'reviewed' ? 'تم التصحيح' : 'بانتظار التصحيح',
+            'الدرجة': r.score === null ? '-' : r.score + '%',
+            'المستوى': r.level || '-',
+            'ملاحظة المعلم': r.feedback || '-',
+            'تاريخ الإرسال': r.createdAt ? r.createdAt.toLocaleDateString('ar-EG') : '-'
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'التسميع');
+        XLSX.writeFile(wb, 'تقرير_التسميع.xlsx');
+    };
+
+    onAuthReady(async (profile) => {
+        me = profile;
+        myCode = me.raw.myTeacherCode || null;
+
+        if (!myCode) {
+            const w = document.getElementById('warn-box');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ لا يوجد كود أكاديمي لحسابك، لذلك لن تصلك تسميعات. افتح صفحة «بناء الاختبارات» مرة واحدة ليُصدر الكود.';
+        }
+
+        try {
+            all = await loadTeacherRecitations({ uid: me.uid, teacherCode: myCode });
+        } catch (e) {
+            document.getElementById('spin').classList.add('hidden');
+            document.getElementById('empty').classList.remove('hidden');
+            document.getElementById('empty').textContent = 'تعذّر تحميل التسميعات: ' + e.message;
+            return;
+        }
+
+        document.getElementById('spin').classList.add('hidden');
+        updateStats();
+        buildFilters();
+        render();
+    });
+</script>
+
+</body>
+</html>

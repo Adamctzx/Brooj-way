@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسار الحفظ | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- 🛡️ يتطلب تسجيل دخول -->
+    <script type="module" src="auth-guard.js" data-require-role="student"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1150px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#0b6e4f,#16a085,#f1c40f);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a { background:rgba(255,255,255,.22); color:#fff; padding:9px 16px; border-radius:9px;
+                       text-decoration:none; font-weight:bold; font-size:.92rem; transition:.25s; }
+        .top-links a:hover { background:rgba(255,255,255,.36); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#0b6e4f; margin-bottom:4px; border-right:5px solid #16a085; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        .viewing-banner {
+            background:linear-gradient(135deg,#c0392b,#e67e22); color:#fff; border-radius:14px;
+            padding:16px 20px; margin-bottom:20px; display:flex; justify-content:space-between;
+            align-items:center; flex-wrap:wrap; gap:12px; font-weight:700;
+        }
+        .viewing-banner a { background:rgba(255,255,255,.25); color:#fff; padding:8px 16px;
+                            border-radius:8px; text-decoration:none; font-size:.9rem; }
+
+        /* ===== المسارات ===== */
+        .tracks { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:24px; }
+        .track {
+            border:2px solid #e6edf3; border-radius:16px; padding:18px; cursor:pointer;
+            background:#fff; transition:.25s; text-align:center;
+        }
+        .track:hover { transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,.09); }
+        .track.active { border-color:var(--c); background:var(--bgc); box-shadow:0 6px 18px rgba(0,0,0,.1); }
+        .track .ic { font-size:2rem; display:block; margin-bottom:7px; }
+        .track .nm { font-weight:900; font-size:1.05rem; margin-bottom:4px; }
+        .track .ds { font-size:.78rem; color:#95a5a6; line-height:1.5; margin-bottom:10px; }
+        .track .bar { height:9px; background:#eef2f6; border-radius:6px; overflow:hidden; }
+        .track .bar > div { height:100%; border-radius:6px; transition:width .8s ease; }
+        .track .pc { font-size:.85rem; font-weight:800; margin-top:6px; }
+
+        /* ===== الإحصاءات ===== */
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-bottom:22px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center;
+                box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; line-height:1.2; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.a { border-color:#27ae60; } .stat.a .v { color:#27ae60; }
+        .stat.b { border-color:#3498db; } .stat.b .v { color:#3498db; }
+        .stat.c { border-color:#f39c12; } .stat.c .v { color:#f39c12; }
+        .stat.d { border-color:#8e44ad; } .stat.d .v { color:#8e44ad; }
+
+        /* ===== شبكة السور ===== */
+        .surah-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
+        .surah {
+            border:2px solid #e6edf3; border-radius:12px; padding:13px 15px; background:#fff;
+            display:flex; align-items:center; gap:12px; transition:.2s;
+        }
+        .surah:hover { box-shadow:0 5px 14px rgba(0,0,0,.08); }
+        .surah .num {
+            width:34px; height:34px; border-radius:50%; background:#f1f4f8; color:#5d6d7e;
+            display:flex; align-items:center; justify-content:center; font-weight:900;
+            font-size:.85rem; flex-shrink:0;
+        }
+        .surah .info { flex:1; min-width:0; }
+        .surah .nm { font-weight:800; font-size:1rem; }
+        .surah .ay { color:#95a5a6; font-size:.78rem; }
+        .surah .dot { font-size:1.4rem; line-height:1; flex-shrink:0; }
+
+        .surah.s-in_progress { border-color:#f39c12; background:#fffaf0; }
+        .surah.s-memorized   { border-color:#3498db; background:#f4f9fd; }
+        .surah.s-confirmed   { border-color:#27ae60; background:#f2fbf6; }
+
+        .surah-actions { display:flex; gap:5px; margin-top:9px; }
+        .sbtn {
+            flex:1; border:1px solid #d9e2ea; background:#fff; border-radius:7px; padding:5px 4px;
+            cursor:pointer; font-family:'Cairo',sans-serif; font-size:.74rem; font-weight:700;
+            color:#5d6d7e; transition:.18s; white-space:nowrap;
+        }
+        .sbtn:hover:not(:disabled) { background:#f1f4f8; }
+        .sbtn:disabled { opacity:.45; cursor:not-allowed; }
+
+        /* ✓ أحفظها (أخضر)  ✗ لا أحفظها (أحمر) */
+        .sbtn.yes { color:#27ae60; border-color:#a9dfbf; font-size:1.05rem; }
+        .sbtn.no  { color:#e74c3c; border-color:#f5b7b1; font-size:1.05rem; }
+        .sbtn.yes:hover:not(:disabled) { background:#eafaf1; }
+        .sbtn.no:hover:not(:disabled)  { background:#fdedec; }
+        .sbtn.yes.on { background:#27ae60; color:#fff; border-color:#27ae60; box-shadow:0 3px 9px rgba(39,174,96,.3); }
+        .sbtn.no.on  { background:#e74c3c; color:#fff; border-color:#e74c3c; box-shadow:0 3px 9px rgba(231,76,60,.3); }
+
+        .surah-cell { display:flex; flex-direction:column; }
+
+        .legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:18px; font-size:.88rem; color:#5d6d7e; }
+        .legend span { display:flex; align-items:center; gap:6px; }
+
+        .empty { text-align:center; color:#95a5a6; padding:34px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #16a085; border-radius:50%;
+                   width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .toast {
+            position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+            background:#2c3e50; color:#fff; padding:13px 26px; border-radius:30px;
+            font-weight:700; box-shadow:0 8px 24px rgba(0,0,0,.28); z-index:999;
+            opacity:0; transition:opacity .3s, transform .3s; pointer-events:none;
+        }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(-6px); }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>📿 مسار الحفظ</h1>
+        <div class="top-links">
+            <a href="profile-student.html" id="lnk-profile">ملفي الشخصي 👤</a>
+            <a href="recitation-student.html">ركن التسميع 🎙️</a>
+            <a href="index.html">الرئيسية 🏠</a>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <div id="viewing" class="viewing-banner hidden"></div>
+
+    <div id="load-spin" class="spinner"></div>
+
+    <div id="content" class="hidden">
+
+        <!-- الإحصاءات العامة -->
+        <div class="stats">
+            <div class="stat a"><div class="v" id="s-confirmed">0</div><div class="k">معتمدة من المعلم</div></div>
+            <div class="stat b"><div class="v" id="s-memorized">0</div><div class="k">سور حفظتها</div></div>
+            <div class="stat c"><div class="v" id="s-progress">0</div><div class="k">قيد الحفظ</div></div>
+            <div class="stat d"><div class="v" id="s-ayahs">0</div><div class="k">آية محفوظة</div></div>
+        </div>
+
+        <!-- المسارات -->
+        <div class="card">
+            <h2>🗺️ اختر مسارك</h2>
+            <p class="sub">ابدأ بجزء عمّ فهو الأقرب لمنهجك، وتابع تقدّمك سورة بسورة.</p>
+            <div class="tracks" id="tracks"></div>
+        </div>
+
+        <!-- شبكة السور -->
+        <div class="card">
+            <h2 id="grid-title">السور</h2>
+            <p class="sub" id="grid-sub"></p>
+
+            <div class="legend">
+                <span><span style="color:#e74c3c; font-size:1.2rem; font-weight:900;">✗</span> لا أحفظها</span>
+                <span><span style="color:#3498db; font-size:1.3rem;">●</span> أحفظها (بانتظار اعتماد معلمي)</span>
+                <span><span style="color:#27ae60; font-size:1.2rem; font-weight:900;">✓</span> معتمدة من المعلم</span>
+            </div>
+            <div id="no-teacher-warn" class="hidden"
+                 style="background:#fff9e6; border:1px solid #f1c40f; border-radius:10px;
+                        padding:13px 16px; color:#7d6608; font-size:.92rem; line-height:1.8; margin-bottom:16px;">
+                ⚠️ <strong>حسابك غير مرتبط بمعلم.</strong> تقدّمك يُحفظ لك، لكنه
+                <strong>لن يصل لأي معلم</strong> ولن يعتمده أحد.
+                أضف كود معلمك من <a href="profile-student.html" style="color:#7d6608; font-weight:bold;">ملفك الشخصي</a>.
+            </div>
+
+            <div class="surah-grid" id="surah-grid"></div>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+    import { onAuthReady, getUserProfile } from "./roles.js";
+    import { TRACKS, trackSurahs, trackByKey } from "./quran-data.js";
+    import { loadMemorization, setSurahStatus, trackStats, overallStats,
+             effectiveStatus, STATUS } from "./memorization-engine.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    let me = null;              // الحساب الداخل
+    let targetUid = null;       // صاحب السجل المعروض
+    let targetName = '';
+    let targetProfile = null;
+    let data = { surahs: {} };
+    let activeTrack = 'juz30';
+    let isTeacherView = false;  // المعلم يستعرض سجل طالبه
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ---------- المسارات ----------
+    function renderTracks() {
+        document.getElementById('tracks').innerHTML = TRACKS.map(t => {
+            const st = trackStats(data.surahs, t.key);
+            return `<div class="track ${t.key === activeTrack ? 'active' : ''}" data-track="${t.key}"
+                         style="--c:${t.color}; --bgc:${t.color}14;">
+                        <span class="ic">${t.icon}</span>
+                        <div class="nm" style="color:${t.color};">${esc(t.label)}</div>
+                        <div class="ds">${esc(t.desc)}</div>
+                        <div class="bar"><div style="width:${st.percent}%; background:${t.color};"></div></div>
+                        <div class="pc" style="color:${t.color};">${st.memorized} / ${st.total} سورة (${st.percent}%)</div>
+                    </div>`;
+        }).join('');
+
+        document.querySelectorAll('[data-track]').forEach(el => {
+            el.onclick = () => { activeTrack = el.dataset.track; renderTracks(); renderGrid(); };
+        });
+    }
+
+    // ---------- شبكة السور ----------
+    function renderGrid() {
+        const t = trackByKey(activeTrack);
+        const list = trackSurahs(activeTrack);
+        const st = trackStats(data.surahs, activeTrack);
+
+        document.getElementById('grid-title').textContent = `${t.icon} ${t.label}`;
+        document.getElementById('grid-sub').innerHTML =
+            `${st.memorized} من ${st.total} سورة · <strong style="color:${t.color};">${st.percent}%</strong>` +
+            ` · ${st.ayahsDone} من ${st.ayahsTotal} آية` +
+            (isTeacherView ? ' — اضغط «اعتماد» لتأكيد حفظ الطالب.' : ' — سجّل تقدّمك بنفسك، ومعلمك يعتمده.');
+
+        document.getElementById('surah-grid').innerHTML = list.map(s => {
+            const entry = data.surahs[String(s.num)];
+            const eff = effectiveStatus(entry);
+            const cur = entry ? (entry.confirmed ? 'confirmed' : entry.status) : 'none';
+
+            // الطالب: ✓ أحفظها  /  ✗ لا أحفظها     المعلم: ✓ اعتماد  /  ✗ سحب
+            const knows = (cur === 'memorized' || cur === 'confirmed');
+
+            const actions = isTeacherView
+                ? `<button class="sbtn yes ${cur === 'confirmed' ? 'on' : ''}"
+                           data-act="confirm" data-s="${s.num}" title="اعتماد حفظ الطالب">✓ اعتماد</button>
+                   <button class="sbtn no ${cur !== 'confirmed' ? 'on' : ''}"
+                           data-act="unconfirm" data-s="${s.num}" title="سحب الاعتماد">✗ سحب</button>`
+                : `<button class="sbtn yes ${knows ? 'on' : ''}"
+                           data-act="memorized" data-s="${s.num}"
+                           ${cur === 'confirmed' ? 'disabled title="معتمدة من معلمك — لا يمكن تغييرها"' : 'title="أحفظ هذه السورة"'}>✓</button>
+                   <button class="sbtn no ${(cur === 'none' || !entry) ? 'on' : ''}"
+                           data-act="none" data-s="${s.num}"
+                           ${cur === 'confirmed' ? 'disabled' : 'title="لا أحفظها بعد"'}>✗</button>`;
+
+            return `<div class="surah-cell">
+                <div class="surah s-${eff.key}">
+                    <span class="num">${s.num}</span>
+                    <div class="info">
+                        <div class="nm">${esc(s.name)}</div>
+                        <div class="ay">${s.ayahs} آية · ${esc(s.type)}</div>
+                    </div>
+                    <span class="dot" style="color:${eff.color};" title="${esc(eff.label)}">${eff.icon}</span>
+                </div>
+                <div class="surah-actions">${actions}</div>
+            </div>`;
+        }).join('');
+
+        document.querySelectorAll('[data-act]').forEach(b => {
+            b.onclick = () => handleAction(b.dataset.act, parseInt(b.dataset.s, 10), b);
+        });
+    }
+
+    // ---------- تحديث الحالة ----------
+    async function handleAction(act, surahNum, btn) {
+        const key = String(surahNum);
+        const entry = data.surahs[key];
+        const cur = entry ? (entry.confirmed ? 'confirmed' : entry.status) : 'none';
+
+        let newStatus = act;
+        let byTeacher = false;
+
+        if (isTeacherView) {
+            byTeacher = true;
+            // الاعتماد يثبّتها محفوظة، والسحب يبقيها محفوظة لكن بلا اعتماد
+            newStatus = 'memorized';
+        }
+        // الطالب: ✓ => memorized  ·  ✗ => none (بلا تبديل، الاختيار صريح)
+
+        btn.disabled = true;
+        try {
+            const saved = await setSurahStatus({
+                uid: targetUid,
+                profile: isTeacherView ? targetProfile : me,
+                surahNum,
+                status: newStatus,
+                byTeacher,
+                teacherUid: isTeacherView ? me.uid : null
+            });
+
+            if (isTeacherView && act === 'unconfirm') saved.confirmed = false;
+            data.surahs[key] = saved;
+
+            renderTracks();
+            renderGrid();
+            renderStats();
+            toast(isTeacherView ? '✅ تم تحديث اعتماد السورة' : '✅ حُفظ تقدّمك');
+
+        } catch (e) {
+            console.error(e);
+            const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+            alert(denied
+                ? 'تعذّر الحفظ: قواعد الحماية ترفض العملية.\n\nتأكد من نشر أحدث نسخة من firestore.rules.'
+                : 'تعذّر الحفظ: ' + e.message);
+            btn.disabled = false;
+        }
+    }
+
+    // ---------- الإحصاءات ----------
+    function renderStats() {
+        const o = overallStats(data.surahs);
+        document.getElementById('s-confirmed').textContent = o.confirmed;
+        document.getElementById('s-memorized').textContent = o.memorized;
+        document.getElementById('s-progress').textContent  = o.inProgress;
+        document.getElementById('s-ayahs').textContent     = o.ayahsDone;
+    }
+
+    // ---------- التشغيل ----------
+    onAuthReady(async (profile) => {
+        me = profile;
+
+        // المعلم يستعرض سجل طالب: memorization.html?student=UID
+        const param = new URLSearchParams(location.search).get('student');
+        if (param && me.isTeacher && param !== me.uid) {
+            isTeacherView = true;
+            targetUid = param;
+        } else {
+            targetUid = me.uid;
+            targetProfile = me;
+        }
+
+        try {
+            data = await loadMemorization(targetUid);
+        } catch (e) {
+            document.getElementById('load-spin').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+            document.getElementById('surah-grid').innerHTML =
+                `<div class="empty">تعذّر تحميل السجل: ${esc(e.message)}</div>`;
+            return;
+        }
+
+        targetName = data.studentName || (isTeacherView ? 'الطالب' : me.name);
+
+        if (isTeacherView) {
+            const b = document.getElementById('viewing');
+            b.classList.remove('hidden');
+            b.innerHTML = `<span>👨‍🏫 تستعرض سجل حفظ الطالب: <strong>${esc(targetName)}</strong></span>
+                           <a href="profile-teacher.html">العودة لملف المعلم</a>`;
+            document.getElementById('lnk-profile').href = 'profile-teacher.html';
+            document.getElementById('lnk-profile').textContent = 'ملف المعلم 👨‍🏫';
+            // نحتاج بيانات الطالب لحفظها مع السجل
+            targetProfile = { name: targetName, raw: { teacherCode: data.teacherCode, grade: data.grade } };
+        }
+
+        // تنبيه الطالب إن لم يربط حسابه بمعلم — وإلا لن يصل تقدّمه لأحد
+        if (!isTeacherView && !(me.raw && me.raw.teacherCode)) {
+            document.getElementById('no-teacher-warn').classList.remove('hidden');
+        }
+
+        // ابدأ بأقرب مسار لم يكتمل
+        activeTrack = overallStats(data.surahs).suggestedTrack;
+
+        renderStats();
+        renderTracks();
+        renderGrid();
+
+        document.getElementById('load-spin').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+    });
+</script>
+
+</body>
+</html>

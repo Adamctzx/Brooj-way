@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام التقييم المعياري الموحد | Unified Assessment System</title>
+    <style>
+        :root {
+            --primary: #002147;
+            --secondary: #4a5568;
+            --success: #1e8449;
+            --error: #922b21;
+            --bg: #f7fafc;
+            --border: #e2e8f0;
+            --text: #2d3748;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        .panel { background: #ffffff; border-radius: 6px; padding: 40px; width: 100%; max-width: 800px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); text-align: center; }
+        .hidden { display: none !important; }
+        
+        .lang-selection-title { font-size: 1.4rem; color: var(--primary); margin-bottom: 30px; font-weight: 600; }
+        .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; margin: 0 auto; }
+        .lang-btn { padding: 20px; font-size: 1.2rem; font-weight: bold; border: 2px solid var(--border); border-radius: 4px; background: #ffffff; cursor: pointer; transition: 0.2s; color: var(--primary); }
+        .lang-btn:hover { border-color: var(--primary); background-color: #f7fafc; }
+
+        .meta-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; font-size: 0.95rem; color: var(--secondary); }
+        .badge { background: var(--secondary); color: #ffffff; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 0.85rem; }
+        
+        #timer-container { width: 100%; background: var(--border); border-radius: 2px; height: 6px; margin-bottom: 25px; overflow: hidden; }
+        #timer-bar { height: 100%; background: #3182ce; width: 100%; transition: width 1s linear; }
+        
+        .question-container { text-align: initial; margin-bottom: 25px; }
+        .question-text { font-size: 1.5rem; font-weight: 600; color: var(--primary); line-height: 1.6; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 25px; }
+        .option-button { background: #ffffff; border: 1px solid var(--border); padding: 18px 20px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; transition: 0.2s; text-align: initial; font-weight: 500; color: var(--text); }
+        .option-button:hover:not(:disabled) { background: #edf2f7; border-color: var(--secondary); }
+        .option-button:disabled { cursor: not-allowed; opacity: 0.8; }
+        .option-button.correct-status { background-color: #e6f4ea !important; border-color: var(--success) !important; color: var(--success) !important; font-weight: 600; }
+        .option-button.wrong-status { background-color: #fce8e6 !important; border-color: var(--error) !important; color: var(--error) !important; font-weight: 600; }
+
+        .action-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .control-btn { padding: 10px 20px; border: none; border-radius: 3px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-hint { background: #feebc8; color: #c05621; border: 1px solid #fbd38d; }
+        .btn-next { background: var(--primary); color: #ffffff; padding: 12px 30px; font-size: 1.05rem; }
+        
+        .box-pane { padding: 20px; margin-top: 20px; border-radius: 4px; text-align: initial; display: none; line-height: 1.6; }
+        #hint-box { background: #fffaf0; border-right: 4px solid #dd6b20; border-left: 4px solid transparent; color: #744210; }
+        body.ltr-mode #hint-box { border-left: 4px solid #dd6b20; border-right: 4px solid transparent; }
+        
+        #feedback-box { background: #ebf8ff; border-right: 4px solid #3182ce; border-left: 4px solid transparent; color: #2b6cb0; }
+        body.ltr-mode #feedback-box { border-left: 4px solid #3182ce; border-right: 4px solid transparent; }
+
+        .error-frame { background: #fce8e6; color: var(--error); padding: 20px; border-radius: 4px; border: 1px solid #f5c6cb; font-weight: bold; }
+        
+        /* تنسيقات لوحة المعلم المباشرة */
+        .host-dashboard { width: 100%; text-align: center; }
+        .host-timer { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 20px 0; }
+        .leaderboard-container { text-align: right; margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .lb-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--border); background: #fff; margin-bottom: 5px; border-radius: 4px; }
+        .lb-item.rank-1 { border-right: 5px solid #d4af37; }
+        .lb-item.rank-2 { border-right: 5px solid #c0c0c0; }
+        .lb-item.rank-3 { border-right: 5px solid #cd7f32; }
+    </style>
+</head>
+<body>
+
+    <div id="language-screen" class="panel">
+        <h2 class="lang-selection-title">الرجاء اختيار لغة واجهة التقييم / Please Select Assessment Interface Language</h2>
+        <div class="lang-grid">
+            <button class="lang-btn" onclick="setLanguage('ar')">العربية (Arabic)</button>
+            <button class="lang-btn" onclick="setLanguage('en')">English (إنجليزية)</button>
+        </div>
+    </div>
+
+    <div id="loading-screen" class="panel hidden">
+        <h2 id="loading-text">جاري تهيئة بيئة التقييم الرقمية...</h2>
+        <div id="error-display" class="error-frame hidden"></div>
+    </div>
+
+    <div id="assessment-screen" class="panel hidden">
+        <div class="meta-bar">
+            <div>
+                <span id="counter-display">السؤال</span>
+                <span id="bloom-badge" class="badge">المجال المعرفي</span>
+            </div>
+            <div id="score-display" class="student-id" style="font-weight: bold; color: var(--success);">النقاط: 0</div>
+        </div>
+
+        <div id="timer-container"><div id="timer-bar"></div></div>
+
+        <div class="action-row">
+            <button id="btn-hint" class="control-btn btn-hint" onclick="toggleHintBox()">طلب تلميح المساعدة</button>
+        </div>
+        
+        <div id="hint-box" class="box-pane"></div>
+
+        <div class="question-container">
+            <h2 class="question-text" id="target-question-text">نص التقييم المركزي</h2>
+        </div>
+
+        <div class="options-grid" id="options-viewport"></div>
+
+        <div id="feedback-box" class="box-pane">
+            <strong id="feedback-title" style="display: block; margin-bottom: 5px;">التحليل العلمي المعتمد:</strong>
+            <p id="target-feedback-text"></p>
+        </div>
+    </div>
+
+    <div id="report-screen" class="panel hidden">
+        <h2 id="report-title" style="color: var(--primary); margin-bottom: 15px; font-size: 2rem;">تقرير الكفاءة الأكاديمية</h2>
+        <div id="report-summary" style="font-size: 1.2rem; margin-bottom: 30px; background: #f8fafc; padding: 25px; border-radius: 4px; border: 1px solid var(--border); line-height: 2;"></div>
+        <button class="control-btn btn-next" onclick="exitAssessment()">إغلاق ومغادرة الجلسة</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, getDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // 🚀 اكتشاف وضع الـ Premium من الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('roomId');
+        let customId = urlParams.get('customId');
+        let premiumLessonId = urlParams.get('lessonId'); 
+        let isPremium = urlParams.get('premiumMode') === 'true'; 
+
+        let selectedLanguage = 'ar'; 
+        let myUid = null;
+        let myName = "";
+        let datasetQuizzes = [];
+        let activeIndex = -1;
+        let runningScore = 0;
+        // 🧠 تجميع إجابات الطالب حسب مستوى بلوم لكل سؤال
+        let bloomTally = {};
+        let hasSelectedOption = false;
+        let isTransitioning = false;
+        let clockCountdownInterval;
+        let isHost = false;
+        let gameMode = 'single';
+        let hostTimerInterval;
+        let hostSecondsElapsed = 0;
+
+        let isDataReady = false;
+        let hasSelectedLanguage = false;
+
+        const dictionary = {
+            ar: { loading: "جاري استدعاء حزمة الأسئلة القياسية...", counter: "السؤال", score: "النقاط المحرزة", hintBtn: "طلب تلميح مساعد", errorLink: "معرف الجلسة غير مكتمل أو الرابط تالف.", errorNoData: "لا توجد أسئلة متوفرة لهذا المقرر حالياً.", feedbackTitle: "التعليل والتحليل العلمي المعتمد:", transition: "جاري الانتقال للسؤال التالي تلقائياً...", timeout: "انتهى الوقت الزمني المخصص للسؤال.", summaryScore: "إجمالي النقاط المستحقة", summaryRate: "مستوى الكفاءة الأكاديمية النهائي" },
+            en: { loading: "Retrieving standard assessment package...", counter: "Question", score: "Current Score", hintBtn: "Request Reference Hint", errorLink: "Invalid link parameters or incomplete session ID.", errorNoData: "No assessment data available for this course context.", feedbackTitle: "Approved Scientific Rationale:", transition: "Transitioning to the next evaluation item automatically...", timeout: "Allocated response period expired.", summaryScore: "Total Merited Score", summaryRate: "Final Academic Competency Evaluation" }
+        };
+
+        executeVerificationMapping();
+
+        window.setLanguage = function(lang) {
+            selectedLanguage = lang;
+            hasSelectedLanguage = true;
+
+            document.getElementById('language-screen').classList.add('hidden');
+            
+            if (lang === 'en') {
+                document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en';
+                document.body.classList.add('ltr-mode'); document.getElementById('loading-text').textContent = dictionary.en.loading;
+            } else {
+                document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar';
+                document.body.classList.remove('ltr-mode'); document.getElementById('loading-text').textContent = dictionary.ar.loading;
+            }
+
+            if (isDataReady) {
+                if (isHost && gameMode === 'group') {
+                    renderHostDashboard(window.currentRoomData);
+                } else if (activeIndex === -1) {
+                    initializeEvaluationPipeline();
+                }
+            } else {
+                document.getElementById('loading-screen').classList.remove('hidden');
+            }
+        };
+
+        function throwExecutionFault(msgKey) {
+            const frame = document.getElementById('error-display');
+            frame.innerHTML = selectedLanguage === 'ar' ? dictionary.ar[msgKey] : dictionary.en[msgKey];
+            frame.classList.remove('hidden');
+            document.getElementById('loading-text').classList.add('hidden');
+            document.getElementById('language-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+        }
+
+        // 🚀 دالة التحقق المحدثة لتقبل طلاب الـ Premium بدون تسجيل دخول Firebase
+        function executeVerificationMapping() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    myUid = user.uid;
+                    const profile = await getDoc(doc(db, 'users', user.uid));
+                    myName = profile.exists() && profile.data().name ? profile.data().name : "Academic Student";
+                } else {
+                    if (isPremium) {
+                        // استخدام بيانات كود الـ Premium كبديل لمعرف المستخدم
+                        myUid = sessionStorage.getItem('premium_access_code') || "premium_guest";
+                        myName = sessionStorage.getItem('premium_student_name') || "طالب معتمد";
+                    } else {
+                        window.location.href = "login.html"; 
+                        return;
+                    }
+                }
+                
+                if (customId) loadCustomDataRepository();
+                else if (roomId) loadStandardRoomRepository();
+                else if (isPremium && premiumLessonId) loadPremiumDataRepository(); // جلب أسئلة المدفوع
+                else throwExecutionFault('errorLink');
+            });
+        }
+
+        // 🚀 دالة جلب البيانات الخاصة بطلاب الـ Premium
+        async function loadPremiumDataRepository() {
+            try {
+                const bankSnap = await getDoc(doc(db, 'academic_question_banks', premiumLessonId));
+                if (!bankSnap.exists() || !bankSnap.data().questions) { throwExecutionFault('errorNoData'); return; }
+                
+                datasetQuizzes = bankSnap.data().questions;
+                isDataReady = true;
+
+                if (hasSelectedLanguage && activeIndex === -1) {
+                    initializeEvaluationPipeline();
+                }
+            } catch (e) { throwExecutionFault('errorNoData'); }
+        }
+
+        async function loadCustomDataRepository() {
+            try {
+                const snap = await getDoc(doc(db, 'custom_quizzes', customId));
+                if (!snap.exists()) { throwExecutionFault('errorNoData'); return; }
+                datasetQuizzes = snap.data().questions;
+                
+                isDataReady = true;
+                if (hasSelectedLanguage && activeIndex === -1) {
+                    initializeEvaluationPipeline();
+                }
+            } catch (e) { throwExecutionFault('errorNoData'); }
+        }
+
+        async function loadStandardRoomRepository() {
+            try {
+                const roomRef = doc(db, 'rooms', roomId);
+                const roomSnap = await getDoc(roomRef);
+                if (!roomSnap.exists()) { throwExecutionFault('errorLink'); return; }
+                
+                const roomData = roomSnap.data();
+                isHost = roomData.hostUid === myUid;
+                gameMode = roomData.mode;
+
+                const bankSnap = await getDoc(doc(db, 'academic_question_banks', roomData.lessonId));
+                if (!bankSnap.exists() || !bankSnap.data().questions) { throwExecutionFault('errorNoData'); return; }
+                
+                datasetQuizzes = bankSnap.data().questions;
+
+                onSnapshot(roomRef, (docSnap) => {
+                    const data = docSnap.data();
+                    if (!data) return;
+                    window.currentRoomData = data; 
+                    
+                    if (data.players && data.players[myUid]) {
+                        runningScore = data.players[myUid].score || 0;
+                    }
+
+                    isDataReady = true;
+
+                    if (hasSelectedLanguage) {
+                        if (isHost && gameMode === 'group') {
+                            renderHostDashboard(data);
+                            return; 
+                        }
+
+                        if(activeIndex >= datasetQuizzes.length && activeIndex !== -1) { terminateAssessmentSession(data); return; }
+
+                        if(activeIndex === -1) {
+                            initializeEvaluationPipeline();
+                        }
+                    }
+                });
+
+            } catch (e) { throwExecutionFault('errorNoData'); }
+        }
+
+        function initializeEvaluationPipeline() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('assessment-screen').classList.remove('hidden');
+            activeIndex = 0;
+            renderLocalizedQuestion();
+        }
+
+        function renderHostDashboard(data) {
+            let dashboard = document.getElementById('host-dashboard-ui');
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('assessment-screen').classList.add('hidden');
+            
+            if (!dashboard) {
+                dashboard = document.createElement('div');
+                dashboard.id = 'host-dashboard-ui';
+                dashboard.className = 'panel host-dashboard';
+                dashboard.innerHTML = `
+                    <h2 style="color: var(--primary); font-size: 2rem;">لوحة المراقبة الأكاديمية (المعلم)</h2>
+                    <div class="host-timer" id="host-timer-display">00:00</div>
+                    <div style="border-bottom: 2px solid var(--border); padding-bottom: 10px; text-align: right; font-weight: bold; font-size: 1.2rem; color: var(--secondary);">الترتيب الأكاديمي المباشر:</div>
+                    <div id="host-leaderboard" class="leaderboard-container"></div>
+                    <button onclick="endGroupQuizForEveryone()" style="background: var(--error); color: white; border: none; padding: 15px; width: 100%; border-radius: 4px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 30px;">إنهاء التقييم واعتماد النتائج</button>
+                `;
+                document.body.appendChild(dashboard);
+
+                hostTimerInterval = setInterval(() => {
+                    hostSecondsElapsed++;
+                    let m = Math.floor(hostSecondsElapsed / 60).toString().padStart(2, '0');
+                    let s = (hostSecondsElapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('host-timer-display').textContent = `${m}:${s}`;
+                }, 1000);
+            }
+
+            const lbContainer = document.getElementById('host-leaderboard');
+            lbContainer.innerHTML = '';
+            
+            const playersArray = Object.values(data.players || {})
+                .filter(p => p.uid !== data.hostUid)
+                .sort((a,b) => (b.score || 0) - (a.score || 0));
+            
+            if(playersArray.length === 0) {
+                lbContainer.innerHTML = '<p style="text-align:center; color:#666;">لا يوجد طلاب متصلين...</p>';
+            } else {
+                playersArray.forEach((p, index) => {
+                    let rankClass = index === 0 ? 'rank-1' : (index === 1 ? 'rank-2' : (index === 2 ? 'rank-3' : ''));
+                    let answeredCount = p.answers ? Object.keys(p.answers).length : 0;
+                    
+                    lbContainer.innerHTML += `
+                        <div class="lb-item ${rankClass}">
+                            <div style="font-weight: bold; font-size: 1.1rem; color: var(--primary);">
+                                ${index + 1}. ${p.displayName || 'طالب'} 
+                                <span style="font-size:0.85rem; color:#666; background:#f0f0f0; padding:2px 8px; border-radius:10px; margin: 0 10px;">أجاب: ${answeredCount} / ${datasetQuizzes.length}</span>
+                            </div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: var(--success);">${p.score || 0} نقطة</div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        window.endGroupQuizForEveryone = function() {
+            if(confirm("هل أنت متأكد من إنهاء التقييم للجميع؟")) {
+                clearInterval(hostTimerInterval);
+                terminateAssessmentSession(window.currentRoomData);
+            }
+        };
+
+        window.processNextTransition = function() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            
+            setTimeout(() => {
+                activeIndex++;
+                if (activeIndex < datasetQuizzes.length) {
+                    isTransitioning = false;
+                    renderLocalizedQuestion();
+                } else {
+                    terminateAssessmentSession();
+                }
+            }, 3500); 
+        };
+
+        function renderLocalizedQuestion() {
+            if (isHost && gameMode === 'group') return; 
+
+            hasSelectedOption = false;
+            const q = datasetQuizzes[activeIndex];
+            const dict = dictionary[selectedLanguage];
+
+            document.getElementById('counter-display').textContent = `${dict.counter} ${activeIndex + 1} / ${datasetQuizzes.length}`;
+            document.getElementById('bloom-badge').textContent = q.bloomLevel || "";
+            document.getElementById('score-display').textContent = `${dict.score}: ${runningScore}`;
+            
+            document.getElementById('target-question-text').textContent = selectedLanguage === 'ar' ? (q.textAr || q.ar) : (q.textEn || q.en);
+
+            const RawHintParts = (q.hint || "").split('|');
+            const calculatedHint = selectedLanguage === 'ar' ? RawHintParts[0] : (RawHintParts[1] || RawHintParts[0]);
+            document.getElementById('btn-hint').textContent = dict.hintBtn;
+            document.getElementById('hint-box').textContent = calculatedHint ? calculatedHint.trim() : "";
+            document.getElementById('hint-box').style.display = 'none';
+
+            const RawFeedbackParts = (q.feedback || "").split('|');
+            document.getElementById('feedback-title').textContent = dict.feedbackTitle;
+            document.getElementById('target-feedback-text').textContent = selectedLanguage === 'ar' ? RawFeedbackParts[0]?.trim() : (RawFeedbackParts[1] || RawFeedbackParts[0])?.trim();
+            document.getElementById('feedback-box').style.display = 'none';
+
+            const oldTransMsg = document.getElementById('trans-msg');
+            if (oldTransMsg) oldTransMsg.remove();
+
+            const viewport = document.getElementById('options-viewport');
+            viewport.innerHTML = '';
+
+            let arrayOptions = [...(q.options || [])];
+            arrayOptions.sort(() => Math.random() - 0.5);
+
+            arrayOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-button';
+                btn.textContent = selectedLanguage === 'ar' ? opt.ar : (opt.en || opt.ar);
+                
+                let isCorrect = (q.correctAnswerIndex !== undefined && q.options.indexOf(opt) === q.correctAnswerIndex) || (opt.correct === true);
+
+                btn.onclick = () => {
+                    if (hasSelectedOption) return;
+                    hasSelectedOption = true;
+                    clearInterval(clockCountdownInterval);
+
+                    viewport.querySelectorAll('.option-button').forEach(b => b.disabled = true);
+
+                    // 🧠 تسجيل مستوى بلوم لهذا السؤال (صحيح/إجمالي)
+                    // يُحفظ لاحقاً مع النتيجة ليُبنى عليه تحليل مهارات التفكير
+                    // في ملفي الطالب والمعلم. لا يؤثر على سير الاختبار إطلاقاً.
+                    const bloomKey = (q.bloomLevel && String(q.bloomLevel).trim()) || 'غير مصنف';
+                    if (!bloomTally[bloomKey]) bloomTally[bloomKey] = { correct: 0, total: 0 };
+                    bloomTally[bloomKey].total++;
+                    if (isCorrect) bloomTally[bloomKey].correct++;
+
+                    if (isCorrect) {
+                        btn.classList.add('correct-status');
+                        runningScore += 10;
+                        document.getElementById('score-display').textContent = `${dict.score}: ${runningScore}`;
+                    } else {
+                        btn.classList.add('wrong-status');
+                        viewport.querySelectorAll('.option-button').forEach(b => { if(b.dataset.isTrue === 'true') b.classList.add('correct-status'); });
+                    }
+
+                    document.getElementById('feedback-box').style.display = 'block';
+
+                    if (roomId && !customId) {
+                        updateDoc(doc(db,'rooms',roomId), {
+                            [`players.${myUid}.answers.q_${activeIndex}`]: true,
+                            [`players.${myUid}.score`]: runningScore
+                        });
+                    }
+
+                    const transMsg = document.createElement('div');
+                    transMsg.id = 'trans-msg';
+                    transMsg.style.cssText = "margin-top: 15px; font-weight: bold; color: var(--secondary); font-size: 0.95rem;";
+                    transMsg.textContent = dict.transition;
+                    document.getElementById('feedback-box').appendChild(transMsg);
+
+                    window.processNextTransition();
+                };
+
+                btn.dataset.isTrue = isCorrect;
+                viewport.appendChild(btn);
+            });
+
+            executeCountdownTimer();
+        }
+
+        function executeCountdownTimer() {
+            let ticker = 60;
+            const bar = document.getElementById('timer-bar');
+            bar.style.width = '100%';
+            clearInterval(clockCountdownInterval);
+
+            clockCountdownInterval = setInterval(() => {
+                if (hasSelectedOption) return;
+                ticker--;
+                bar.style.width = `${(ticker / 60) * 100}%`;
+
+                if (ticker <= 0) {
+                    clearInterval(clockCountdownInterval);
+                    hasSelectedOption = true;
+                    
+                    const viewport = document.getElementById('options-viewport');
+                    viewport.querySelectorAll('.option-button').forEach(b => {
+                        b.disabled = true;
+                        if(b.dataset.isTrue === 'true') b.classList.add('correct-status');
+                    });
+
+                    document.getElementById('target-feedback-text').textContent = dictionary[selectedLanguage].timeout + " " + document.getElementById('target-feedback-text').textContent;
+                    document.getElementById('feedback-box').style.display = 'block';
+                    
+                    if (roomId && !customId) {
+                        updateDoc(doc(db,'rooms',roomId), {
+                            [`players.${myUid}.answers.q_${activeIndex}`]: true
+                        });
+                    }
+                    window.processNextTransition();
+                }
+            }, 1000);
+        }
+
+        window.toggleHintBox = function() {
+            const pane = document.getElementById('hint-box');
+            pane.style.display = pane.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // 🚀 حفظ النتائج وتوجيهها للجدول الصحيح بناءً على نوع الطالب
+        async function terminateAssessmentSession(data = null) {
+            clearInterval(clockCountdownInterval);
+            document.getElementById('assessment-screen').classList.add('hidden');
+            const dash = document.getElementById('host-dashboard-ui');
+            if(dash) dash.style.display = 'none';
+
+            document.getElementById('report-screen').classList.remove('hidden');
+
+            const summary = document.getElementById('report-summary');
+            const dict = dictionary[selectedLanguage];
+            const maxScore = datasetQuizzes.length * 10;
+
+            if (gameMode === 'single' || customId || isPremium) {
+                const percentage = Math.round((runningScore / maxScore) * 100);
+                summary.innerHTML = `<div><strong>${dict.summaryScore}:</strong> ${runningScore} / ${maxScore} (${percentage}%)</div>`;
+            } else if (data) {
+                const playersArray = Object.values(data.players || {}).sort((a,b) => (b.score || 0) - (a.score || 0));
+                summary.innerHTML = `<h3 style="color:var(--primary); margin-bottom:15px;">الترتيب النهائي:</h3>`;
+                playersArray.forEach((p, index) => {
+                    if(p.uid === data.hostUid) return; 
+                    summary.innerHTML += `<div style="border-bottom: 1px solid var(--border); padding: 10px 0;">المركز ${index+1}: ${p.displayName} - <strong style="color:var(--success);">${p.score || 0} نقطة</strong></div>`;
+                });
+            }
+
+            try {
+                let targetCollection = customId ? "custom_results" : "standard_results";
+                let hostTeacher = myUid; 
+                let actualLessonId = customId; 
+                let accessCode = "";
+                let schoolInfo = "";
+                let schoolIdInfo = "";
+                let subjectTypeInfo = "";
+                
+                // 💡 التوجيه الذكي في حالة الطالب المعتمد (Premium)
+                if (isPremium) {
+                    targetCollection = "premium_results"; // توجيه لجدول النتائج المركزية
+                    hostTeacher = sessionStorage.getItem('premium_teacherUid') || "MISSING_TEACHER";
+                    actualLessonId = premiumLessonId; 
+                    accessCode = sessionStorage.getItem('premium_access_code') || "بدون_كود";
+                    schoolInfo = sessionStorage.getItem('premium_school') || "";
+                    schoolIdInfo = sessionStorage.getItem('premium_schoolId') || "";
+                    subjectTypeInfo = sessionStorage.getItem('premium_subjectType') || "";
+                } else {
+                    if (window.currentRoomData) {
+                        if (window.currentRoomData.hostUid) {
+                            hostTeacher = window.currentRoomData.hostUid;
+                        }
+                        if (!customId && window.currentRoomData.lessonId) {
+                            actualLessonId = window.currentRoomData.lessonId; 
+                        }
+                    }
+                    if (!actualLessonId) {
+                        actualLessonId = roomId; 
+                    }
+                }
+
+                // الحفظ النهائي في قاعدة البيانات
+                await addDoc(collection(db, targetCollection), {
+                    studentUid: myUid, 
+                    studentName: myName, 
+                    score: Math.round((runningScore / maxScore) * 100), 
+                    lessonId: actualLessonId, 
+                    roomId: roomId || "تقييم_فردي", 
+                    interfaceLanguage: selectedLanguage,
+                    timestamp: new Date(),
+                    teacherUid: hostTeacher, // ربط المعلم
+
+                    // 🧠 تفصيل مستويات بلوم لتحليل مهارات التفكير في الملفات الشخصية
+                    bloomBreakdown: bloomTally,
+                    
+                    // بيانات إضافية ترفع فقط في حالة الـ Premium لتظهر في لوحة الأدمن
+                    accessCode: accessCode,
+                    school: schoolInfo,
+                    schoolStudentId: schoolIdInfo,
+                    subjectType: subjectTypeInfo
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        // دالة للمغادرة الصحيحة
+        window.exitAssessment = function() {
+            if (isPremium) {
+                // يعود لبوابة التفعيل المدفوعة
+                window.location.href = 'premium-student-portal.html';
+            } else {
+                // يعود للوبي المجاني
+                window.location.href = 'academic-lobby.html';
+            }
+        }
+    </script>
+</body>
+</html>

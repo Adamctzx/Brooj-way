@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borooj Way - بوابة التقييم والاعتماد الأكاديمي</title> 
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <script type="module">
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { auth } from "./firebase-shared.js";
+        import { getUserProfile, profilePageFor, ROLES } from "./roles.js";
+
+        window.continueAsGuest = function() {
+            sessionStorage.setItem('guestMode', 'true');
+            document.getElementById('guest-modal').style.display = 'none';
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            const authSection = document.getElementById('user-auth-section');
+            if (!user) {
+                if(!sessionStorage.getItem('guestMode')) {
+                    document.getElementById('guest-modal').style.display = 'flex';
+                }
+                authSection.innerHTML = `<a href="login.html" class="auth-btn login-btn">تسجيل الدخول 👤</a>`;
+            }
+            else {
+                document.getElementById('guest-modal').style.display = 'none';
+
+                // 🛡️ عرض الاسم والدور الحقيقي، وإظهار روابط الإدارة لمن يملك صلاحيتها فقط
+                const profile = await getUserProfile(user);
+
+                let roleLinks = '';
+                if (profile.isAdmin) {
+                    // لوحة الإدارة قد تكون على جهاز المالك فقط ولا تُرفع على الاستضافة،
+                    // لذلك لا نعرض الرابط إلا إذا كانت الصفحة موجودة فعلاً على هذا الخادم.
+                    let adminPageExists = false;
+                    try {
+                        const r = await fetch('admin-users.html', { method: 'HEAD' });
+                        adminPageExists = r.ok;
+                    } catch (e) { adminPageExists = false; }
+
+                    if (adminPageExists) {
+                        roleLinks += `<a href="admin-users.html" class="auth-btn" style="background:#8e44ad; color:#fff; margin-left:10px;">إدارة المنصة 🛡️</a>`;
+                    }
+                }
+                if (profile.isTeacher) {
+                    roleLinks += `<a href="academic-teacher.html" class="auth-btn" style="background:#e67e22; color:#fff; margin-left:10px;">بوابة المعلم 👨‍🏫</a>`;
+                }
+
+                authSection.innerHTML = `
+                    <span class="welcome-badge">مرحباً ${profile.name} | ${profile.roleLabel}</span>
+                    ${roleLinks}
+                    <a href="${profilePageFor(profile.role)}" class="auth-btn" style="background: #27ae60; color: white; margin-left: 10px;">ملفي الشخصي 👤</a>
+                    <button id="logout-btn" class="auth-btn logout-btn">تسجيل الخروج</button>
+                `;
+
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    signOut(auth).then(() => {
+                        sessionStorage.removeItem('guestMode');
+                        window.location.reload();
+                    });
+                });
+
+                // إخفاء بطاقات البوابات الإدارية عن الطلاب (تبقى في الصفحة، تُخفى فقط)
+                if (!profile.isTeacher) {
+                    document.querySelectorAll('.teacher-theme, .generator-theme').forEach(card => {
+                        card.style.display = 'none';
+                    });
+                }
+            }
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary: #1a2a6c;
+            --secondary: #fdbb2d;
+            --accent: #27ae60;
+            --bg-color: #f4f7fb;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+            --font-main: 'Cairo', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+        body { background-color: var(--bg-color); color: var(--text-dark); line-height: 1.6; overflow-x: hidden; }
+        a { text-decoration: none; transition: 0.3s; }
+        .container { max-width: 1250px; margin: 0 auto; padding: 0 20px; }
+
+        .site-header {
+            background: linear-gradient(135deg, var(--primary), #b21f1f, var(--secondary));
+            background-size: 300% 300%;
+            animation: gradientBG 10s ease infinite;
+            color: white;
+            padding: 70px 20px 50px 20px; 
+            text-align: center;
+            border-radius: 0 0 40px 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .site-header h1 { font-size: 3rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .site-header h2, .site-header h3 { font-weight: 600; opacity: 0.9; margin-bottom: 10px; }
+        .header-callout { display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 30px; font-weight: bold; margin-top: 15px; backdrop-filter: blur(5px); }
+
+        .user-auth-section { position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; gap: 10px; align-items: center; }
+        .auth-btn { padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; text-decoration: none; border: none; font-size: 1rem; transition: 0.3s; }
+        .login-btn { background: var(--secondary); color: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .login-btn:hover { transform: translateY(-2px); background: #f39c12; }
+        .logout-btn { background: rgba(231, 76, 60, 0.9); color: white; }
+        .logout-btn:hover { background: #c0392b; }
+        .welcome-badge { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); color: white; padding: 8px 15px; border-radius: 10px; font-weight: bold; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-box { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 500px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.4s ease; border: 4px solid var(--secondary); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-box h2 { color: var(--primary); margin-bottom: 15px; font-size: 1.8rem; font-weight: 900; }
+        .modal-box p { color: #555; margin-bottom: 25px; font-size: 1.1rem; line-height: 1.6; }
+        .modal-actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn-register { background: var(--accent); color: white; padding: 12px 25px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; flex: 1; font-size: 1.1rem; transition: 0.2s; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); text-decoration: none; }
+        .btn-register:hover { background: #219653; transform: translateY(-2px); }
+        .btn-guest { background: #ecf0f1; color: var(--text-dark); padding: 12px 25px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; flex: 1; font-size: 1.1rem; transition: 0.2s; }
+        .btn-guest:hover { background: #bdc3c7; }
+
+        .aljazeera-ticker {
+            display: flex; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; border-radius: 15px; overflow: hidden; border: 1px solid #e1e8ed;
+        }
+        .ticker-title { background: #e74c3c; color: white; padding: 12px 25px; font-weight: bold; white-space: nowrap; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .ticker-content { overflow: hidden; white-space: nowrap; flex-grow: 1; display: flex; align-items: center; }
+        .ticker-text { display: inline-block; animation: tickerScroll 30s linear infinite; font-weight: 600; color: #34495e; }
+        .ticker-text span { margin-right: 40px; }
+        @keyframes tickerScroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        .content-wrapper { display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 40px; }
+        .main-area { flex: 3; min-width: 300px; display: flex; flex-direction: column; gap: 30px; }
+        .sidebar { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px; }
+
+        .about-section {
+            background: linear-gradient(145deg, #1e293b, #2c3e50);
+            border-radius: 20px; padding: 30px; color: #fff;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2); border-bottom: 5px solid var(--secondary);
+            position: relative; overflow: hidden;
+        }
+        .about-section::before { content: '🚀'; position: absolute; font-size: 150px; opacity: 0.05; right: -20px; bottom: -20px; }
+        .about-section h2 { color: var(--secondary); margin-bottom: 15px; font-size: 1.8rem; border-bottom: 2px dashed rgba(253, 187, 45, 0.3); padding-bottom: 10px; }
+        .about-section p { font-size: 1.05rem; line-height: 1.8; color: #cbd5e1; margin-bottom: 15px; }
+        .about-section ul { list-style: none; padding: 0; }
+        .about-section li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; display: flex; align-items: center; gap: 10px; }
+        .about-section li::before { content: '🔸'; color: var(--secondary); }
+
+        .hero-banner {
+            border-radius: 20px; padding: 30px; text-align: center; color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; position: relative; overflow: hidden;
+        }
+        .hero-banner:hover { transform: translateY(-5px); }
+        .hero-yalla { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .hero-pvp { background: linear-gradient(135deg, #ff823a 0%, #bc84ee 100%); border: 4px solid #fff; }
+        .hero-solutions { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: 3px solid var(--secondary); display: flex; align-items: center; justify-content: center; gap: 20px; text-align: right; }
+        
+        .hero-banner h2, .hero-banner h3 { font-size: 2rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .hero-banner p { font-size: 1.1rem; margin-bottom: 20px; font-weight: 600; }
+        .btn-action { display: inline-block; background: #fff; color: var(--primary); padding: 12px 35px; border-radius: 30px; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn-action:hover { transform: scale(1.05); background: var(--secondary); color: #fff; }
+
+        .section-title { font-size: 1.8rem; color: var(--primary); margin-bottom: 20px; border-right: 5px solid var(--secondary); padding-right: 15px; }
+        .grades-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .grade-card { background: white; border-radius: 15px; padding: 25px 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-bottom: 4px solid #bdc3c7; transition: 0.3s; display: flex; align-items: center; justify-content: center; min-height: 100px;}
+        .grade-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-color: var(--primary); }
+        .grade-card h3 { color: var(--text-dark); font-size: 1.1rem; margin: 0; }
+
+        .sidebar-widget { background: #fff; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .sidebar-widget h3 { color: var(--primary); margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #f1f2f6; padding-bottom: 10px;}
+        .glossary-list { display: flex; flex-direction: column; gap: 10px; }
+        .glossary-btn { background: #f8f9fa; border: 1px solid #e1e8ed; padding: 15px; border-radius: 10px; color: var(--text-dark); font-weight: bold; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .glossary-btn:hover { background: var(--primary); color: #fff; transform: translateX(-5px); border-color: var(--primary); }
+        
+        .search-form { display: flex; gap: 10px; margin-top: 15px; }
+        .search-form input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; outline: none; }
+        .search-form button { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        .games-scroll-container { display: flex; gap: 20px; overflow-x: auto; padding: 15px 5px; scroll-behavior: smooth; }
+        .games-scroll-container::-webkit-scrollbar { height: 8px; }
+        .games-scroll-container::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 10px; }
+        .game-poster-card { min-width: 200px; background: white; border-radius: 15px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: 0.3s; border: 2px solid transparent; }
+        .game-poster-card:hover { transform: translateY(-5px); border-color: var(--secondary); }
+        .game-poster-card img { width: 100%; height: 260px; border-radius: 10px; object-fit: cover; margin-bottom: 10px; }
+        .game-poster-card p { text-align: center; font-weight: bold; color: var(--text-dark); font-size: 1rem; }
+
+        /* شبكة الوصول لكل ألعاب الصفوف */
+        .grade-games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+        .grade-game-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+            background: #fff; border: 1px solid #e1e8ed; border-radius: 14px; padding: 18px 12px;
+            text-align: center; transition: 0.25s; border-bottom: 4px solid var(--primary);
+        }
+        .grade-game-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 22px rgba(0,0,0,0.1); border-bottom-color: var(--secondary); }
+        .grade-game-btn .gg-name { font-weight: 900; color: var(--primary); font-size: 1.05rem; }
+        .grade-game-btn .gg-count { font-size: 0.85rem; color: #7f8c8d; background: #f1f4f8; padding: 2px 12px; border-radius: 20px; }
+
+        /* بطاقات "قريباً" — معلوماتية لا تُنقر */
+        .grade-card.soon { cursor: default; opacity: 0.72; }
+        .grade-card.soon:hover { transform: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-color: #bdc3c7; }
+
+        .site-footer { background: var(--primary); color: white; text-align: center; padding: 20px; margin-top: 40px; border-radius: 30px 30px 0 0; }
+        
+        #google_translate_element { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .skiptranslate iframe { display: none !important; }
+        body { top: 0 !important; }
+
+        .academic-portals-wrapper {
+            display: flex !important;
+            flex-direction: column !important; 
+            align-items: center !important;    
+            justify-content: center !important;
+            gap: 25px !important;
+            padding: 40px 0 !important;        
+            margin: 20px auto !important;      
+            width: 100% !important;            
+            max-width: 100% !important;
+            direction: rtl !important;
+            box-sizing: border-box !important;
+        }
+
+        .portal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 500px; 
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-top: 6px solid;
+            transition: all 0.3s ease;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+
+        .portal-card::before {
+            content: ''; position: absolute; top: -60px; right: -60px;
+            width: 180px; height: 180px; border-radius: 50%; opacity: 0.05;
+            z-index: 0; transition: all 0.4s ease;
+        }
+        
+        .portal-card:hover::before { transform: scale(1.2); }
+
+        .student-theme { border-color: #3498db; }
+        .student-theme::before { background: #3498db; }
+        
+        .teacher-theme { border-color: #e67e22; }
+        .teacher-theme::before { background: #e67e22; }
+        
+        .generator-theme { border-color: #27ae60; }
+        .generator-theme::before { background: #27ae60; }
+
+        .parent-theme { border-color: #7b1fa2; }
+        .parent-theme::before { background: #7b1fa2; }
+        .parent-theme .portal-btn { background: linear-gradient(135deg, #7b1fa2, #4a148c); }
+        .parent-theme .portal-btn:hover { background: linear-gradient(135deg, #4a148c, #38006b); box-shadow: 0 6px 20px rgba(123, 31, 162, 0.4); }
+
+        .wall-theme { border-color: #9b59b6; }
+        .wall-theme::before { background: #9b59b6; }
+        .wall-theme .portal-btn { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .wall-theme .portal-btn:hover { background: linear-gradient(135deg, #8e44ad, #732d91); box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4); }
+
+        /* 🔴 التنسيق الجديد لبطاقة العلوم الشرعية 🔴 */
+        .sharia-theme { border-color: #16a085; }
+        .sharia-theme::before { background: #16a085; }
+        .sharia-theme .portal-btn { background: linear-gradient(135deg, #16a085, #1abc9c); }
+        .sharia-theme .portal-btn:hover { background: linear-gradient(135deg, #1abc9c, #117a65); box-shadow: 0 6px 20px rgba(22, 160, 133, 0.4); }
+
+        .portal-icon { font-size: 4.5rem; margin-bottom: 20px; position: relative; z-index: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .portal-card h3 { color: #2c3e50; font-size: 1.6rem; font-weight: 800; margin-bottom: 15px; position: relative; z-index: 1; }
+        .portal-card p { color: #7f8c8d; line-height: 1.7; font-size: 1.05rem; margin-bottom: 35px; position: relative; z-index: 1; }
+
+        .portal-btn {
+            display: inline-block; padding: 14px 35px; border-radius: 8px; text-decoration: none;
+            font-weight: bold; font-size: 1.1rem; color: #fff; transition: 0.3s ease;
+            position: relative; z-index: 1; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .student-theme .portal-btn { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .student-theme .portal-btn:hover { background: linear-gradient(135deg, #2980b9, #1f618d); box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4); }
+        
+        .teacher-theme .portal-btn { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .teacher-theme .portal-btn:hover { background: linear-gradient(135deg, #d35400, #a04000); box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4); }
+        
+        .generator-theme .portal-btn { background: linear-gradient(135deg, #27ae60, #1e8449); }
+        .generator-theme .portal-btn:hover { background: linear-gradient(135deg, #1e8449, #145a32); box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div id="guest-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>👋 أهلاً بك في منصة BoRooJ Way</h2>
+            <p>للاستمتاع بكافة الميزات التفاعلية مثل حفظ النقاط، التحديات المباشرة، وسجل الإنجازات الخاص بك، ننصحك بتسجيل الدخول.</p>
+            <div class="modal-actions">
+                <a href="login.html" class="btn-register">تسجيل الدخول / حساب جديد</a>
+                <button onclick="continueAsGuest()" class="btn-guest">الاستمرار كزائر 🌍</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="google_translate_element"></div>
+
+    <header class="site-header">
+        <div id="user-auth-section" class="user-auth-section"></div>
+        <div class="container">
+            <h1 data-translate-key="new_header_line1">أهلاً بكم في بروج واي BoRooJ Way</h1>
+            <h3 data-translate-key="new_header_line1">التعليم عن بُعد الآن - نوفر لكم أسئلة وأنشطة تعليمية مبتكرة</h3>
+            <h2 data-translate-key="new_header_line2">كل ما يخص التعليم بالعالم العربي</h2>
+            <p class="header-callout" data-translate-key="new_header_line3">المنهج الإماراتي - المصري - السعودي... والمزيد</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- شريط الأخبار -->
+        <div class="aljazeera-ticker">
+            <div class="ticker-title">آخر الأخبار</div>
+            <div class="ticker-content">
+                <div class="ticker-text">
+                    <span>• 🚀 ألعاب دروس التربية الإسلامية للصفوف 7-8-9-10-11 متاحة الآن</span>
+                    <span>• 📖 أطلقنا قسم حلول الكتاب المدرسي التفاعلي الجديد</span>
+                    <span>• ⚔️ جرب الآن منصة التحديات المباشرة (Yalla Quiz) الأولى من نوعها</span>
+                    <span>• 📚 قريباً الأربعين النووية شروحات علمية بالرسم</span>
+                    <span>• 💻 متوفر الآن عروض تقديمية (PowerPoint) لجميع دروس التربية الإسلامية</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <main class="main-area">
+                
+                <a href="emirati-islamic-grades.html" class="hero-banner hero-yalla">
+                    <h2>📰 يلااا كويز | Yalla Quiz</h2>
+                    <p>كويزات التربية الإسلامية للصفوف (4 - 11) متاحة الآن!<br>Islamic Education Quizzes now available!</p>
+                    <span class="btn-action">تصفح الكويزات الفردية</span>
+                </a>
+				
+                <!-- 📌 البوابات الأكاديمية (النسخة المحدثة للاعتماد) 📌 -->
+                <div class="academic-portals-wrapper">
+                    
+                    <!-- 🔴 الإضافة الجديدة: بوابة طالب العلم الشرعي 🔴 -->
+                    <div class="portal-card sharia-theme" style="margin-bottom: 20px;">
+                        <div class="portal-icon">🕌</div>
+                        <h3>بوابة طالب العلم الشرعي</h3>
+                        <p>منصة متخصصة لطلاب العلم الشرعي، تتيح لك قراءة المتون، استعراض ملخصات الكتب، واختبار فهمك أكاديمياً مع توثيق إنجازك.</p>
+                        <a href="sharia-portal.html" class="portal-btn">الدخول للبوابة الشرعية 📚</a>
+                    </div>
+                    
+                    <!-- كرت الطلاب الموجه لبوابة التفعيل الجديدة -->
+                    <div class="portal-card student-theme">
+                        <div class="portal-icon">🎓</div>
+                        <h3>بوابة التقييمات الأكاديمية (للطلاب)</h3>
+                        <p>ادخل الآن بواسطة الكود (PRM) المقدم لك من مدرستك لفتح التقييمات التفاعلية وتوثيق نتائجك.</p>
+                        <a href="premium-student-portal.html" class="portal-btn">بوابة دخول الطلاب 🚀</a>
+                    </div>
+
+                    <!-- كرت المعلم الموجه للوحة التحكم -->
+                    <div class="portal-card teacher-theme">
+                        <div class="portal-icon">👨‍🏫</div>
+                        <h3>بوابة الإدارة الأكاديمية (للمعلمين)</h3>
+                        <p>قم بمتابعة نتائج طلابك، إدارة اختباراتك، وتصدير الدرجات الرسمية بطريقة مختصرة وموثقة.</p>
+                        <a href="academic-teacher.html" class="portal-btn">لوحة تحكم المعلم ⚙️</a>
+                    </div>
+                    
+                    <!-- الكرت الثالث -->
+                    <div class="portal-card generator-theme">
+                        <div class="portal-icon">🧠</div>
+                        <h3>ابدأ درسك بخطوات تمهيدية بسيطة</h3>
+                        <p>قم بتوليد اختبارات تمهيدية سريعة أو امتحانات شهرية شاملة للوحدات بضغطة زر، وشاركها مع طلابك فوراً عبر QR Code.</p>
+                        <a href="smart-generator.html" class="portal-btn">توليد التقييمات ⚡</a>
+                    </div>
+
+                    <!-- 👨‍👩‍👧 بوابة ولي الأمر -->
+                    <div class="portal-card parent-theme">
+                        <div class="portal-icon">👨‍👩‍👧</div>
+                        <h3>بوابة ولي الأمر</h3>
+                        <p>تابع مستوى ابنك ونتائجه وحفظه للقرآن وتسميعه — في مكان واحد وبلا صلاحية تعديل. اطلب كود الربط من ابنك.</p>
+                        <a href="parent-portal.html" class="portal-btn">دخول أولياء الأمور 👪</a>
+                    </div>
+
+                    <!-- الكرت الرابع -->
+                    <div class="portal-card wall-theme">
+                        <div class="portal-icon">📌</div>
+                        <h3>حائط بروج التفاعلي (BoRooJ Wall)</h3>
+                        <p>شارك أفكارك، أرسل ملاحظاتك، وتفاعل مع زملائك في بيئة آمنة. ادخل عبر الكود السري الخاص بمعلمك أو امسح الـ QR Code.</p>
+                        <a href="boroj-wall.html" class="portal-btn">دخول الحائط التفاعلي ✨</a>
+                    </div>
+                </div>
+
+                <div class="hero-banner hero-pvp">
+                    <h2>🔥 ساحة التحديات يلاااا كويز...الكويز المباشر!</h2>
+                    <p>هل أنت مستعد لمواجهة أصدقائك في تحدٍ مباشر؟ متاح الآن صف 4-5-6-7 <br>أول كويز PvP في الوطن العربي يعتمد على مستويات هرم بلوم الذكية.</p>
+                    <a href="lobby.html" class="btn-action" style="color: #bc84ee;">🚀 ادخل الغرفة الآن!</a>
+                </div>
+
+                <a href="solutions.html" class="hero-banner hero-solutions">
+                    <div style="font-size: 3.5rem; background:#fff; border-radius:15px; padding:10px; box-shadow:0 4px 10px rgba(0,0,0,0.2);">📖</div>
+                    <div>
+                        <h2 style="margin-bottom: 5px; color:#fff;">دليل حلول الكتاب المدرسي</h2>
+                        <p style="color:#d1d8e0; margin-bottom: 0;">الإجابات النموذجية لجميع الدروس والوحدات بشكل تفاعلي ومنظم للمذاكرة.</p>
+                    </div>
+                </a>
+
+                <a href="nawawi-download.html" class="grade-card" style="border-bottom: 4px solid #27ae60; background: linear-gradient(135deg, #2ecc71, #27ae60); color: white;">
+                    <h3 style="color: white; font-size: 1.3rem;">✨ قريباً للطلاب والأسرة المسلمة: باوربوينت الأربعين النووية بشروحات علمية بالرسم</h3>
+                </a>
+
+                <div>
+                    <h2 class="section-title">📚 اختر المنهج الدراسي أو الخدمة</h2>
+                    <div class="grades-grid">
+                        <a href="emirati-subjects.html" class="grade-card" style="border-color:#3498db;">
+                            <h3>🇦🇪 المنهج الإماراتي<br><small style="color:#7f8c8d;">متاح الآن لمادة التربية الإسلامية</small></h3>
+                        </a>
+                        <div class="grade-card soon"><h3>🇪🇬 المنهج المصري <br><small style="color:#7f8c8d;">(قريباً)</small></h3></div>
+                        <div class="grade-card soon"><h3>🇸🇦 المنهج السعودي <br><small style="color:#7f8c8d;">(قريباً)</small></h3></div>
+                        <a href="https://www.youtube.com/@Booroj/featured" target="_blank" class="grade-card" style="border-color:#e74c3c;">
+                            <h3>📺 شاهدنا على اليوتيوب<br><small style="color:#7f8c8d;">Education Bazaar</small></h3>
+                        </a>
+                        <a href="books-download.html" target="_blank" class="grade-card" style="border-color:#f39c12;">
+                            <h3>📥 تحميل الكتب الدراسية<br><small style="color:#7f8c8d;">للتربية الإسلامية</small></h3>
+                        </a>
+                        <a href="powerpoint-download.html" target="_blank" class="grade-card" style="border-color:#9b59b6;">
+                            <h3>💻 عروض الباوربوينت<br><small style="color:#7f8c8d;">متاح لصف أول كاملاً</small></h3>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="fb-comments" data-href="https://education-bazaar.com" data-width="100%" data-numposts="5"></div>
+
+            </main>
+
+            <!-- 🔴 الشريط الجانبي (اليمين) 🔴 -->
+            <aside class="sidebar">
+                
+                <div class="about-section">
+                    <h2>عن إديوكيشن بازار</h2>
+                    <p>المنصة العربية الرائدة التي تعيد تعريف تجربة التعلم عن بعد. نوفر أدوات تفاعلية وألعاباً تعليمية تذلل الصعاب التقنية لتقديم تجربة فريدة ومسلية.</p>
+				 <p>لطلب الأكواد الخاصة بالاختبارات المعيارية الأسبوعية والشهرية، الرجاء التواصل عبر الهاتف المخصص 0553169697 </p>
+
+                    <ul>
+                        <li>مناهج التربية الإسلامية.</li>
+                        <li>مناهج اللغة العربية.</li>
+                        <li>مناهج الدراسات الاجتماعية.</li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-widget">
+                    <h3>أقسام خدمية </h3>
+                    <div class="glossary-list">
+                        <a href="teachers-accessories.html" class="glossary-btn" style="background:#fff9e6; border-color:#f1c40f;">🛍️ اكسسوارات المعلمين (قريباً)</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-widget">
+                    <h3>علوم وثقافة (المعاجم الذكية)</h3>
+                    <div class="glossary-list">
+                        <a href="tools/aqeedah-glossary.html" class="glossary-btn">🕋 معجم العقيدة الإسلامية</a>
+                        <a href="tools/quran-glossary.html" class="glossary-btn">📖 معجم القرآن الذكي</a>
+                        <a href="tools/hadith-glossary.html" class="glossary-btn">📜 معجم مصطلح الحديث</a>
+                        <a href="tools/asma-ul-husna.html" class="glossary-btn">✨ معجم أسماء الله الحسنى</a>
+                        <a href="tools/student-glossary.html" class="glossary-btn">🎓 معجم الطالب الشامل</a>
+                        <a href="tools/arbain-nawawi/index.html" class="glossary-btn">📚 الأربعين النووية</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-widget">
+                    <h3>البحث في الموسوعة الحديثية</h3>
+                    <form class="search-form" action="https://dorar.net/hadith/search" method="get" target="_blank">
+                        <input type="text" name="q" placeholder="اكتب كلمة من الحديث..." required>
+                        <input type="hidden" name="st" value="a"> 
+                        <button type="submit">بحث</button>
+                    </form>
+                </div>
+
+            </aside>
+        </div>
+
+        <section class="sidebar-widget" style="margin-bottom: 30px;">
+            <h2 class="section-title">أحدث الألعاب التعليمية الكبرى</h2>
+            <div class="games-scroll-container">
+                <div class="game-poster-card" style="border-color: #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.3);">
+                    <a href="games/nawawi-game/quiz-nawawi.html">
+                        <img src="images/poster-nawawi.jpg" alt="الأربعون النووية" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p style="color: #ce1126;">🌟 الأربعون النووية</p>
+                    </a>
+                </div>
+                <div class="game-poster-card" style="border-color: #11998e;">
+                    <a href="games/siyam-game/quiz-siyam.html">
+                        <img src="images/poster-siyam.jpg" alt="فقه الصيام" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p style="color: #11998e;">🌙 تحدي فقه الصيام</p>
+                    </a>
+                </div>
+                <div class="game-poster-card" style="border-color: #4A00E0;">
+                    <a href="games/aqeedah-league-game/quiz-aqeedah.html">
+                        <img src="images/poster-aqeedah.jpg" alt="دوري العقيدة" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p style="color: #4A00E0;">🏆 دوري العقيدة</p>
+                    </a>
+                </div>
+                <div class="game-poster-card">
+                    <a href="games/g10-t1-l6-game/quiz-kahf-companions.html">
+                        <img src="images/poster-kahf.jpg" alt="أصحاب الكهف" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p>أصحاب الكهف - صف 10</p>
+                    </a>
+                </div>
+                <div class="game-poster-card">
+                    <a href="games/g4-u1-l2-game/quiz-al-burooj-1.html">
+                        <img src="images/poster-burooj.jpg" alt="سورة البروج" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p>سورة البروج - صف 4</p>
+                    </a>
+                </div>
+                 <div class="game-poster-card">
+                    <a href="games/g5-u1-l3-game/quiz-ahabb-al-amal.html">
+                         <img src="images/poster-ahabb.jpg" alt="أحب الأعمال" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p>أحب الأعمال - صف 5</p>
+                    </a>
+                </div>
+                <div class="game-poster-card">
+                    <a href="games/g8-u1-l8-game/quiz-kasb-tayyib.html">
+                        <img src="images/poster-kasb.jpg" alt="الكسب الطيب" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'">
+                        <p>الكسب الطيب - صف 8</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="sidebar-widget" style="margin-bottom: 30px;">
+            <h2 class="section-title">ألعاب الصف الرابع التفاعلية</h2>
+            <div class="games-scroll-container">
+                <div class="game-poster-card"><a href="games/g4-u1-l1-game/quiz-verify-news.html"><img src="images/poster-verify.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>التثبت من الأخبار</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u1-l2-game/quiz-al-burooj-1.html"><img src="images/poster-burooj.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>سورة البروج (1)</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u1-l3-game/quiz-tajweed-qalqalah.html"><img src="images/poster-qalqalah.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>أحكام القلقلة</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u1-l5-game/quiz-start-dawah.html"><img src="images/poster-dawah.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>بدء الدعوة للإسلام</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u1-l6-game/quiz-zainab-bint-khuzayma.html"><img src="images/poster-zainab.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>السيدة زينب</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u1-l7-game/quiz-divine-books.html"><img src="images/poster-books.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>الكتب السماوية</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u2-l2-game/quiz-al-tariq.html"><img src="images/poster-tariq.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>سورة الطارق</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u2-l3-game/quiz-home-adab.html"><img src="images/poster-home-adab.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>آداب الدخول والخروج</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u3-l4-game/quiz-salah-adab.html"><img src="images/poster-salah.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>أهمية الصلاة وآدابها</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u3-l5-game/quiz-ahsanukum-akhlaqan.html"><img src="images/poster-akhlaq.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>أحسنكم أخلاقاً</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u3-l6-game/quiz-sunan-rawatib.html"><img src="images/poster-rawatib.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>السنن الرواتب</p></a></div>
+                <div class="game-poster-card"><a href="games/g4-u3-l7-game/quiz-habasha-migration.html"><img src="images/poster-habasha.jpg" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><p>الهجرة للحبشة</p></a></div>
+            </div>
+        </section>
+
+        <section class="sidebar-widget" style="margin-bottom: 30px;">
+            <h2 class="section-title">🎮 مكتبة الألعاب الكاملة — 230 لعبة تفاعلية</h2>
+            <p style="color:#7f8c8d; margin-bottom:20px; line-height:1.8;">
+                البطاقات أعلاه مجرد مختارات. اضغط على صفّك لتصل إلى <strong>كل</strong> ألعاب دروسه.
+            </p>
+            <div class="grade-games-grid">
+                <a href="grade-1.html"  class="grade-game-btn"><span class="gg-name">الصف الأول</span><span class="gg-count">2 لعبة</span></a>
+                <a href="grade-4.html"  class="grade-game-btn"><span class="gg-name">الصف الرابع</span><span class="gg-count">33 لعبة</span></a>
+                <a href="grade-5.html"  class="grade-game-btn"><span class="gg-name">الصف الخامس</span><span class="gg-count">19 لعبة</span></a>
+                <a href="grade-6.html"  class="grade-game-btn"><span class="gg-name">الصف السادس</span><span class="gg-count">32 لعبة</span></a>
+                <a href="grade-7.html"  class="grade-game-btn"><span class="gg-name">الصف السابع</span><span class="gg-count">27 لعبة</span></a>
+                <a href="grade-8.html"  class="grade-game-btn"><span class="gg-name">الصف الثامن</span><span class="gg-count">33 لعبة</span></a>
+                <a href="grade-9.html"  class="grade-game-btn"><span class="gg-name">الصف التاسع</span><span class="gg-count">20 لعبة</span></a>
+                <a href="grade-10.html" class="grade-game-btn"><span class="gg-name">الصف العاشر</span><span class="gg-count">30 لعبة</span></a>
+                <a href="grade-11.html" class="grade-game-btn"><span class="gg-name">الحادي عشر</span><span class="gg-count">30 لعبة</span></a>
+                <a href="grade-12.html" class="grade-game-btn"><span class="gg-name">الثاني عشر</span><span class="gg-count">4 ألعاب</span></a>
+            </div>
+        </section>
+
+    </div> <!-- End Main Container -->
+
+    <footer class="site-footer">
+        <div class="container">
+            <h3 style="margin-bottom: 10px;">بروج واي - BoRooJ Way</h3>
+            <p>جميع الحقوق محفوظة &copy; 2025 - موقع الدروس - شركة إديوكيشن بازار التعليمية</p>
+        </div>
+    </footer>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'ar', 
+                includedLanguages: 'ar,en,es,fr,ur,hi',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
+    <div id="fb-root"></div>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/ar_AR/sdk.js#xfbml=1&version=v12.0"></script>
+    
+</body>
+</html>

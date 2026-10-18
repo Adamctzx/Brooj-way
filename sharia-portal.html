@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة طالب العلم - أكاديمية العلوم الشرعية</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; padding-bottom: 50px; }
+        
+        .header { background: linear-gradient(135deg, #1a2a6c, #2a4858); color: white; padding: 40px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-bottom: 5px solid #d35400; position: relative; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.2rem; color: #ecf0f1; }
+
+        .lang-controls { position: absolute; top: 15px; left: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .lang-toggle-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; backdrop-filter: blur(5px); }
+        .lang-toggle-btn:hover { background: rgba(255,255,255,0.3); }
+
+        .google-translate-box { position: absolute; top: 15px; right: 20px; z-index: 100; }
+        .goog-te-gadget-simple { background-color: rgba(255,255,255,0.25) !important; border: 1px solid rgba(255,255,255,0.5) !important; padding: 6px 12px !important; border-radius: 8px !important; backdrop-filter: blur(5px); }
+        .goog-te-gadget-simple span, .goog-te-gadget-simple a { color: white !important; font-weight: bold; text-decoration: none !important; font-size: 0.9rem !important; }
+        .goog-te-gadget-icon { display: none !important; }
+
+        .page-wrapper { max-width: 1000px; margin: -30px auto 30px; padding: 0 20px; position: relative; z-index: 10; }
+        .container { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 30px; }
+
+        .search-box { background: #fdfefe; border: 1px solid #e1e8ed; padding: 25px; border-radius: 10px; margin-bottom: 30px; }
+        .search-box h3 { color: #d35400; margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #f2f3f4; padding-bottom: 10px; }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        label { font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px; font-size: 0.95rem; }
+        select, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; font-weight: bold; font-size: 1rem; outline: none; transition: 0.3s; }
+        select:focus, input[type="text"]:focus { border-color: #2980b9; box-shadow: 0 0 5px rgba(41, 128, 185, 0.3); }
+        
+        .btn-search { background: #2980b9; color: white; border: none; padding: 15px; width: 100%; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn-search:hover { background: #1f618d; }
+
+        .status-msg { padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 20px; display: none; font-size: 1.1rem; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2980b9; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .content-area { display: none; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .tab-btn { flex: 1; min-width: 150px; padding: 12px; text-align: center; background: transparent; border: 2px solid transparent; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; color: #7f8c8d; transition: 0.3s; }
+        .tab-btn.active { background: #eaf2f8; color: #2980b9; border-color: #2980b9; }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; padding: 20px 0; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .en-text { color: #7f8c8d; font-size: 0.95rem; margin-top: 6px; direction: ltr; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        .summary-card { background: #fffcf5; border-right: 5px solid #f39c12; padding: 25px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .summary-title { font-size: 1.6rem; color: #d35400; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        .summary-point { margin-bottom: 18px; font-size: 1.12rem; line-height: 2; color: #2c3e50; padding-bottom: 12px; border-bottom: 1px dashed #eee; }
+        .summary-point strong { color: #c0392b; background: #fdedec; padding: 2px 6px; border-radius: 4px; }
+
+        /* =========================================
+           تنسيقات التظليل التفاعلي وشرح الكلمات الصعبة (Tooltip)
+           ========================================= */
+        .summary-point span[title] {
+            position: relative;
+            background-color: #fef9e7;
+            color: #d35400;
+            border-bottom: 2px dotted #e67e22;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .summary-point span[title]:hover,
+        .summary-point span[title]:focus {
+            background-color: #f39c12;
+            color: #fff;
+        }
+
+        /* نافذة الشرح التي تظهر فوق الكلمة المظللة */
+        .summary-point span[title]::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            white-space: normal;
+            width: max-content;
+            max-width: 260px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 99;
+            pointer-events: none;
+            line-height: 1.4;
+            font-weight: normal;
+        }
+
+        /* سهم التوضيح */
+        .summary-point span[title]::before {
+            content: '';
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 99;
+        }
+
+        /* إظهار نافذة الشرح عند التمرير أو النقر */
+        .summary-point span[title]:hover::after,
+        .summary-point span[title]:hover::before,
+        .summary-point span[title]:focus::after,
+        .summary-point span[title]:focus::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .vocab-card { background: white; border: 1px solid #e1e8ed; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 4px solid #8e44ad; }
+        .vocab-word { font-size: 1.4rem; color: #8e44ad; font-weight: bold; margin-bottom: 10px; }
+        .vocab-def { font-size: 1rem; color: #34495e; line-height: 1.6; }
+
+        .quiz-container { max-width: 800px; margin: 0 auto; }
+        .question-card { background: white; border: 1px solid #e1e8ed; padding: 25px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .q-text { font-size: 1.2rem; color: #1a2a6c; font-weight: bold; margin-bottom: 20px; }
+        .q-option { display: block; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 1.05rem; }
+        .q-option:hover { background: #eaf2f8; border-color: #3498db; }
+        .q-option input { margin-left: 10px; transform: scale(1.2); }
+        .q-feedback { display: none; margin-top: 15px; padding: 15px; background: #eafaf1; border-right: 4px solid #27ae60; color: #27ae60; font-weight: bold; border-radius: 6px; line-height: 1.6; }
+        .btn-submit-quiz { background: #27ae60; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; display: block; margin: 0 auto; width: 100%; max-width: 300px; }
+        
+        #auth-warning { background: #fdf2e9; color: #d35400; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 20px; display: none; border: 1px solid #f5b041; }
+
+        @media (max-width: 992px) {
+            .page-wrapper { margin-top: -20px; }
+            .lang-controls { position: static; justify-content: center; margin-bottom: 15px; }
+            .google-translate-box { position: static; text-align: center; margin-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="google-translate-box" id="google_translate_element"></div>
+
+        <div class="lang-controls">
+            <button class="lang-toggle-btn" id="lang-toggle" onclick="toggleLanguage()">🌐 إخفاء النص الإنجليزي</button>
+        </div>
+        
+        <h1>🕌 بوابة طالب العلم الشرعي</h1>
+        <p>استكشف المتون والشروح التفصيلية، واختبر فهمك</p>
+    </div>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div id="auth-warning">⚠️ أنت تتصفح كزائر. لن يتم حفظ إنجازاتك الأكاديمية في ملفك الشخصي. يرجى <a href="login.html">تسجيل الدخول</a>.</div>
+
+            <div class="search-box">
+                <h3>🔍 اختر المادة العلمية</h3>
+                <div class="filters">
+                    <div>
+                        <label>العلم / التصنيف</label>
+                        <select id="s-category">
+                            <option value="FIQH">فقه</option>
+                            <option value="AQEEDAH">عقيدة</option>
+                            <option value="HADITH">حديث</option>
+                            <option value="TAFSIR">تفسير</option>
+                            <option value="SEERAH">سيرة</option>
+                            <option value="USOOL">أصول فقه</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>رمز الكتاب (مثال: UMDAT)</label>
+                        <input type="text" id="s-book" placeholder="اكتب رمز الكتاب..." style="text-transform: uppercase;">
+                    </div>
+                    <div>
+                        <label>رقم الباب (مثال: 01)</label>
+                        <input type="text" id="s-chapter" placeholder="اكتب رقم الباب (مثال: 01)..." style="text-transform: uppercase;">
+                    </div>
+                </div>
+                <button class="btn-search" onclick="fetchContent()">استعراض المادة العلمية 📚</button>
+            </div>
+
+            <div class="loader" id="loader"></div>
+            <div id="status-msg" class="status-msg"></div>
+
+            <div class="content-area" id="content-area">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('tab-summary', this)">📑 الشرح والمادة العلمية</button>
+                    <button class="tab-btn" onclick="switchTab('tab-vocab', this)">📖 قاموس المصطلحات</button>
+                    <button class="tab-btn" onclick="switchTab('tab-quiz', this)">🎓 اختبر فهمك</button>
+                </div>
+
+                <div id="tab-summary" class="tab-content active">
+                    <div class="summary-card" id="summary-container"></div>
+                </div>
+
+                <div id="tab-vocab" class="tab-content">
+                    <div class="vocab-grid" id="vocab-container"></div>
+                </div>
+
+                <div id="tab-quiz" class="tab-content">
+                    <div class="quiz-container" id="quiz-container"></div>
+                    <button class="btn-submit-quiz" id="btn-submit-quiz" style="display:none;" onclick="checkAnswers()">إرسال الإجابات وحفظ الإنجاز ✅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'ar',
+                includedLanguages: 'en,ur,id,bn,tr,fr,ru,ha,fa,sw',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentQuizData = [];
+        let showEnglish = true;
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-warning').style.display = 'none';
+            } else {
+                currentUser = null;
+                document.getElementById('auth-warning').style.display = 'block';
+            }
+        });
+
+        window.toggleLanguage = function() {
+            showEnglish = !showEnglish;
+            document.querySelectorAll('.en-text').forEach(el => {
+                el.style.display = showEnglish ? 'block' : 'none';
+            });
+            document.getElementById('lang-toggle').textContent = showEnglish ? '🌐 إخفاء النص الإنجليزي' : '🌐 إظهار النص الإنجليزي';
+        }
+
+        window.switchTab = function(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        window.fetchContent = async function() {
+            const cat = document.getElementById('s-category').value.trim().toUpperCase();
+            const book = document.getElementById('s-book').value.trim().toUpperCase();
+            const chapter = document.getElementById('s-chapter').value.trim().toUpperCase();
+
+            if(!book || !chapter) { showStatus("⚠️ يرجى إدخال رمز الكتاب ورقم الباب للبحث.", "#fdedec", "#c0392b"); return; }
+            
+            const docId = `ACADEMY_${cat}_${book}_${chapter}`;
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('status-msg').style.display = 'none';
+            document.getElementById('content-area').style.display = 'none';
+            
+            document.getElementById('summary-container').innerHTML = '';
+            document.getElementById('vocab-container').innerHTML = '';
+            document.getElementById('quiz-container').innerHTML = '';
+            currentQuizData = [];
+
+            let dataFound = false;
+
+            try {
+                const summarySnap = await getDoc(doc(db, 'academy_summaries', docId));
+                if (summarySnap.exists()) { renderSummary(summarySnap.data()); dataFound = true; }
+
+                const vocabSnap = await getDoc(doc(db, 'academy_vocabulary', docId));
+                if (vocabSnap.exists()) { renderVocab(vocabSnap.data()); dataFound = true; }
+
+                const quizSnap = await getDoc(doc(db, 'academy_question_banks', docId));
+                if (quizSnap.exists()) { renderQuiz(quizSnap.data()); dataFound = true; }
+
+                if(dataFound) {
+                    document.getElementById('content-area').style.display = 'block';
+                    document.querySelectorAll('.tab-btn')[0].click();
+                    if(!showEnglish) toggleLanguage(); toggleLanguage();
+                } else {
+                    showStatus("❌ لم يتم العثور على مادة علمية. تأكد من صحة رمز الكتاب ورقم الباب.", "#fdedec", "#c0392b");
+                }
+            } catch (error) {
+                console.error(error);
+                showStatus("حدث خطأ أثناء الاتصال بقاعدة البيانات.", "#fdedec", "#c0392b");
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        // دالة العرض مع تفعيل التظليل والشرح عند الضغط أو التمرير
+        function renderSummary(data) {
+            const container = document.getElementById('summary-container');
+            let html = `<h2 class="summary-title">📖 ${data.title}</h2>`;
+            
+            if(data.points) {
+                for (let i = 0; i < data.points.length; i += 2) {
+                    // معالجة النص العربي وتحويل **الكلمة** إلى تمييز عريض مع إبقاء وسوم الشرح التفاعلي
+                    let pointAr = data.points[i].replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    let pointEn = data.points[i+1] ? data.points[i+1] : '';
+                    
+                    html += `
+                    <div class="summary-point">
+                        <div><strong>${(i/2) + 1}.</strong> ${pointAr}</div>
+                        <div class="en-text">${pointEn}</div>
+                    </div>`;
+                }
+            }
+            container.innerHTML = html;
+
+            // إضافة إمكانية الضغط على الأجهزة الذكية لتفعيل الـ Tooltip
+            document.querySelectorAll('.summary-point span[title]').forEach(span => {
+                span.setAttribute('tabindex', '0'); // لتمكين الضغط بلمسة واحدة على الجوال
+            });
+        }
+
+        function renderVocab(data) {
+            const container = document.getElementById('vocab-container');
+            let html = '';
+            if(data.vocabulary) {
+                data.vocabulary.forEach(v => {
+                    html += `
+                    <div class="vocab-card">
+                        <div class="vocab-word">${v.wordAr}</div>
+                        <div class="en-text" style="text-align:center; color:#2980b9; margin-bottom:10px; font-weight:bold;">${v.wordEn || ''}</div>
+                        <div class="vocab-def">${v.definitionAr}</div>
+                        <div class="en-text" style="text-align:center;"><i>${v.definitionEn || ''}</i></div>
+                    </div>`;
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        function renderQuiz(data) {
+            const container = document.getElementById('quiz-container');
+            currentQuizData = data.questions || [];
+            let html = '';
+
+            if(currentQuizData.length > 0) {
+                currentQuizData.forEach((q, qIndex) => {
+                    html += `<div class="question-card" id="q-card-${qIndex}">
+                                <div class="q-text">
+                                    ${qIndex + 1}. ${q.textAr}
+                                    <div class="en-text" style="color:#2980b9;">${q.textEn || ''}</div>
+                                </div>`;
+                    
+                    q.options.forEach((opt, optIndex) => {
+                        html += `<label class="q-option">
+                                    <input type="radio" name="q_${qIndex}" value="${optIndex}">
+                                    ${opt.ar}
+                                 </label>`;
+                    });
+
+                    html += `<div class="q-feedback" id="feedback-${qIndex}">💡 <strong>التوضيح:</strong> ${q.feedback}</div>
+                             </div>`;
+                });
+                document.getElementById('btn-submit-quiz').style.display = 'block';
+            }
+            container.innerHTML = html;
+        }
+
+        window.checkAnswers = async function() {
+            let score = 0;
+            currentQuizData.forEach((q, qIndex) => {
+                const selected = document.querySelector(`input[name="q_${qIndex}"]:checked`);
+                const qCard = document.getElementById(`q-card-${qIndex}`);
+                const feedbackBox = document.getElementById(`feedback-${qIndex}`);
+
+                if (selected) {
+                    if (q.options[parseInt(selected.value)].correct) {
+                        score++; qCard.style.borderColor = '#27ae60'; qCard.style.borderWidth = '2px';
+                    } else {
+                        qCard.style.borderColor = '#e74c3c'; qCard.style.borderWidth = '2px';
+                    }
+                } else {
+                    qCard.style.borderColor = '#f39c12'; qCard.style.borderWidth = '2px';
+                }
+                if(q.feedback) feedbackBox.style.display = 'block';
+            });
+
+            let percentage = Math.round((score / currentQuizData.length) * 100);
+            let level = percentage >= 90 ? 'متميز 🌟' : percentage >= 75 ? 'جيد جداً 📈' : percentage >= 60 ? 'مستوعب للمادة ✅' : 'بحاجة لمراجعة 📚';
+
+            if (currentUser) {
+                try {
+                    document.getElementById('btn-submit-quiz').textContent = "جاري حفظ إنجازك الأكاديمي...";
+                    await addDoc(collection(db, 'sharia_student_achievements'), {
+                        studentUid: currentUser.uid,
+                        category: document.getElementById('s-category').value,
+                        book: document.getElementById('s-book').value.toUpperCase(),
+                        chapter: document.getElementById('s-chapter').value.toUpperCase(),
+                        score: percentage,
+                        level: level,
+                        timestamp: new Date()
+                    });
+                    showStatus(`✅ حصلت على ${percentage}%. تم توثيق إنجازك في ملفك الشخصي كطالب علم!`, "#eafaf1", "#27ae60");
+                } catch (error) {
+                    console.error("خطأ في الحفظ:", error);
+                    showStatus("⚠️ تم تصحيح الاختبار، لكن حدث خطأ أثناء حفظ الإنجاز.", "#fdedec", "#c0392b");
+                }
+            } else {
+                alert(`النتيجة: حصلت على ${percentage}%.\n⚠️ (تنبيه: لم يتم حفظ النتيجة لأنك زائر).`);
+            }
+
+            document.getElementById('btn-submit-quiz').disabled = true;
+            document.getElementById('btn-submit-quiz').textContent = "تم التسليم ومراجعة الإجابات ✔️";
+            document.getElementById('btn-submit-quiz').style.background = "#7f8c8d";
+        }
+
+        function showStatus(msg, bg, color) {
+            const div = document.getElementById('status-msg');
+            div.textContent = msg; div.style.background = bg; div.style.color = color;
+            div.style.display = 'block'; setTimeout(() => div.style.display = 'none', 6000);
+        }
+    </script>
+</body>
+</html>

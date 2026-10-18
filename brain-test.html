@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ألعاب الذكاء - BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        
+        body {
+            background-color: #1a2a6c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none; /* منع السحب العشوائي للشاشة */
+        }
+
+        /* الشريط العلوي */
+        .top-bar {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            z-index: 10;
+        }
+
+        .timer-box { font-size: 1.5rem; font-weight: 900; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 10px; }
+        .hint-btn { background: #f1c40f; color: #2c3e50; border: none; padding: 8px 15px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 1.1rem; transition: 0.3s; box-shadow: 0 4px 0 #d4ac0d; outline: none;}
+        .hint-btn:disabled { background: #bdc3c7; color: #7f8c8d; box-shadow: 0 4px 0 #95a5a6; cursor: not-allowed; }
+        .hint-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: none; }
+
+        /* منطقة اللعب (ورقة الدفتر) */
+        .game-board {
+            position: relative;
+            width: 95%;
+            max-width: 500px;
+            flex-grow: 1;
+            margin-bottom: 20px;
+            background-color: #fff;
+            background-image: linear-gradient(#f1f1f1 2px, transparent 2px);
+            background-size: 100% 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border-right: 3px solid #ff5252;
+            transition: background 0.5s ease;
+        }
+
+        /* عنوان اللغز */
+        .level-title {
+            text-align: center;
+            font-size: 1.6rem;
+            color: #2c3e50;
+            margin-top: 40px;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 5;
+            position: relative;
+        }
+
+        /* حاوية العناصر التفاعلية */
+        #game-area {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        .game-item {
+            position: absolute;
+            user-select: none;
+            cursor: pointer;
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.15));
+            transition: transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .draggable { cursor: grab; }
+        .draggable:active { cursor: grabbing; transition: none !important; }
+
+        /* التلميح (Modal) */
+        #hint-modal {
+            position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+            background: #fff3cd; color: #856404; padding: 15px 25px; border-radius: 10px;
+            font-weight: bold; border: 2px solid #ffeeba; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 100; display: none; text-align: center; width: 80%;
+        }
+
+        /* شاشة الفوز */
+        #win-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 204, 113, 0.95); color: white; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #win-screen.show { opacity: 1; pointer-events: all; }
+
+        /* شاشة انتهاء الوقت والحل التلقائي */
+        #timeout-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(231, 76, 60, 0.8); color: white; display: flex;
+            justify-content: center; align-items: center; font-size: 2rem; font-weight: bold;
+            z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #timeout-screen.show { opacity: 1; animation: fadeOut 2s forwards; }
+        @keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0; pointer-events: none;} }
+
+        .btn-next {
+            margin-top: 25px; padding: 12px 35px; font-size: 1.3rem; border: none;
+            border-radius: 30px; background: #fff; color: #27ae60; font-weight: 900;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div style="font-size: 1.2rem; font-weight: bold;">المرحلة <span id="level-display">1</span></div>
+        <div class="timer-box" id="timer">02:00</div>
+        <button class="hint-btn" id="btn-hint" onclick="useHint()">💡 مساعدة</button>
+    </div>
+
+    <div class="game-board" id="board">
+        <h1 class="level-title" id="question-title">جاري التحميل...</h1>
+        
+        <div id="game-area"></div>
+        <div id="hint-modal"></div>
+
+        <div id="timeout-screen">انتهى الوقت! شاهد الحل 👁️</div>
+
+        <div id="win-screen">
+            <h1 style="font-size: 3.5rem; margin-bottom: 10px;">أحسنت! 🎉</h1>
+            <p style="font-size: 1.3rem;" id="win-msg">تفكيرك ذكي ومبدع!</p>
+            <button class="btn-next" onclick="nextLevel()">التالي ⏭️</button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // 🛠️ المحرك البرمجي الأساسي (Game Engine)
+        // =========================================
+        const board = document.getElementById('board');
+        const gameArea = document.getElementById('game-area');
+        const timerDisplay = document.getElementById('timer');
+        const hintBtn = document.getElementById('btn-hint');
+        const hintModal = document.getElementById('hint-modal');
+        const winScreen = document.getElementById('win-screen');
+        const titleEl = document.getElementById('question-title');
+        const timeoutScreen = document.getElementById('timeout-screen');
+
+        let currentLevel = 0;
+        let timeLeft = 120;
+        let timerInterval;
+        let isLevelActive = true;
+
+        // دالة إنشاء العناصر (Emojis أو نصوص)
+        function createItem(id, text, fontSize, x, y, zIndex = 1) {
+            const el = document.createElement('div');
+            el.className = 'game-item';
+            el.id = id;
+            el.innerHTML = text;
+            el.style.fontSize = fontSize;
+            el.style.left = x;
+            el.style.top = y;
+            el.style.zIndex = zIndex;
+            gameArea.appendChild(el);
+            return el;
+        }
+
+        // دالة السحب والإفلات الموحدة (تدعم اللمس والماوس)
+        function makeDraggable(el, onMove = null, onDrop = null) {
+            el.classList.add('draggable');
+            el.onpointerdown = (e) => {
+                if(!isLevelActive) return;
+                e.preventDefault();
+                el.setPointerCapture(e.pointerId);
+                const rect = el.getBoundingClientRect();
+                const boardRect = board.getBoundingClientRect();
+                let shiftX = e.clientX - rect.left;
+                let shiftY = e.clientY - rect.top;
+
+                el.onpointermove = (e) => {
+                    let newX = e.clientX - boardRect.left - shiftX;
+                    let newY = e.clientY - boardRect.top - shiftY;
+                    el.style.left = newX + 'px';
+                    el.style.top = newY + 'px';
+                    if(onMove) onMove(el, newX, newY);
+                };
+
+                el.onpointerup = (e) => {
+                    el.onpointermove = null;
+                    el.onpointerup = null;
+                    el.releasePointerCapture(e.pointerId);
+                    if(onDrop) onDrop(el);
+                };
+            };
+        }
+
+        // دالة فحص التصادم بين عنصرين (Collision Detection)
+        function checkCollision(el1, el2) {
+            if(!el1 || !el2) return false;
+            const r1 = el1.getBoundingClientRect();
+            const r2 = el2.getBoundingClientRect();
+            return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
+        }
+
+        // =========================================
+        // 🧩 تصميم المراحل العشر (The 10 Levels)
+        // =========================================
+        const levels = [
+            {
+                // مرحلة 1: الدجاجة
+                title: "أين الكتكوت الصغير؟",
+                hint: "الكتكوت يختبئ تحت شيء ما، جرب سحب الأشياء المتاحة.",
+                winMsg: "الخدعة البصرية الأولى مرت بسلام!",
+                init: () => {
+                    createItem('chicken', '🐔', '6rem', '10%', '30%', 3);
+                    const chick = createItem('chick', '🐣', '4rem', '45%', '50%', 1);
+                    const nest = createItem('nest', '🪹', '7rem', '35%', '45%', 2);
+                    
+                    chick.onclick = () => winLevel();
+                    makeDraggable(nest);
+                },
+                autoSolve: () => {
+                    const nest = document.getElementById('nest');
+                    nest.style.transition = "all 1.5s ease";
+                    nest.style.top = "10%";
+                    setTimeout(() => winLevel(), 2000);
+                }
+            },
+            {
+                // مرحلة 2: إطعام الكلب
+                title: "أطعم الكلب العظمة",
+                hint: "الكلب لا يريد التفاحة، وهناك عظمة مخفية خارج الإطار العادي!",
+                winMsg: "أحسنت! استخدام الكلمات كعناصر هو جوهر اللعبة.",
+                init: () => {
+                    titleEl.innerHTML = `أطعم الكلب <span id="bone-word" style="background:#ecf0f1; padding:2px 10px; border-radius:10px; cursor:grab; display:inline-block;">العظمة 🦴</span>`;
+                    const dog = createItem('dog', '🐕', '6rem', '35%', '50%', 1);
+                    createItem('apple', '🍎', '4rem', '10%', '60%', 2).onclick = () => alert('الكلب لا يأكل التفاح!');
+                    
+                    const boneWord = document.getElementById('bone-word');
+                    makeDraggable(boneWord, null, (el) => {
+                        if(checkCollision(el, dog)) {
+                            el.style.display = 'none';
+                            dog.innerHTML = '🐕💖';
+                            winLevel();
+                        }
+                    });
+                },
+                autoSolve: () => {
+                    const bone = document.getElementById('bone-word');
+                    bone.style.position = 'absolute';
+                    bone.style.transition = "all 1.5s ease";
+                    bone.style.top = "50%"; bone.style.left = "35%";
+                    setTimeout(() => { document.getElementById('dog').innerHTML = '🐕💖'; winLevel(); }, 1600);
+                }
+            },
+            {
+                // مرحلة 3: كسر البيضة
+                title: "ساعد الديناصور في الخروج من البيضة",
+                hint: "البيضة قاسية.. تحتاج إلى النقر عليها عدة مرات لكسرها.",
+                winMsg: "النقرات المتعددة تكسر المستحيل!",
+                init: () => {
+                    let clicks = 0;
+                    const egg = createItem('egg', '🥚', '7rem', '35%', '45%', 2);
+                    egg.onclick = () => {
+                        if(!isLevelActive) return;
+                        clicks++;
+                        egg.style.transform = `rotate(${clicks%2===0?15:-15}deg)`;
+                        if(clicks === 5) {
+                            egg.innerHTML = '🦖';
+                            winLevel();
+                        }
+                    };
+                },
+                autoSolve: () => {
+                    const egg = document.getElementById('egg');
+                    egg.innerHTML = '🦖';
+                    winLevel();
+                }
+            },
+            {
+                // مرحلة 4: الأكبر
+                title: "أي هذه الحيوانات هو الأكبر؟",
+                hint: "لا تنخدع بحجم الرسمة، فكر في الحجم الحقيقي للحيوان في الواقع.",
+                winMsg: "صحيح! الفيل هو الأكبر في الواقع.",
+                init: () => {
+                    const mouse = createItem('mouse', '🐁', '8rem', '10%', '30%'); // رسمة ضخمة
+                    const lion = createItem('lion', '🦁', '5rem', '60%', '30%');
+                    const elephant = createItem('elephant', '🐘', '1.5rem', '45%', '70%'); // رسمة صغيرة جداً
+                    
+                    mouse.onclick = () => alert('حجم الرسمة خادع!');
+                    lion.onclick = () => alert('حجم الرسمة خادع!');
+                    elephant.onclick = () => winLevel();
+                },
+                autoSolve: () => {
+                    document.getElementById('elephant').style.transform = "scale(5)";
+                    setTimeout(() => winLevel(), 1000);
+                }
+            },
+            {
+                // مرحلة 5: إيقاظ البومة
+                title: "أيقظ البومة من نومها",
+                hint: "البومة تنام بالنهار وتستيقظ بالليل.. ماذا لو أخفينا الشمس؟",
+                winMsg: "البوم طائر ليلي.. فكرة ذكية!",
+                init: () => {
+                    const owl = createItem('owl', '🦉💤', '6rem', '35%', '50%', 1);
+                    const sun = createItem('sun', '☀️', '5rem', '10%', '20%', 2);
+                    makeDraggable(sun, (el, x, y) => {
+                        if(y > window.innerHeight * 0.7) { // إذا نزلنا الشمس للأسفل
+                            board.style.backgroundColor = "#2c3e50";
+                            owl.innerHTML = '🦉✨';
+                            winLevel();
+                        }
+                    });
+                },
+                autoSolve: () => {
+                    const sun = document.getElementById('sun');
+                    sun.style.transition = "all 1.5s ease";
+                    sun.style.top = "100%";
+                    setTimeout(() => {
+                        board.style.backgroundColor = "#2c3e50";
+                        document.getElementById('owl').innerHTML = '🦉✨';
+                        winLevel();
+                    }, 1600);
+                }
+            },
+            {
+                // مرحلة 6: الجسر
+                title: "السيارة لا تستطيع العبور!",
+                hint: "استخدم كلمة (الجسر) الموجودة أسفل الشاشة وضعها فوق الماء.",
+                winMsg: "بناء الجسور باستخدام الكلمات!",
+                init: () => {
+                    const river = createItem('river', '🌊🌊🌊', '4rem', '25%', '50%', 1);
+                    const car = createItem('car', '🚗', '4rem', '5%', '50%', 3);
+                    const bridgeText = createItem('bridge', '<span style="background:#eee; padding:5px; border-radius:5px;">الجسر 🌉</span>', '1.2rem', '40%', '80%', 4);
+                    
+                    makeDraggable(bridgeText, null, (el) => {
+                        if(checkCollision(el, river)) {
+                            river.innerHTML = '🌉🌉🌉';
+                            el.style.display = 'none';
+                        }
+                    });
+
+                    makeDraggable(car, null, (el) => {
+                        if(river.innerHTML.includes('🌉') && checkCollision(el, river)) {
+                            el.style.left = '70%'; // عبرت الجسر
+                            winLevel();
+                        } else if(checkCollision(el, river)) {
+                            alert("السيارة تغرق! اصنع جسراً أولاً.");
+                            el.style.left = '5%';
+                        }
+                    });
+                },
+                autoSolve: () => {
+                    const bridge = document.getElementById('bridge');
+                    const river = document.getElementById('river');
+                    const car = document.getElementById('car');
+                    bridge.style.transition = "all 1s ease"; bridge.style.top = "50%";
+                    setTimeout(() => {
+                        river.innerHTML = '🌉🌉🌉'; bridge.style.display = 'none';
+                        car.style.transition = "all 1.5s ease"; car.style.left = "70%";
+                        setTimeout(() => winLevel(), 1500);
+                    }, 1000);
+                }
+            },
+            {
+                // مرحلة 7: دمج الألوان
+                title: "اصنع اللون الأخضر",
+                hint: "الأخضر يتكون من دمج لونين أساسيين ببعضهما.",
+                winMsg: "أصفر + أزرق = أخضر!",
+                init: () => {
+                    const blue = createItem('blue', '🔵', '5rem', '10%', '40%', 2);
+                    const yellow = createItem('yellow', '🟡', '5rem', '60%', '40%', 1);
+                    const red = createItem('red', '🔴', '5rem', '35%', '70%', 2);
+                    
+                    makeDraggable(blue, null, (el) => {
+                        if(checkCollision(el, yellow)) {
+                            el.style.display = 'none';
+                            yellow.innerHTML = '🟢';
+                            setTimeout(() => winLevel(), 500);
+                        }
+                    });
+                    makeDraggable(red);
+                },
+                autoSolve: () => {
+                    const blue = document.getElementById('blue');
+                    blue.style.transition = "all 1.5s ease";
+                    blue.style.left = "60%"; blue.style.top = "40%";
+                    setTimeout(() => { document.getElementById('yellow').innerHTML = '🟢'; blue.style.display='none'; winLevel(); }, 1600);
+                }
+            },
+            {
+                // مرحلة 8: الثلاجة
+                title: "أدخل الفيل في الثلاجة",
+                hint: "الفيل كبير جداً؟ استخدم إصبعين (أو الماوس) لتصغير الفيل أولاً!",
+                winMsg: "التصغير هو الحل السحري!",
+                init: () => {
+                    const fridge = createItem('fridge', '🧊', '8rem', '50%', '40%', 1);
+                    const elephant = createItem('elephant', '🐘', '6rem', '10%', '60%', 2);
+                    
+                    // خدعة: الضغط على الفيل يصغره
+                    elephant.onclick = () => { elephant.style.fontSize = '2rem'; };
+                    
+                    makeDraggable(elephant, null, (el) => {
+                        if(checkCollision(el, fridge)) {
+                            if(el.style.fontSize === '2rem') {
+                                el.style.display = 'none';
+                                fridge.innerHTML = '✅🧊';
+                                winLevel();
+                            } else {
+                                alert("الفيل كبير جداً على الثلاجة!");
+                                el.style.left = '10%'; el.style.top = '60%';
+                            }
+                        }
+                    });
+                },
+                autoSolve: () => {
+                    const elephant = document.getElementById('elephant');
+                    elephant.style.transition = "all 1s ease";
+                    elephant.style.fontSize = '2rem';
+                    setTimeout(() => {
+                        elephant.style.left = "50%"; elephant.style.top = "40%";
+                        setTimeout(() => { document.getElementById('fridge').innerHTML = '✅🧊'; elephant.style.display='none'; winLevel(); }, 1000);
+                    }, 1000);
+                }
+            },
+            {
+                // مرحلة 9: الجائزة المفقودة
+                title: "أين الجائزة؟",
+                hint: "الكلمات في السؤال أحياناً تكون هي الإجابة.",
+                winMsg: "كلمة (الجائزة) هي الجائزة فعلاً!",
+                init: () => {
+                    titleEl.innerHTML = `أين <span id="word-prize" style="cursor:pointer; color:#e74c3c;">الجائزة</span>؟`;
+                    createItem('box1', '📦', '5rem', '10%', '50%').onclick = () => alert('فارغ');
+                    createItem('box2', '📦', '5rem', '40%', '50%').onclick = () => alert('فارغ');
+                    createItem('box3', '📦', '5rem', '70%', '50%').onclick = () => alert('فارغ');
+                    
+                    document.getElementById('word-prize').onclick = () => winLevel();
+                },
+                autoSolve: () => {
+                    const prize = document.getElementById('word-prize');
+                    prize.style.transform = "scale(1.5)";
+                    prize.style.display = "inline-block";
+                    setTimeout(() => winLevel(), 1000);
+                }
+            },
+            {
+                // مرحلة 10: المصباح
+                title: "شغّل المصباح",
+                hint: "الزر مكسور.. استخدم كلمة (تشغيل) الموجودة بأعلى السؤال.",
+                winMsg: "ختامها مسك! لقد أتممت جميع الألغاز بنجاح.",
+                init: () => {
+                    titleEl.innerHTML = `<span id="word-on" style="background:#e74c3c; padding:2px 10px; border-radius:5px; color:white; cursor:grab;">تشغيل</span> المصباح`;
+                    const bulb = createItem('bulb', '💡', '7rem', '40%', '50%', 1);
+                    const brokenBtn = createItem('btn', '🔲', '3rem', '10%', '60%', 2);
+                    brokenBtn.onclick = () => alert('الزر مكسور ولا يعمل!');
+                    
+                    const wordOn = document.getElementById('word-on');
+                    makeDraggable(wordOn, null, (el) => {
+                        if(checkCollision(el, bulb)) {
+                            bulb.innerHTML = '🌟💡';
+                            el.style.display = 'none';
+                            winLevel();
+                        }
+                    });
+                },
+                autoSolve: () => {
+                    const wordOn = document.getElementById('word-on');
+                    wordOn.style.position = 'absolute';
+                    wordOn.style.transition = "all 1s ease";
+                    wordOn.style.top = "50%"; wordOn.style.left = "40%";
+                    setTimeout(() => { document.getElementById('bulb').innerHTML = '🌟💡'; winLevel(); }, 1200);
+                }
+            }
+        ];
+
+        // =========================================
+        // ⚙️ نظام التحكم والتشغيل (Game Controllers)
+        // =========================================
+        function loadLevel(index) {
+            if(index >= levels.length) {
+                alert("لقد أنهيت جميع المراحل بعبقرية! سيتم إعادتك للقائمة الرئيسية.");
+                window.location.href = "academic-lobby.html"; // عدل هذا الرابط حسب موقعك
+                return;
+            }
+
+            currentLevel = index;
+            isLevelActive = true;
+            gameArea.innerHTML = '';
+            board.style.backgroundColor = '#fff';
+            titleEl.innerHTML = levels[index].title;
+            document.getElementById('level-display').textContent = index + 1;
+            
+            // إعادة تفعيل زر التلميح
+            hintBtn.disabled = false;
+            hintModal.style.display = 'none';
+            winScreen.classList.remove('show');
+            timeoutScreen.classList.remove('show');
+
+            levels[index].init();
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 120; // 120 ثانية = دقيقتين
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                if(!isLevelActive) { clearInterval(timerInterval); return; }
+                timeLeft--;
+                updateTimerDisplay();
+
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    triggerAutoSolve();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            let s = (timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${m}:${s}`;
+            timerDisplay.style.color = timeLeft <= 10 ? '#e74c3c' : 'white';
+        }
+
+        function useHint() {
+            if(hintBtn.disabled) return;
+            hintBtn.disabled = true; // مساعدة لمرة واحدة
+            hintModal.textContent = levels[currentLevel].hint;
+            hintModal.style.display = 'block';
+            setTimeout(() => hintModal.style.display = 'none', 5000);
+        }
+
+        function triggerAutoSolve() {
+            isLevelActive = false;
+            timeoutScreen.classList.add('show');
+            setTimeout(() => {
+                levels[currentLevel].autoSolve(); // تشغيل حركة الحل التلقائي
+            }, 2000);
+        }
+
+        function winLevel() {
+            if(!isLevelActive && timeLeft > 0) return; // لمنع الفوز المتكرر
+            isLevelActive = false;
+            clearInterval(timerInterval);
+            document.getElementById('win-msg').textContent = levels[currentLevel].winMsg;
+            winScreen.classList.add('show');
+        }
+
+        function nextLevel() {
+            loadLevel(currentLevel + 1);
+        }
+
+        // بدء اللعبة
+        loadLevel(0);
+
+    </script>
+</body>
+</html>

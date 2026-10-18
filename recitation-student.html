@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ركن التسميع - سجّل تلاوتك | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- 🛡️ يتطلب تسجيل دخول -->
+    <script type="module" src="auth-guard.js" data-require-role="student"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1000px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#0b6e4f,#16a085,#1abc9c);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a { background:rgba(255,255,255,.22); color:#fff; padding:9px 16px; border-radius:9px;
+                       text-decoration:none; font-weight:bold; font-size:.92rem; transition:.25s; }
+        .top-links a:hover { background:rgba(255,255,255,.36); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#0b6e4f; margin-bottom:4px; border-right:5px solid #1abc9c; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        /* اختيار النوع */
+        .types { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+        .type-opt { border:2px solid #e6edf3; border-radius:14px; padding:18px 10px; text-align:center;
+                    cursor:pointer; transition:.25s; background:#fff; }
+        .type-opt:hover { transform:translateY(-3px); border-color:#bdc3c7; }
+        .type-opt.active { border-color:#16a085; background:#f0fbf8; box-shadow:0 6px 18px rgba(22,160,133,.18); }
+        .type-opt .ic { font-size:2.2rem; display:block; margin-bottom:6px; }
+        .type-opt .nm { font-weight:800; font-size:.98rem; }
+
+        .fld { margin-bottom:16px; }
+        .fld label { display:block; margin-bottom:7px; font-weight:700; font-size:.93rem; color:#34495e; }
+        .fld input, .fld select { width:100%; padding:12px 14px; border:1px solid #ccd1d9; border-radius:8px;
+                                  font-size:1rem; outline:none; font-family:'Cairo',sans-serif; }
+        .fld input:focus, .fld select:focus { border-color:#16a085; box-shadow:0 0 0 3px rgba(22,160,133,.12); }
+        .fld small { display:block; color:#95a5a6; font-size:.83rem; margin-top:5px; }
+        .row2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+
+        /* المسجّل */
+        .recorder { background:linear-gradient(135deg,#0f2027,#203a43,#2c5364); border-radius:18px;
+                    padding:30px 22px; text-align:center; color:#fff; }
+        .rec-timer { font-size:3.2rem; font-weight:900; letter-spacing:2px; direction:ltr; margin-bottom:6px; font-variant-numeric:tabular-nums; }
+        .rec-state { font-size:.98rem; opacity:.85; margin-bottom:22px; min-height:24px; }
+        .rec-dot { display:inline-block; width:13px; height:13px; border-radius:50%; background:#e74c3c;
+                   margin-left:8px; vertical-align:middle; animation:pulse 1.1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:.35; transform:scale(.82)} }
+
+        .rec-buttons { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+        .rec-btn { border:none; border-radius:50px; padding:15px 34px; font-size:1.05rem; font-weight:bold;
+                   cursor:pointer; font-family:'Cairo',sans-serif; transition:.25s; }
+        .rec-btn:disabled { opacity:.4; cursor:not-allowed; }
+        .btn-start { background:#e74c3c; color:#fff; }
+        .btn-start:hover:not(:disabled) { background:#c0392b; transform:scale(1.04); }
+        .btn-stop  { background:#f1c40f; color:#2c3e50; }
+        .btn-again { background:rgba(255,255,255,.2); color:#fff; }
+
+        #playback { width:100%; margin-top:20px; display:none; border-radius:10px; }
+
+        .progress-wrap { display:none; margin-top:20px; }
+        .progress-bar { height:16px; background:rgba(255,255,255,.2); border-radius:10px; overflow:hidden; }
+        .progress-bar > div { height:100%; width:0%; background:linear-gradient(90deg,#1abc9c,#2ecc71); transition:width .3s; }
+
+        .btn { background:#16a085; color:#fff; border:none; padding:14px 30px; border-radius:9px;
+               font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:1.05rem; transition:.25s; }
+        .btn:hover:not(:disabled) { background:#0e8271; }
+        .btn:disabled { background:#95a5a6; cursor:not-allowed; }
+        .btn-block { width:100%; margin-top:20px; }
+
+        .msg { display:none; margin-top:16px; padding:13px 16px; border-radius:9px; font-weight:600;
+               font-size:.95rem; text-align:center; line-height:1.7; }
+        .msg.err { display:block; background:#fdedec; color:#c0392b; border:1px solid #f5b7b1; }
+        .msg.ok  { display:block; background:#eafaf1; color:#1e8449; border:1px solid #a9dfbf; }
+        .msg.info{ display:block; background:#eaf4fd; color:#1a5276; border:1px solid #aed6f1; }
+
+        /* السجل */
+        .rec-item { border:1px solid #e6edf3; border-radius:14px; padding:18px; margin-bottom:14px; background:#fff; }
+        .rec-head { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+        .rec-title { font-weight:900; font-size:1.08rem; }
+        .rec-meta { color:#7f8c8d; font-size:.85rem; margin-top:4px; }
+        .pill { display:inline-block; padding:4px 13px; border-radius:20px; font-size:.8rem; font-weight:bold; white-space:nowrap; }
+        .p-pending  { background:#fef5e7; color:#b9770e; }
+        .p-reviewed { background:#eafaf1; color:#1e8449; }
+        .score-big { font-size:1.7rem; font-weight:900; }
+        .feedback-box { background:#f4f8fd; border-right:4px solid #3498db; padding:12px 15px;
+                        border-radius:9px; margin-top:12px; line-height:1.8; font-size:.94rem; }
+        .rec-item audio { width:100%; margin-top:10px; border-radius:8px; }
+        .btn-del { background:none; border:1px solid #f5b7b1; color:#c0392b; border-radius:8px;
+                   padding:6px 14px; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.85rem; font-weight:700; }
+        .btn-del:hover { background:#fdedec; }
+
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-bottom:20px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center;
+                box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.a { border-color:#16a085; } .stat.a .v { color:#16a085; }
+        .stat.b { border-color:#f39c12; } .stat.b .v { color:#f39c12; }
+        .stat.c { border-color:#27ae60; } .stat.c .v { color:#27ae60; }
+
+        .empty { text-align:center; color:#95a5a6; padding:34px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #16a085; border-radius:50%;
+                   width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .warn { background:#fff9e6; border:1px solid #f1c40f; border-radius:9px; padding:13px 16px;
+                color:#7d6608; font-size:.92rem; line-height:1.8; margin-bottom:18px; }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>🎙️ ركن التسميع</h1>
+        <div class="top-links">
+            <a href="profile-student.html">ملفي الشخصي 👤</a>
+            <a href="index.html">الرئيسية 🏠</a>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <!-- تسجيل جديد -->
+    <div class="card">
+        <h2>🎤 سجّل تسميعاً جديداً</h2>
+        <p class="sub">اختر ما تريد تسميعه، ثم سجّل صوتك بنفسك — وسيصل تسميعك لمعلمك ليصحّحه لك.</p>
+
+        <div id="no-teacher" class="warn hidden"></div>
+
+        <!-- 1. النوع -->
+        <label style="display:block; margin-bottom:10px; font-weight:800; color:#34495e;">١. ماذا ستسمّع؟</label>
+        <div class="types" id="type-picker"></div>
+
+        <!-- 2. التفاصيل -->
+        <label style="display:block; margin-bottom:10px; font-weight:800; color:#34495e;">٢. التفاصيل</label>
+        <div class="row2">
+            <div class="fld" id="fld-surah">
+                <label for="in-surah">السورة</label>
+                <select id="in-surah"><option value="">-- اختر السورة --</option></select>
+            </div>
+            <div class="fld hidden" id="fld-title">
+                <label for="in-title">العنوان</label>
+                <input type="text" id="in-title" placeholder="مثال: حديث الأعمال بالنيات">
+            </div>
+            <div class="fld">
+                <label for="in-ref">التحديد (اختياري)</label>
+                <input type="text" id="in-ref" placeholder="مثال: الآيات ١ - ١٠">
+            </div>
+        </div>
+
+        <!-- 3. المسجّل -->
+        <label style="display:block; margin:20px 0 10px; font-weight:800; color:#34495e;">٣. سجّل الآن</label>
+        <div class="recorder">
+            <div class="rec-timer" id="timer">00:00</div>
+            <div class="rec-state" id="rec-state">اضغط «ابدأ التسجيل» عندما تكون مستعداً</div>
+
+            <div class="rec-buttons">
+                <button class="rec-btn btn-start" id="btn-rec">● ابدأ التسجيل</button>
+                <button class="rec-btn btn-stop"  id="btn-stop" disabled>■ إيقاف</button>
+                <button class="rec-btn btn-again" id="btn-again" style="display:none;">↻ إعادة التسجيل</button>
+            </div>
+
+            <audio id="playback" controls></audio>
+
+            <div class="progress-wrap" id="prog-wrap">
+                <div class="progress-bar"><div id="prog-bar"></div></div>
+                <div style="margin-top:8px; font-size:.9rem;" id="prog-text">جاري الرفع...</div>
+            </div>
+        </div>
+
+        <button class="btn btn-block" id="btn-send" disabled>📤 إرسال التسميع لمعلمي</button>
+        <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- سجلي -->
+    <div class="card">
+        <h2>📋 سجل تسميعاتي</h2>
+        <p class="sub">كل ما سمّعته، ودرجات معلمك وملاحظاته عليها.</p>
+
+        <div class="stats">
+            <div class="stat a"><div class="v" id="st-total">0</div><div class="k">إجمالي التسميعات</div></div>
+            <div class="stat b"><div class="v" id="st-pending">0</div><div class="k">بانتظار التصحيح</div></div>
+            <div class="stat c"><div class="v" id="st-avg">—</div><div class="k">متوسط درجاتي</div></div>
+        </div>
+
+        <div id="list-spin" class="spinner"></div>
+        <div id="my-list"></div>
+        <div id="list-empty" class="empty hidden">
+            لم تسجّل أي تسميع بعد.<br>ابدأ من الأعلى ☝️ وسيظهر تسميعك هنا فوراً.
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { collection, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+    import { db, storage } from "./firebase-shared.js";
+    import { onAuthReady } from "./roles.js";
+    import { GRADE_LABELS } from "./lesson-map.js";
+    import { RECITATION_TYPES, SURAHS, loadStudentRecitations, recitationStats,
+             scoreColor, fmtDuration } from "./recitation-engine.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+
+    let me = null;
+    let selectedType = 'quran';
+    // 🔇 التسجيل صوتي فقط — أُلغي خيار الفيديو لتقليل استهلاك التخزين والبيانات
+    const MEDIA_TYPE = 'audio';
+    let mediaRecorder = null, chunks = [], stream = null;
+    let recordedBlob = null, recordedMime = '', seconds = 0, timerInt = null;
+
+    // ---------- بناء الواجهة ----------
+    document.getElementById('type-picker').innerHTML = Object.values(RECITATION_TYPES).map(t => `
+        <div class="type-opt ${t.key === 'quran' ? 'active' : ''}" data-type="${t.key}">
+            <span class="ic">${t.icon}</span><span class="nm">${esc(t.label)}</span>
+        </div>`).join('');
+
+    document.getElementById('in-surah').innerHTML = '<option value="">-- اختر السورة --</option>' +
+        SURAHS.map((s, i) => `<option value="${esc(s)}">${i + 1}. ${esc(s)}</option>`).join('');
+
+    document.querySelectorAll('#type-picker .type-opt').forEach(el => {
+        el.onclick = () => {
+            document.querySelectorAll('#type-picker .type-opt').forEach(o => o.classList.remove('active'));
+            el.classList.add('active');
+            selectedType = el.dataset.type;
+            const isQuran = selectedType === 'quran';
+            document.getElementById('fld-surah').classList.toggle('hidden', !isQuran);
+            document.getElementById('fld-title').classList.toggle('hidden', isQuran);
+        };
+    });
+
+    function showMsg(text, type) {
+        const el = document.getElementById('msg');
+        el.className = 'msg ' + type;
+        el.innerHTML = text;
+    }
+
+    // ---------- المسجّل ----------
+    function pickMime() {
+        const opts = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+        for (const m of opts) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+        }
+        return '';
+    }
+
+    function resetRecorder() {
+        stopTracks();
+        recordedBlob = null; chunks = []; seconds = 0;
+        clearInterval(timerInt);
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('rec-state').textContent = 'اضغط «ابدأ التسجيل» عندما تكون مستعداً';
+        document.getElementById('btn-rec').disabled = false;
+        document.getElementById('btn-stop').disabled = true;
+        document.getElementById('btn-again').style.display = 'none';
+        document.getElementById('btn-send').disabled = true;
+        document.getElementById('playback').style.display = 'none';
+        document.getElementById('playback').src = '';
+        document.getElementById('prog-wrap').style.display = 'none';
+    }
+
+    function stopTracks() {
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    }
+
+    document.getElementById('btn-rec').onclick = async () => {
+        if (!window.MediaRecorder || !navigator.mediaDevices) {
+            showMsg('⚠️ متصفحك لا يدعم التسجيل. جرّب Chrome أو Edge حديثاً.', 'err');
+            return;
+        }
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e) {
+            showMsg('⚠️ لم نتمكن من الوصول للميكروفون.<br>تأكد من السماح بالإذن من المتصفح ثم أعد المحاولة.', 'err');
+            return;
+        }
+
+        recordedMime = pickMime();
+        chunks = [];
+        try {
+            mediaRecorder = recordedMime ? new MediaRecorder(stream, { mimeType: recordedMime })
+                                         : new MediaRecorder(stream);
+        } catch (e) {
+            showMsg('⚠️ تعذّر بدء التسجيل: ' + esc(e.message), 'err');
+            stopTracks();
+            return;
+        }
+
+        mediaRecorder.ondataavailable = ev => { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
+        mediaRecorder.onstop = () => {
+            const type = recordedMime || 'audio/webm';
+            recordedBlob = new Blob(chunks, { type });
+
+            const url = URL.createObjectURL(recordedBlob);
+            const pb = document.getElementById('playback');
+            pb.src = url; pb.style.display = 'block';
+
+            document.getElementById('rec-state').innerHTML =
+                `✅ تم التسجيل (${fmtDuration(seconds)} — ${(recordedBlob.size / 1024 / 1024).toFixed(1)} ميجابايت)<br>
+                 <small>استمع إليه، وإن أعجبك أرسله لمعلمك</small>`;
+            document.getElementById('btn-send').disabled = false;
+            document.getElementById('btn-again').style.display = 'inline-block';
+            stopTracks();
+        };
+
+
+        mediaRecorder.start();
+        seconds = 0;
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('rec-state').innerHTML = '<span class="rec-dot"></span> جاري التسجيل... تحدّث الآن';
+        document.getElementById('btn-rec').disabled = true;
+        document.getElementById('btn-stop').disabled = false;
+        document.getElementById('btn-send').disabled = true;
+        document.getElementById('playback').style.display = 'none';
+        showMsg('', '');
+        document.getElementById('msg').className = 'msg';
+
+        timerInt = setInterval(() => {
+            seconds++;
+            document.getElementById('timer').textContent = fmtDuration(seconds);
+            // حد أقصى ١٠ دقائق حمايةً لحجم الملف
+            if (seconds >= 600) document.getElementById('btn-stop').click();
+        }, 1000);
+    };
+
+    document.getElementById('btn-stop').onclick = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        clearInterval(timerInt);
+        document.getElementById('btn-stop').disabled = true;
+        document.getElementById('btn-rec').disabled = true;
+    };
+
+    document.getElementById('btn-again').onclick = resetRecorder;
+
+    // ---------- الإرسال ----------
+    document.getElementById('btn-send').onclick = async () => {
+        if (!recordedBlob) return;
+
+        const isQuran = selectedType === 'quran';
+        const title = isQuran
+            ? document.getElementById('in-surah').value
+            : document.getElementById('in-title').value.trim();
+
+        if (!title) {
+            showMsg(isQuran ? '⚠️ اختر السورة أولاً.' : '⚠️ اكتب عنوان ما ستسمّعه أولاً.', 'err');
+            return;
+        }
+
+        const btn = document.getElementById('btn-send');
+        btn.disabled = true;
+        btn.textContent = 'جاري الرفع...';
+        document.getElementById('prog-wrap').style.display = 'block';
+
+        const ext = (recordedBlob.type.includes('mp4')) ? 'mp4' : 'webm';
+        const fileName = `${Date.now()}_audio.${ext}`;
+        const path = `recitations/${me.uid}/${fileName}`;
+
+        try {
+            const task = uploadBytesResumable(ref(storage, path), recordedBlob, { contentType: recordedBlob.type });
+
+            await new Promise((resolve, reject) => {
+                task.on('state_changed',
+                    snap => {
+                        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                        document.getElementById('prog-bar').style.width = pct + '%';
+                        document.getElementById('prog-text').textContent = `جاري الرفع... ${pct}%`;
+                    },
+                    reject,
+                    resolve
+                );
+            });
+
+            const url = await getDownloadURL(task.snapshot.ref);
+
+            await addDoc(collection(db, 'recitations'), {
+                studentUid:   me.uid,
+                studentName:  me.name,
+                studentGrade: me.raw.grade || null,
+                teacherCode:  me.raw.teacherCode || null,
+                teacherUid:   null,
+                type:         selectedType,
+                title:        title,
+                reference:    document.getElementById('in-ref').value.trim(),
+                mediaType:    MEDIA_TYPE,
+                storagePath:  path,
+                downloadURL:  url,
+                durationSec:  seconds,
+                status:       'pending',
+                level:        '',
+                feedback:     '',
+                createdAt:    new Date()
+            });
+
+            showMsg('✅ تم إرسال تسميعك بنجاح! سيظهر لمعلمك ليصحّحه لك.', 'ok');
+            resetRecorder();
+            document.getElementById('in-ref').value = '';
+            await loadMine();
+
+        } catch (e) {
+            console.error(e);
+            const denied = e && (e.code === 'storage/unauthorized' || /unauthorized|permission/i.test(e.message || ''));
+            showMsg(denied
+                ? '❌ تعذّر الرفع: قواعد التخزين ترفض العملية.<br>تأكد من تفعيل Firebase Storage ونشر ملف storage.rules.'
+                : '❌ تعذّر إرسال التسميع: ' + esc(e.message), 'err');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📤 إرسال التسميع لمعلمي';
+            document.getElementById('prog-wrap').style.display = 'none';
+            document.getElementById('prog-bar').style.width = '0%';
+        }
+    };
+
+    // ---------- سجلي ----------
+    async function loadMine() {
+        const listEl = document.getElementById('my-list');
+        document.getElementById('list-spin').classList.remove('hidden');
+
+        let list = [];
+        try {
+            list = await loadStudentRecitations(me.uid);
+        } catch (e) {
+            document.getElementById('list-spin').classList.add('hidden');
+            listEl.innerHTML = `<div class="empty">تعذّر تحميل سجلك: ${esc(e.message)}</div>`;
+            return;
+        }
+
+        const st = recitationStats(list);
+        document.getElementById('st-total').textContent   = st.total;
+        document.getElementById('st-pending').textContent = st.pending;
+        document.getElementById('st-avg').textContent     = st.avgScore === null ? '—' : st.avgScore + '%';
+
+        document.getElementById('list-spin').classList.add('hidden');
+        document.getElementById('list-empty').classList.toggle('hidden', list.length > 0);
+
+        listEl.innerHTML = list.map(r => {
+            const t = RECITATION_TYPES[r.type] || RECITATION_TYPES.other;
+            const reviewed = r.status === 'reviewed' && r.score !== null;
+            const player = `<audio controls preload="none" src="${esc(r.downloadURL)}"></audio>`;
+
+            return `<div class="rec-item">
+                <div class="rec-head">
+                    <div>
+                        <div class="rec-title">${t.icon} ${esc(r.title)}${r.reference ? ' — ' + esc(r.reference) : ''}</div>
+                        <div class="rec-meta">${esc(t.label)} · ${fmtDuration(r.durationSec)} · ${esc(fmtDate(r.createdAt))}</div>
+                    </div>
+                    <div style="text-align:left;">
+                        ${reviewed
+                            ? `<div class="score-big" style="color:${scoreColor(r.score)};">${r.score}%</div>
+                               <span class="pill p-reviewed">${esc(r.level || 'تم التصحيح')}</span>`
+                            : `<span class="pill p-pending">⏳ بانتظار التصحيح</span>`}
+                    </div>
+                </div>
+                ${player}
+                ${r.feedback ? `<div class="feedback-box">💬 <strong>ملاحظة معلمك:</strong> ${esc(r.feedback)}</div>` : ''}
+                <div style="margin-top:12px; text-align:left;">
+                    <button class="btn-del" data-del="${esc(r.id)}" data-path="${esc(r.storagePath)}">🗑️ حذف هذا التسميع</button>
+                </div>
+            </div>`;
+        }).join('');
+
+        listEl.querySelectorAll('[data-del]').forEach(b => {
+            b.onclick = () => removeRecitation(b.dataset.del, b.dataset.path);
+        });
+    }
+
+    async function removeRecitation(id, path) {
+        if (!confirm('حذف هذا التسميع نهائياً؟\n\nسيُحذف التسجيل ودرجته معاً، ولا يمكن التراجع.')) return;
+        try {
+            await deleteDoc(doc(db, 'recitations', id));
+            if (path) { try { await deleteObject(ref(storage, path)); } catch (e) { /* الملف قد يكون محذوفاً */ } }
+            await loadMine();
+        } catch (e) {
+            alert('تعذّر الحذف: ' + e.message);
+        }
+    }
+
+    // ---------- التشغيل ----------
+    onAuthReady(async (profile) => {
+        me = profile;
+
+        if (!me.raw.teacherCode) {
+            const w = document.getElementById('no-teacher');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ <strong>لم تربط حسابك بمعلم بعد.</strong> تستطيع التسجيل والاحتفاظ بتسميعاتك، ' +
+                          'لكنها لن تصل لأي معلم. أضف كود معلمك من ' +
+                          '<a href="profile-student.html" style="color:#7d6608; font-weight:bold;">ملفك الشخصي</a>.';
+        }
+
+        await loadMine();
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متابعة حفظ الطلاب | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 🛡️ للمعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1200px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#7d6608,#f1c40f,#16a085);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; text-shadow:0 2px 6px rgba(0,0,0,.2); }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a { background:rgba(255,255,255,.25); color:#fff; padding:9px 16px; border-radius:9px;
+                       text-decoration:none; font-weight:bold; font-size:.92rem; transition:.25s; }
+        .top-links a:hover { background:rgba(255,255,255,.4); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#7d6608; margin-bottom:4px; border-right:5px solid #f1c40f; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:15px; margin-bottom:20px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center;
+                box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.a { border-color:#16a085; } .stat.a .v { color:#16a085; }
+        .stat.b { border-color:#27ae60; } .stat.b .v { color:#27ae60; }
+        .stat.c { border-color:#f39c12; } .stat.c .v { color:#f39c12; }
+
+        .filters { display:flex; gap:11px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+        .filters select, .filters input {
+            padding:11px 14px; border:1px solid #ccd1d9; border-radius:8px;
+            font-family:'Cairo',sans-serif; font-size:.94rem; outline:none;
+        }
+        .filters input { flex:1; min-width:190px; }
+        .btn { background:#7d6608; color:#fff; border:none; padding:11px 22px; border-radius:8px;
+               font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.96rem; }
+        .btn.g { background:#27ae60; }
+
+        .tbl-scroll { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; min-width:760px; }
+        th { background:#7d6608; color:#fff; padding:13px 11px; text-align:right; font-size:.92rem; white-space:nowrap; }
+        td { padding:12px 11px; border-bottom:1px solid #eef2f6; font-size:.93rem; vertical-align:middle; }
+        tr:hover td { background:#fffdf5; }
+
+        .track-cell { min-width:150px; }
+        .track-cell .lbl { font-size:.8rem; color:#7f8c8d; margin-bottom:4px; }
+        .mini-bar { height:9px; background:#eef2f6; border-radius:6px; overflow:hidden; }
+        .mini-bar > div { height:100%; border-radius:6px; }
+        .pill { font-weight:900; }
+        .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:.8rem; font-weight:bold; white-space:nowrap; }
+        .b-grade { background:#eaf4fd; color:#2471a3; }
+
+        .btn-open { background:#16a085; color:#fff; border:none; padding:8px 16px; border-radius:7px;
+                    font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.86rem;
+                    text-decoration:none; display:inline-block; transition:.2s; white-space:nowrap; }
+        .btn-open:hover { background:#0e8271; }
+
+        .empty { text-align:center; color:#95a5a6; padding:40px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #f1c40f; border-radius:50%;
+                   width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .warn { background:#fff9e6; border:1px solid #f1c40f; border-radius:9px; padding:13px 16px;
+                color:#7d6608; font-size:.92rem; line-height:1.8; margin-bottom:18px; }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>📿 متابعة حفظ الطلاب</h1>
+        <div class="top-links">
+            <a href="profile-teacher.html">ملف المعلم 👨‍🏫</a>
+            <a href="recitation-teacher.html">تصحيح التسميع 🎧</a>
+            <a href="index.html">الرئيسية 🏠</a>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <div id="warn-box" class="warn hidden"></div>
+
+    <div class="stats">
+        <div class="stat a"><div class="v" id="s-students">0</div><div class="k">طلاب لديهم سجل حفظ</div></div>
+        <div class="stat b"><div class="v" id="s-confirmed">0</div><div class="k">سور اعتمدتها</div></div>
+        <div class="stat c"><div class="v" id="s-pending">0</div><div class="k">سور تنتظر اعتمادك</div></div>
+    </div>
+
+    <div class="card">
+        <h2>👥 سجلات حفظ طلابي</h2>
+        <p class="sub">
+            اضغط «فتح السجل» لتستعرض سور الطالب وتعتمد ما حفظه.
+            الرقم البرتقالي يعني سوراً سجّلها الطالب وتنتظر اعتمادك.
+        </p>
+
+        <div class="filters">
+            <select id="f-grade"><option value="">كل الصفوف</option></select>
+            <input type="text" id="f-search" placeholder="🔍 ابحث باسم الطالب...">
+            <button class="btn g" id="btn-export">تصدير Excel 📊</button>
+        </div>
+
+        <div id="spin" class="spinner"></div>
+        <div class="tbl-scroll">
+            <table id="tbl" class="hidden">
+                <thead>
+                    <tr>
+                        <th>الطالب</th><th>الصف</th>
+                        <th>جزء عمّ</th><th>جزء تبارك</th>
+                        <th>الإجمالي</th><th>تنتظر الاعتماد</th><th>آخر تحديث</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="body"></tbody>
+            </table>
+        </div>
+        <div id="empty" class="empty hidden"></div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { onAuthReady } from "./roles.js";
+    import { GRADE_LABELS } from "./lesson-map.js";
+    import { loadTeacherMemorization, trackStats, overallStats, effectiveStatus }
+        from "./memorization-engine.js";
+    import { SURAH_LIST } from "./quran-data.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+
+    let me = null, all = [];
+
+    // عدد السور التي سجّلها الطالب ولم يعتمدها المعلم بعد
+    function pendingCount(surahs) {
+        let n = 0;
+        SURAH_LIST.forEach(s => {
+            const e = surahs[String(s.num)];
+            if (e && e.status === 'memorized' && e.confirmed !== true) n++;
+        });
+        return n;
+    }
+
+    function buildFilters() {
+        const grades = [...new Set(all.map(r => r.grade).filter(Boolean))]
+            .sort((a, b) => (parseInt(a.slice(1)) || 0) - (parseInt(b.slice(1)) || 0));
+        document.getElementById('f-grade').innerHTML = '<option value="">كل الصفوف</option>' +
+            grades.map(g => `<option value="${esc(g)}">${esc(GRADE_LABELS[g] || g)}</option>`).join('');
+        document.getElementById('f-grade').onchange = render;
+        document.getElementById('f-search').oninput = render;
+    }
+
+    function currentRows() {
+        const grade = document.getElementById('f-grade').value;
+        const term  = document.getElementById('f-search').value.trim().toLowerCase();
+        return all.filter(r => {
+            if (grade && r.grade !== grade) return false;
+            if (term && !(r.studentName || '').toLowerCase().includes(term)) return false;
+            return true;
+        });
+    }
+
+    function render() {
+        const rows = currentRows();
+        const body = document.getElementById('body');
+        const emptyEl = document.getElementById('empty');
+
+        emptyEl.classList.toggle('hidden', rows.length > 0);
+        document.getElementById('tbl').classList.toggle('hidden', rows.length === 0);
+
+        if (!rows.length) {
+            emptyEl.innerHTML = all.length
+                ? 'لا يوجد طلاب مطابقون لهذه الفلترة.'
+                : 'لم يبدأ أي من طلابك مسار الحفظ بعد.<br>وجّههم لصفحة «مسار الحفظ» من ملفهم الشخصي.';
+            return;
+        }
+
+        body.innerHTML = rows.map(r => {
+            const s = r.surahs || {};
+            const j30 = trackStats(s, 'juz30');
+            const j29 = trackStats(s, 'juz29');
+            const o   = overallStats(s);
+            const pend = pendingCount(s);
+
+            const bar = (st, color) => `
+                <div class="track-cell">
+                    <div class="lbl">${st.memorized} / ${st.total} (${st.percent}%)</div>
+                    <div class="mini-bar"><div style="width:${st.percent}%; background:${color};"></div></div>
+                </div>`;
+
+            return `<tr>
+                <td><strong>${esc(r.studentName)}</strong></td>
+                <td>${r.grade ? `<span class="badge b-grade">${esc(GRADE_LABELS[r.grade] || r.grade)}</span>` : '—'}</td>
+                <td>${bar(j30, '#16a085')}</td>
+                <td>${bar(j29, '#8e44ad')}</td>
+                <td><span class="pill" style="color:#27ae60;">${o.memorized}</span> سورة</td>
+                <td>${pend > 0
+                    ? `<span class="pill" style="color:#f39c12;">${pend}</span>`
+                    : '<span style="color:#bdc3c7;">—</span>'}</td>
+                <td style="color:#7f8c8d; font-size:.87rem;">${esc(fmtDate(r.updatedAt))}</td>
+                <td><a class="btn-open" href="memorization.html?student=${encodeURIComponent(r.studentUid)}">فتح السجل ←</a></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function updateStats() {
+        let confirmed = 0, pending = 0;
+        all.forEach(r => {
+            const o = overallStats(r.surahs || {});
+            confirmed += o.confirmed;
+            pending += pendingCount(r.surahs || {});
+        });
+        document.getElementById('s-students').textContent  = all.length;
+        document.getElementById('s-confirmed').textContent = confirmed;
+        document.getElementById('s-pending').textContent   = pending;
+    }
+
+    document.getElementById('btn-export').onclick = () => {
+        const rows = currentRows();
+        if (!rows.length) return alert('لا توجد بيانات للتصدير.');
+        const data = rows.map(r => {
+            const s = r.surahs || {};
+            const j30 = trackStats(s, 'juz30');
+            const j29 = trackStats(s, 'juz29');
+            const o = overallStats(s);
+            return {
+                'اسم الطالب': r.studentName,
+                'الصف': r.grade ? (GRADE_LABELS[r.grade] || r.grade) : '-',
+                'جزء عمّ': j30.memorized + ' / ' + j30.total + ' (' + j30.percent + '%)',
+                'جزء تبارك': j29.memorized + ' / ' + j29.total + ' (' + j29.percent + '%)',
+                'إجمالي السور المحفوظة': o.memorized,
+                'معتمدة من المعلم': o.confirmed,
+                'تنتظر الاعتماد': pendingCount(s),
+                'الآيات المحفوظة': o.ayahsDone,
+                'آخر تحديث': r.updatedAt ? r.updatedAt.toLocaleDateString('ar-EG') : '-'
+            };
+        });
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'الحفظ');
+        XLSX.writeFile(wb, 'تقرير_حفظ_الطلاب.xlsx');
+    };
+
+    onAuthReady(async (profile) => {
+        me = profile;
+        const myCode = me.raw.myTeacherCode || null;
+
+        if (!myCode) {
+            const w = document.getElementById('warn-box');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ لا يوجد كود أكاديمي لحسابك، لذلك لن تظهر سجلات الطلاب. افتح صفحة «بناء الاختبارات» مرة واحدة ليُصدر الكود.';
+        }
+
+        try {
+            all = await loadTeacherMemorization({ uid: me.uid, teacherCode: myCode });
+        } catch (e) {
+            document.getElementById('spin').classList.add('hidden');
+            document.getElementById('empty').classList.remove('hidden');
+            document.getElementById('empty').textContent = 'تعذّر تحميل السجلات: ' + e.message;
+            return;
+        }
+
+        document.getElementById('spin').classList.add('hidden');
+        updateStats();
+        buildFilters();
+        render();
+    });
+</script>
+
+</body>
+</html>

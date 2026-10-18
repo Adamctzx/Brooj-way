@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فحص النظام - BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- يكفي تسجيل الدخول، ولا نطلب استكمال البيانات حتى نستطيع تشخيص الحساب الناقص -->
+    <script type="module" src="auth-guard.js" data-require-role="student" data-skip-profile-check="true"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding:24px 16px 60px; }
+        .wrap { max-width:900px; margin:0 auto; }
+
+        .head { background:linear-gradient(135deg,#1a2a6c,#2980b9); color:#fff; border-radius:16px;
+                padding:26px 28px; margin-bottom:22px; box-shadow:0 10px 30px rgba(26,42,108,.22); }
+        .head h1 { font-size:1.6rem; font-weight:900; margin-bottom:6px; }
+        .head p { opacity:.88; line-height:1.7; font-size:.96rem; }
+        .head a { color:#fdbb2d; font-weight:bold; text-decoration:none; }
+
+        .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+        .sbox { background:#fff; border-radius:14px; padding:18px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .sbox .v { font-size:2.2rem; font-weight:900; }
+        .sbox .k { color:#7f8c8d; font-size:.88rem; font-weight:600; }
+        .sbox.ok   { border-color:#27ae60; } .sbox.ok .v   { color:#27ae60; }
+        .sbox.warn { border-color:#f39c12; } .sbox.warn .v { color:#f39c12; }
+        .sbox.fail { border-color:#e74c3c; } .sbox.fail .v { color:#e74c3c; }
+
+        .group { background:#fff; border-radius:16px; padding:22px; margin-bottom:18px; box-shadow:0 4px 15px rgba(0,0,0,.05); }
+        .group h2 { font-size:1.15rem; color:#1a2a6c; margin-bottom:14px; border-right:5px solid #fdbb2d; padding-right:12px; }
+
+        .chk { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid #f0f3f7; align-items:flex-start; }
+        .chk:last-child { border-bottom:none; }
+        .chk .ic { font-size:1.4rem; flex-shrink:0; width:28px; text-align:center; line-height:1.5; }
+        .chk .body { flex:1; }
+        .chk .t { font-weight:800; margin-bottom:3px; }
+        .chk .d { color:#7f8c8d; font-size:.9rem; line-height:1.75; }
+        .chk .fix { margin-top:7px; background:#fff9e6; border-right:3px solid #f1c40f;
+                    padding:9px 12px; border-radius:7px; color:#7d6608; font-size:.88rem; line-height:1.7; }
+        .chk.pass .t { color:#1e8449; }
+        .chk.warn .t { color:#b9770e; }
+        .chk.fail .t { color:#c0392b; }
+
+        code { background:#f1f4f8; padding:2px 7px; border-radius:5px; font-family:monospace; direction:ltr; display:inline-block; font-size:.9em; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #1a2a6c; border-radius:50%;
+                   width:40px; height:40px; animation:spin 1s linear infinite; margin:40px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .btn { background:#1a2a6c; color:#fff; border:none; padding:12px 24px; border-radius:9px;
+               font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:1rem; text-decoration:none; display:inline-block; }
+        .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+        .hidden { display:none !important; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="head">
+        <h1>🩺 فحص النظام</h1>
+        <p>
+            هذه الصفحة تفحص حسابك الحالي واتصال المنصة بقاعدة البيانات وتخبرك بما يعمل وما يحتاج انتباهاً.
+            <br>افحص بحساب <strong>الأدمن</strong> ثم بحساب <strong>معلم</strong> ثم بحساب <strong>طالب</strong> — لكل دور فحوصه.
+        </p>
+    </div>
+
+    <div id="spin" class="spinner"></div>
+
+    <div id="out" class="hidden">
+        <div class="summary">
+            <div class="sbox ok"><div class="v" id="n-pass">0</div><div class="k">سليم</div></div>
+            <div class="sbox warn"><div class="v" id="n-warn">0</div><div class="k">يحتاج انتباهاً</div></div>
+            <div class="sbox fail"><div class="v" id="n-fail">0</div><div class="k">مشكلة</div></div>
+        </div>
+        <div id="groups"></div>
+        <div class="actions">
+            <a class="btn" href="index.html">العودة للرئيسية 🏠</a>
+            <a class="btn" href="javascript:location.reload()" style="background:#27ae60;">إعادة الفحص 🔄</a>
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { db } from "./firebase-shared.js";
+    import { ADMIN_EMAILS, ROLES, TEACHER_CODES_COLLECTION, normalizeRole, onAuthReady } from "./roles.js";
+    import { lessonTitle, gradeCurriculum } from "./lesson-map.js";
+    import { loadStudentRecords, loadTeacherRecords, computeStats } from "./progress-engine.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    const groups = [];
+    let nPass = 0, nWarn = 0, nFail = 0;
+
+    function G(title) { const g = { title, items: [] }; groups.push(g); return g; }
+    function add(g, status, title, detail, fix) {
+        g.items.push({ status, title, detail, fix });
+        if (status === 'pass') nPass++; else if (status === 'warn') nWarn++; else nFail++;
+    }
+
+    onAuthReady(async (me) => {
+
+        // ============ 1. الملفات الأساسية ============
+        const gFiles = G('📁 ملفات النظام');
+
+        // ملفات لا يعمل الموقع بدونها — غيابها خطأ حقيقي
+        const required = ['firebase-shared.js','roles.js','auth-guard.js','lesson-map.js','progress-engine.js',
+                          'profile-student.html','profile-teacher.html','complete-profile.html'];
+        // أدوات إدارية قد تُشغَّل من جهاز المالك فقط — غيابها ليس خطأ
+        const adminOnly = ['admin-users.html','premium-admin-portal.html','dashboard.html'];
+
+        async function checkFiles(list) {
+            const gone = [];
+            await Promise.all(list.map(async f => {
+                try { const r = await fetch(f, { method:'GET', cache:'no-store' }); if (!r.ok) gone.push(f); }
+                catch (e) { gone.push(f); }
+            }));
+            return gone;
+        }
+
+        const missing = await checkFiles(required);
+        if (!missing.length) add(gFiles, 'pass', 'كل ملفات النظام الأساسية موجودة', `تم التحقق من ${required.length} ملفاً بنجاح.`);
+        else add(gFiles, 'fail', 'ملفات أساسية ناقصة', 'لم يُعثر على: ' + esc(missing.join('، ')),
+                 'ارفع هذه الملفات إلى الاستضافة في نفس مجلد index.html — الموقع لا يعمل بدونها.');
+
+        const missingAdmin = await checkFiles(adminOnly);
+        if (!missingAdmin.length)
+            add(gFiles, 'pass', 'الأدوات الإدارية متاحة على هذا الخادم', 'يمكنك فتح لوحة الإدارة من هنا مباشرة.');
+        else
+            add(gFiles, 'warn', 'أدوات إدارية غير مرفوعة (وهذا مقصود غالباً)',
+                'غير موجودة هنا: ' + esc(missingAdmin.join('، ')),
+                'إبقاؤها على جهازك فقط خيار أكثر أماناً. شغّلها محلياً عبر ملف تشغيل-الموقع-محلياً.bat وستتصل بنفس قاعدة البيانات.');
+
+        // ============ 2. الحساب والدور ============
+        const gAcc = G('👤 حسابك ودورك');
+        add(gAcc, 'pass', 'تسجيل الدخول يعمل', `الحساب: <code>${esc(me.email)}</code>`);
+
+        if (me.exists) add(gAcc, 'pass', 'ملفك موجود في قاعدة البيانات', 'مجموعة <code>users</code> تحتوي بياناتك.');
+        else add(gAcc, 'warn', 'لا يوجد مستند لحسابك في users', 'لم يُعثر على بياناتك في قاعدة البيانات.',
+                 'افتح <code>complete-profile.html</code> وأكمل بياناتك، سيُنشأ المستند تلقائياً.');
+
+        add(gAcc, 'pass', 'دورك الحالي: ' + me.roleLabel,
+            me.isBootstrapAdmin
+                ? 'حصلت على صلاحية الأدمن لأن بريدك مُدرج في <code>ADMIN_EMAILS</code> داخل ملف roles.js.'
+                : `الدور مقروء من الحقل <code>role</code> في مستندك.`);
+
+        const emailIsAdmin = ADMIN_EMAILS.some(m => m.toLowerCase() === (me.email||'').toLowerCase());
+        if (emailIsAdmin) add(gAcc, 'pass', 'بريد الأدمن مضبوط بشكل صحيح', 'بريدك مطابق لما في roles.js، ولوحة الإدارة ستفتح لك.');
+        else add(gAcc, 'warn', 'هذا الحساب ليس أدمن', `القائمة الحالية تحتوي: <code>${esc(ADMIN_EMAILS.join(', '))}</code>`,
+                 'إن كان هذا حساب المالك، عدّل <code>ADMIN_EMAILS</code> في ملف <code>roles.js</code> ليطابق بريدك.');
+
+        if (!me.profileComplete && !me.isBootstrapAdmin)
+            add(gAcc, 'warn', 'بياناتك غير مكتملة', 'الحقل <code>profileComplete</code> ليس true، لذلك ستُوجَّه لصفحة استكمال البيانات.',
+                'هذا طبيعي للحسابات القديمة. أكمل بياناتك مرة واحدة ولن تظهر لك الصفحة بعدها.');
+        else add(gAcc, 'pass', 'بياناتك مكتملة', 'لن تُوجَّه إلى صفحة استكمال البيانات.');
+
+        if (me.isTeacher) {
+            if (me.raw.myTeacherCode)
+                add(gAcc, 'pass', 'كودك الأكاديمي جاهز', `<code>${esc(me.raw.myTeacherCode)}</code> — أعطه لطلابك ليصلك نتائجهم.`);
+            else
+                add(gAcc, 'fail', 'لا يوجد كود أكاديمي لحسابك', 'بدونه لن تصلك نتائج يلا كويز إطلاقاً.',
+                    'افتح <code>academic-teacher.html</code> مرة واحدة، سيُصدر الكود تلقائياً لأن دورك معلم.');
+        }
+        if (me.isStudent) {
+            if (me.raw.grade) add(gAcc, 'pass', 'صفّك الدراسي محدّد', `${esc(me.raw.grade)} — خريطة تقدّم المنهج ستظهر لك.`);
+            else add(gAcc, 'warn', 'لم تحدّد صفّك الدراسي', 'خريطة تقدّم المنهج لن تظهر بدونه.',
+                     'حدّد صفّك من إعدادات الحساب في <code>profile-student.html</code>.');
+
+            if (me.raw.teacherCode) add(gAcc, 'pass', 'مرتبط بمعلم', `كود المعلم المشرف: <code>${esc(me.raw.teacherCode)}</code>`);
+            else add(gAcc, 'warn', 'غير مرتبط بأي معلم', 'نتائجك لن تصل إلى أي معلم.',
+                     'أضف كود معلمك من إعدادات ملفك الشخصي.');
+        }
+
+        // ============ 3. قراءة قاعدة البيانات ============
+        const gDb = G('🗄️ الاتصال بقاعدة البيانات');
+        const colls = [
+            ['academic_results','نتائج يلا كويز'],
+            ['standard_results','التقييمات المعيارية'],
+            ['premium_results','التقييمات المعتمدة'],
+            ['custom_results','اختبارات المعلمين'],
+            ['sharia_student_achievements','العلوم الشرعية']
+        ];
+        for (const [c, label] of colls) {
+            try {
+                const snap = await getDocs(query(collection(db, c), where('studentUid','==', me.uid)));
+                add(gDb, 'pass', `${label} — القراءة تعمل`, `عدد سجلاتك في <code>${c}</code>: <strong>${snap.size}</strong>`);
+            } catch (e) {
+                add(gDb, 'fail', `${label} — تعذّرت القراءة`, esc(e.message),
+                    'إن ظهرت رسالة permission-denied فالسبب قواعد الحماية في Firestore.');
+            }
+        }
+
+        // ============ 4. نتائجي ============
+        const gRes = G('📊 نتائجك وملفك الشخصي');
+        try {
+            const { records, errors } = await loadStudentRecords(me.uid);
+            const stats = computeStats(records);
+            if (records.length) {
+                add(gRes, 'pass', `تم تجميع ${records.length} نتيجة`,
+                    `النقاط: <strong>${stats.totalXP}</strong> · المتوسط المئوي: <strong>${stats.avgPercent === null ? 'لا يوجد' : stats.avgPercent + '%'}</strong> · سلسلة الأيام: <strong>${stats.streak}</strong>`);
+            } else {
+                add(gRes, 'warn', 'لا توجد نتائج لهذا الحساب', 'ملفك الشخصي سيظهر فارغاً — وهذا طبيعي لحساب جديد.',
+                    'جرّب حل تقييم واحد من يلا كويز أو البوابة الشرعية ثم أعد الفحص.');
+            }
+            if (stats.hasBloom) add(gRes, 'pass', 'تحليل مستويات بلوم يعمل', 'يوجد تفصيل بلوم في نتائجك.');
+            else add(gRes, 'warn', 'لا يوجد تحليل بلوم بعد', 'النتائج القديمة لا تحتوي تفصيل مستويات الأسئلة لأنه لم يكن يُحفظ سابقاً.',
+                     'سيظهر تلقائياً بعد أول تقييم جديد من محرك التقييم الأكاديمي.');
+            if (errors.length) add(gRes, 'fail', 'بعض المصادر تعذّر تحميلها', esc(errors.map(e=>e.source).join('، ')));
+        } catch (e) {
+            add(gRes, 'fail', 'تعذّر تجميع النتائج', esc(e.message));
+        }
+
+        // ============ 5. فحوص المعلم ============
+        if (me.isTeacher) {
+            const gT = G('👨‍🏫 فحوص حساب المعلم');
+            try {
+                const { records } = await loadTeacherRecords({ uid: me.uid, teacherCode: me.raw.myTeacherCode || null });
+                if (records.length) add(gT, 'pass', `وصلتك ${records.length} نتيجة من طلابك`, 'جدول «طلابي» في ملف المعلم سيعرضها.');
+                else add(gT, 'warn', 'لم تصلك أي نتيجة بعد', 'إما أن الطلاب لم يبدأوا، أو لم يُدخلوا كودك.',
+                         'تأكد أن الطلاب يكتبون كودك الأكاديمي في خانة «كود المعلم» داخل اللوبي قبل بدء التحدي.');
+            } catch (e) { add(gT, 'fail', 'تعذّر جلب نتائج الطلاب', esc(e.message)); }
+
+            try {
+                if (me.raw.myTeacherCode) {
+                    const snap = await getDocs(query(collection(db,'users'), where('teacherCode','==', me.raw.myTeacherCode)));
+                    add(gT, 'pass', `${snap.size} طالباً مرتبطاً بكودك`, 'هؤلاء أدخلوا كودك في حساباتهم.');
+                }
+            } catch (e) { add(gT, 'warn', 'تعذّر عدّ الطلاب المرتبطين', esc(e.message)); }
+        }
+
+        // ============ 6. فحوص الأدمن ============
+        if (me.isAdmin) {
+            const gA = G('🛡️ فحوص حساب الأدمن');
+            try {
+                const snap = await getDocs(collection(db,'users'));
+                let students=0, teachers=0, admins=0, flagged=0;
+                snap.forEach(d => {
+                    const u = d.data();
+                    const r = normalizeRole(u.role);
+                    if (r === ROLES.TEACHER) { teachers++; if (!u.teacherActivationCode) flagged++; }
+                    else if (r === ROLES.ADMIN) admins++;
+                    else students++;
+                });
+                add(gA, 'pass', `قراءة جدول المستخدمين تعمل`,
+                    `الإجمالي: <strong>${snap.size}</strong> — طلاب: ${students} · معلمون: ${teachers} · مديرون: ${admins}`);
+
+                if (flagged > 0)
+                    add(gA, 'warn', `${flagged} حساب معلم يحتاج مراجعة يدوية`,
+                        'حسابات دورها «معلم» بلا كود تفعيل — غالباً رُقّيت تلقائياً بسبب الخلل القديم.',
+                        'افتح <code>admin-users.html</code> واختر فلتر «تحتاج مراجعة» وصحّح كل حالة بنفسك.');
+                else
+                    add(gA, 'pass', 'لا توجد حسابات مشبوهة', 'كل حسابات المعلمين تملك كود تفعيل أو أُقرّت يدوياً.');
+            } catch (e) {
+                add(gA, 'fail', 'تعذّرت قراءة جدول المستخدمين', esc(e.message));
+            }
+
+            try {
+                const snap = await getDocs(collection(db, TEACHER_CODES_COLLECTION));
+                let active = 0; snap.forEach(d => { if (d.data().isActive) active++; });
+                if (snap.size === 0)
+                    add(gA, 'warn', 'لم تصدر أي كود تفعيل معلم', 'لن يستطيع أي معلم جديد إنشاء حساب.',
+                        'أصدر أول كود من <code>admin-users.html</code>.');
+                else
+                    add(gA, 'pass', `${snap.size} كود تفعيل (${active} فعّال)`, 'المعلمون الجدد يستطيعون التسجيل بها.');
+            } catch (e) {
+                add(gA, 'warn', 'تعذّرت قراءة أكواد التفعيل', esc(e.message));
+            }
+        }
+
+        // ============ 7. خريطة الدروس ============
+        const gMap = G('🗺️ خريطة المناهج');
+        const t = lessonTitle('Islamic_G9_T1_U1_L5');
+        if (t === 'الزكاة في الإسلام') add(gMap, 'pass', 'فكّ رموز الدروس يعمل', `<code>Islamic_G9_T1_U1_L5</code> ← «${esc(t)}»`);
+        else add(gMap, 'fail', 'فكّ رموز الدروس لا يعمل', `النتيجة غير متوقّعة: ${esc(t)}`);
+
+        const g9 = gradeCurriculum('G9');
+        add(gMap, 'pass', 'منهج الصف التاسع محمّل',
+            `${g9.length} وحدة و ${g9.reduce((s,u)=>s+u.lessons.length,0)} درساً.`);
+
+        render();
+    });
+
+    function render() {
+        document.getElementById('n-pass').textContent = nPass;
+        document.getElementById('n-warn').textContent = nWarn;
+        document.getElementById('n-fail').textContent = nFail;
+
+        const icons = { pass:'✅', warn:'⚠️', fail:'❌' };
+        document.getElementById('groups').innerHTML = groups.map(g => `
+            <div class="group">
+                <h2>${g.title}</h2>
+                ${g.items.map(i => `
+                    <div class="chk ${i.status}">
+                        <div class="ic">${icons[i.status]}</div>
+                        <div class="body">
+                            <div class="t">${i.title}</div>
+                            <div class="d">${i.detail || ''}</div>
+                            ${i.fix ? `<div class="fix">🔧 ${i.fix}</div>` : ''}
+                        </div>
+                    </div>`).join('')}
+            </div>`).join('');
+
+        document.getElementById('spin').classList.add('hidden');
+        document.getElementById('out').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>

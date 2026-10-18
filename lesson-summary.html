@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملخص الدرس الذكي - BOrooj Way</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f4f7fb; color: #2c3e50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .summary-container { background: #ffffff; border-radius: 16px; padding: 30px; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-top: 6px solid #f1c40f; margin-bottom: 30px; position: relative; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        .header-section { text-align: center; border-bottom: 2px dashed #ecf0f1; padding-bottom: 20px; margin-bottom: 25px; }
+        .header-section h1 { color: #1a2a6c; font-size: 1.8rem; margin-bottom: 15px; font-weight: 800; line-height: 1.4; }
+        
+        .meta-tags { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .meta-tag { background: #e8f4f8; color: #2980b9; padding: 6px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .meta-tag.time-tag { background: #fcf3cf; color: #d35400; }
+
+        .points-list { display: flex; flex-direction: column; gap: 15px; }
+        .point-card { background: #f8f9fa; border-right: 4px solid #3498db; padding: 15px 20px; border-radius: 8px; font-size: 1.1rem; line-height: 1.6; color: #34495e; box-shadow: 0 2px 5px rgba(0,0,0,0.02); animation: slideIn 0.4s ease forwards; opacity: 0; transform: translateX(20px); }
+        .point-card.en-text { direction: ltr; text-align: left; border-right: none; border-left: 4px solid #e74c3c; font-size: 1rem; color: #7f8c8d; margin-top: -10px; background: #fff; border-bottom: 1px solid #eee; }
+        
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+        .audio-controls { background: #1a2a6c; border-radius: 12px; padding: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(26, 42, 108, 0.2); }
+        .audio-text { color: white; font-weight: bold; font-size: 1rem; }
+        .btn-listen { background: #f1c40f; color: #1a2a6c; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s; }
+        .btn-listen:hover { transform: scale(1.1); background: #f39c12; }
+        .btn-listen.playing { background: #e74c3c; color: white; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
+
+        .action-section { margin-top: 30px; text-align: center; }
+        .btn-ready { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 1.2rem; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3); transition: 0.3s; }
+        .btn-ready:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4); }
+
+        .loader-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px 0; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .error-message { background: #fadbd8; color: #c0392b; padding: 20px; border-radius: 8px; text-align: center; font-weight: bold; border: 2px solid #e74c3c; }
+
+        .success-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 16px; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .success-overlay.active { opacity: 1; visibility: visible; }
+        .success-icon { font-size: 4rem; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="summary-container">
+        
+        <div id="loading-view" class="loader-container">
+            <div class="loader"></div>
+            <h3 style="color: #34495e;">جاري جلب ملخص الدرس...</h3>
+        </div>
+
+        <div id="error-view" class="error-message hidden">
+            ❌ عذراً، هذا الملخص غير موجود أو تم حذفه. تأكد من صحة الرابط أو الـ QR Code.
+        </div>
+
+        <div id="content-view" class="hidden">
+            <div class="header-section">
+                <h1 id="lesson-title">عنوان الدرس</h1>
+                <div class="meta-tags">
+                    <span class="meta-tag">📑 ملخص تحضيري</span>
+                    <span class="meta-tag time-tag" id="read-time">⏱️ دقيقتين للقراءة</span>
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <span class="audio-text">استمع للملخص الصوتي الذكي</span>
+                <button id="btn-audio" class="btn-listen" onclick="toggleAudio()" title="تشغيل / إيقاف الصوت">🔊</button>
+            </div>
+
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2rem; border-right: 4px solid #f1c40f; padding-right: 10px;">أهم المفاهيم والنقاط:</h3>
+            
+            <div id="points-container" class="points-list">
+                <!-- يتم حقن النقاط هنا برمجياً -->
+            </div>
+
+            <div class="action-section">
+                <button class="btn-ready" onclick="markAsReady()">✅ أتممت القراءة والاستعداد للحصة</button>
+            </div>
+
+            <div id="success-message" class="success-overlay">
+                <div class="success-icon">🏆</div>
+                <h2 style="color: #27ae60; margin-bottom: 10px;">أحسنت يا بطل!</h2>
+                <p style="color: #7f8c8d; font-size: 1.1rem; text-align: center; padding: 0 20px;">لقد أتممت استعدادك بنجاح. نلقاك في الحصة القادمة وأنت في قمة التركيز.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const summaryId = urlParams.get('id');
+
+        let summaryData = null;
+        let isPlaying = false;
+
+        async function fetchSummary() {
+            if (!summaryId) {
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('error-view').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const docRef = doc(db, "lesson_summaries", summaryId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    summaryData = docSnap.data();
+                    renderSummary();
+                } else {
+                    document.getElementById('loading-view').classList.add('hidden');
+                    document.getElementById('error-view').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Error fetching summary:", error);
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('error-view').textContent = "❌ حدث خطأ أثناء تحميل البيانات. تحقق من اتصالك بالإنترنت.";
+                document.getElementById('error-view').classList.remove('hidden');
+            }
+        }
+
+        function renderSummary() {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('content-view').classList.remove('hidden');
+
+            document.getElementById('lesson-title').textContent = summaryData.title || "ملخص الدرس";
+            document.getElementById('read-time').textContent = `⏱️ ${summaryData.readTime || "5"} دقائق للقراءة`;
+
+            const container = document.getElementById('points-container');
+            container.innerHTML = '';
+
+            if (summaryData.points && summaryData.points.length > 0) {
+                let pointIndex = 1;
+                summaryData.points.forEach((point, index) => {
+                    const div = document.createElement('div');
+                    
+                    // التعرف على اللغة الإنجليزية (إذا كان السطر يحتوي على حروف إنجليزية في أغلبه)
+                    const isEnglish = /[a-zA-Z]/.test(point);
+                    
+                    if (isEnglish) {
+                        div.className = 'point-card en-text';
+                    } else {
+                        div.className = 'point-card';
+                        // إضافة رقم النقطة للنص العربي فقط
+                        point = `${pointIndex}. ${point}`;
+                        pointIndex++;
+                    }
+
+                    const highlightedPoint = point.replace(/\*\*(.*?)\*\*/g, '<span style="background: #f1c40f; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #1a2a6c;">$1</span>');
+                    
+                    div.innerHTML = highlightedPoint; 
+                    div.style.animationDelay = `${index * 0.1}s`; 
+                    container.appendChild(div);
+                });
+            } else {
+                container.innerHTML = '<p style="color:#7f8c8d;">لا توجد نقاط مسجلة في هذا الملخص.</p>';
+            }
+        }
+
+        // =========================================
+        // 🔊 نظام القارئ الصوتي الذكي (المحدث لقراءة اللغتين)
+        // =========================================
+        window.toggleAudio = function() {
+            const btnAudio = document.getElementById('btn-audio');
+
+            if (isPlaying) {
+                window.speechSynthesis.cancel();
+                isPlaying = false;
+                btnAudio.textContent = '🔊';
+                btnAudio.classList.remove('playing');
+                return;
+            }
+
+            if (!summaryData || !summaryData.points) return;
+
+            // إيقاف أي قراءة سابقة
+            window.speechSynthesis.cancel();
+            
+            // قراءة العنوان والمقدمة بالعربية
+            speakText(`ملخص درس: ${summaryData.title}. أهم النقاط والمفاهيم.`, 'ar-SA', () => {
+                // بعد الانتهاء من المقدمة، نقرأ النقاط بالترتيب
+                readPointsSequentially(0);
+            });
+            
+            isPlaying = true;
+            btnAudio.textContent = '⏹️';
+            btnAudio.classList.add('playing');
+        };
+
+        // دالة مساعدة لقراءة النصوص بشكل متتابع (عربي ثم إنجليزي)
+        function readPointsSequentially(index) {
+            const btnAudio = document.getElementById('btn-audio');
+            if (index >= summaryData.points.length || !isPlaying) {
+                isPlaying = false;
+                btnAudio.textContent = '🔊';
+                btnAudio.classList.remove('playing');
+                return;
+            }
+
+            const point = summaryData.points[index];
+            const cleanPoint = point.replace(/\*\*/g, ''); // إزالة النجمات
+            const isEnglish = /[a-zA-Z]/.test(cleanPoint);
+            
+            const lang = isEnglish ? 'en-US' : 'ar-SA';
+            
+            speakText(cleanPoint, lang, () => {
+                readPointsSequentially(index + 1); // قراءة النقطة التي تليها
+            });
+        }
+
+        // دالة تشغيل الصوت الأساسية
+        function speakText(text, lang, onEndCallback) {
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = text;
+            msg.lang = lang; 
+            msg.rate = 0.85; 
+            msg.pitch = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                if (lang === 'ar-SA') {
+                    const arabicVoice = voices.find(v => v.lang.includes('ar') && (v.name.includes('Google') || v.name.includes('Siri') || v.name.includes('Majed')));
+                    if (arabicVoice) msg.voice = arabicVoice;
+                } else {
+                    const englishVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Siri') || v.name.includes('Samantha')));
+                    if (englishVoice) msg.voice = englishVoice;
+                }
+            }
+
+            msg.onend = onEndCallback;
+            msg.onerror = () => { window.speechSynthesis.cancel(); };
+
+            window.speechSynthesis.speak(msg);
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        window.onbeforeunload = function () { window.speechSynthesis.cancel(); };
+
+        window.markAsReady = function() {
+            window.speechSynthesis.cancel(); 
+            const overlay = document.getElementById('success-message');
+            overlay.classList.add('active');
+        };
+
+        fetchSummary();
+    </script>
+</body>
+</html>

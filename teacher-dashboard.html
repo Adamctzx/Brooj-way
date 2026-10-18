@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <title>لوحة تحكم المعلم - سجل الدرجات</title>
+
+    <!-- 🛡️ حارس الصلاحيات: هذه الصفحة لحسابات المعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 30px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .code-box { background: #fff3cd; padding: 15px; border: 2px dashed #f1c40f; text-align: center; border-radius: 10px; margin-bottom: 20px; font-size: 1.2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
+        th { background-color: #3498db; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; color: white; }
+        .score-high { background: #27ae60; }
+        .score-low { background: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 سجل درجات الطلاب الأكاديمي</h1>
+        
+        <div class="code-box">
+            أعطِ هذا الكود لطلابك ليدخلوه في غرفة الانتظار: <br>
+            <strong id="my-teacher-code" style="color: #c0392b; font-size: 1.5rem; letter-spacing: 2px;">جاري التحميل...</strong>
+        </div>
+
+        <div id="loading" style="text-align: center; font-weight: bold; color: #3498db;">جاري جلب النتائج من السيرفر... 🔄</div>
+        <table id="results-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الدرس</th>
+                    <th>الدرجة</th>
+                    <th>نوع التحدي</th>
+                    <th>التاريخ والوقت</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // 🛡️ ننتظر حارس الصلاحيات ليؤكد الدور ويمرّر بيانات المعلم
+        // (onAuthReady تعمل حتى لو انتهى الحارس قبل تحميل هذا السكربت)
+        const { onAuthReady } = await import("./roles.js");
+        onAuthReady((me) => {
+
+            // ==========================================================
+            // 🔧 إصلاح: كان الاستعلام يبحث بـ teacherId == user.uid،
+            // بينما live-quiz.html يحفظ teacherId = كود المعلم (TCH-XXXX)
+            // الذي يُدخله الطالب في اللوبي. لذلك لم تكن تظهر أي نتيجة أبداً.
+            // الآن نبحث بالكود، مع إبقاء البحث بالمعرّف للسجلات القديمة.
+            // ==========================================================
+            const myCode = me.raw.myTeacherCode || null;
+            document.getElementById('my-teacher-code').textContent = myCode || 'لا يوجد كود — افتح صفحة بناء الاختبارات مرة واحدة';
+
+            const keys = [myCode, me.uid].filter(Boolean);
+            const merged = new Map();
+
+            keys.forEach(key => {
+                // بلا orderBy: الترتيب يتم محلياً حتى لا تحتاج فهرساً مركّباً في Firestore
+                const q = query(collection(db, "academic_results"), where("teacherId", "==", key));
+
+                onSnapshot(q, (snapshot) => {
+                    snapshot.forEach(d => merged.set(d.id, d.data()));
+                    render();
+                }, (err) => {
+                    document.getElementById('loading').innerHTML =
+                        `<span style="color:red;">تعذّر جلب النتائج: ${err.message}</span>`;
+                });
+            });
+
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            }
+
+            function render() {
+                const rows = [...merged.values()].sort((a, b) => {
+                    const ta = a.timestamp && a.timestamp.toMillis ? a.timestamp.toMillis() : 0;
+                    const tb = b.timestamp && b.timestamp.toMillis ? b.timestamp.toMillis() : 0;
+                    return tb - ta;
+                });
+
+                const tbody = document.getElementById('table-body');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results-table').style.display = 'table';
+
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="5">لا توجد نتائج مسجلة لطلابك حتى الآن.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = rows.map(data => {
+                    const date = data.timestamp && data.timestamp.toDate
+                        ? data.timestamp.toDate().toLocaleString('ar-EG') : '---';
+                    const scoreClass = data.score >= 50 ? 'score-high' : 'score-low';
+                    return `
+                        <tr>
+                            <td><strong>${esc(data.studentName)}</strong></td>
+                            <td>${esc(data.lessonId)}</td>
+                            <td><span class="badge ${scoreClass}">${esc(data.score)}</span></td>
+                            <td>${esc(data.mode)}</td>
+                            <td><small>${esc(date)}</small></td>
+                        </tr>`;
+                }).join('');
+            }
+        });
+    </script>
+</body>
+</html>

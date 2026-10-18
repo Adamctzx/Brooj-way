@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الملف الشخصي | BoRooJ Way Profile</title>
+
+    <!-- ==========================================================
+         🔀 موجّه الملف الشخصي حسب الدور
+         هذه الصفحة أصبحت نقطة توجيه فقط:
+           • المعلم / المدير => profile-teacher.html
+           • الطالب          => profile-student.html
+         محتوى الصفحة القديم أسفل هذا السطر لم يُحذف، وهو يعمل كنسخة
+         احتياطية إن تعذّر التوجيه لأي سبب.
+         ========================================================== -->
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { auth } from "./firebase-shared.js";
+        import { getUserProfile, profilePageFor } from "./roles.js";
+
+        // إخفاء المحتوى القديم أثناء التوجيه لمنع ظهوره للحظة
+        const hideStyle = document.createElement('style');
+        hideStyle.textContent = 'body{visibility:hidden !important;}';
+        (document.head || document.documentElement).appendChild(hideStyle);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.replace('login.html'); return; }
+            try {
+                const profile = await getUserProfile(user);
+                window.location.replace(profilePageFor(profile.role));
+            } catch (e) {
+                // فشل التوجيه => نُظهر الصفحة القديمة بدل ترك المستخدم أمام شاشة فارغة
+                console.warn('[profile] تعذّر التوجيه، سيتم عرض الصفحة القديمة:', e && e.message);
+                hideStyle.remove();
+            }
+        });
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a2a6c;
+            --secondary: #fdbb2d;
+            --accent: #27ae60;
+            --bg-color: #f4f7fb;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --border-color: #e1e8ed;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); line-height: 1.6; }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), #b21f1f);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 1.5rem; font-weight: 900; }
+        .nav-links a { color: white; text-decoration: none; font-weight: 600; margin-right: 20px; transition: 0.3s; }
+        .nav-links a:hover { color: var(--secondary); }
+
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        /* الكارت الجانبي (الصورة والبيانات الأساسية) */
+        .profile-card {
+            background: white; border-radius: 20px; padding: 30px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-top: 5px solid var(--primary);
+            height: fit-content;
+        }
+        .profile-avatar {
+            width: 120px; height: 120px; border-radius: 50%; background: #ecf0f1;
+            margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .profile-name { font-size: 1.5rem; font-weight: 900; color: var(--primary); margin-bottom: 5px; }
+        .profile-role {
+            display: inline-block; background: #e8f4f8; color: #3498db; padding: 5px 15px;
+            border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px;
+        }
+        .profile-email { color: var(--text-light); font-size: 0.95rem; margin-bottom: 25px; word-break: break-all; }
+
+        .logout-btn {
+            background: #ffeaa7; color: #d35400; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;
+            transition: 0.3s; font-size: 1rem;
+        }
+        .logout-btn:hover { background: #fdcb6e; }
+
+        /* قسم الإعدادات والتفاصيل */
+        .details-section { display: flex; flex-direction: column; gap: 20px; }
+        
+        .card-box {
+            background: white; border-radius: 20px; padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .card-title { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+
+        /* كود المعلم الخاص */
+        .teacher-code-box {
+            background: linear-gradient(135deg, #f1c40f, #f39c12); color: white;
+            padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .teacher-code-box h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
+        .teacher-code-box p { margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
+        .copy-btn { background: white; color: #f39c12; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .copy-btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* حقول الإدخال للإعدادات */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--text-dark); }
+        .form-group input { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: 0.3s; outline: none; }
+        .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 42, 108, 0.1); }
+        
+        .btn-save { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
+        .btn-save:hover { background: #219653; }
+        
+        .btn-reset { background: #ecf0f1; color: var(--text-dark); border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
+        .btn-reset:hover { background: #bdc3c7; }
+
+        /* إخفاء الأقسام بناءً على نوع المستخدم */
+        .teacher-only, .student-only { display: none; }
+
+        /* 🔴 التنسيقات الجديدة الخاصة بسجل إنجازات العلوم الشرعية 🔴 */
+        .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .achiev-card { background: #fdfefe; border: 1px solid #e1e8ed; border-radius: 10px; padding: 20px; border-top: 4px solid #2980b9; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s; }
+        .achiev-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); }
+        .achiev-cat { font-size: 0.85rem; color: #fff; background: #2c3e50; padding: 4px 10px; border-radius: 6px; font-weight: bold; display: inline-block; margin-bottom: 12px; }
+        .achiev-title { font-size: 1.1rem; color: #2c3e50; font-weight: 900; margin-bottom: 5px; }
+        .achiev-score { font-size: 1.4rem; font-weight: 900; color: #27ae60; margin-top: 10px; display: inline-block; }
+        .achiev-level { display: inline-block; background: #eafaf1; color: #27ae60; padding: 4px 10px; border-radius: 15px; font-size: 0.9rem; font-weight: bold; margin-right: 10px; vertical-align: text-bottom; }
+        .achiev-date { font-size: 0.8rem; color: #95a5a6; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px; }
+        
+        .loader-sharia { border: 3px solid #f3f3f3; border-top: 3px solid #2980b9; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h1>BoRooJ Way</h1>
+        <div class="nav-links">
+            <a href="index.html">🏠 العودة للرئيسية</a>
+        </div>
+    </nav>
+
+    <div class="container" id="profile-container" style="display: none;">
+        
+        <aside class="profile-card">
+            <div class="profile-avatar" id="avatar-icon">👤</div>
+            <div class="profile-name" id="display-name">جاري التحميل...</div>
+            <div class="profile-role" id="display-role">...</div>
+            <div class="profile-email" id="display-email"></div>
+            <button class="logout-btn" onclick="handleLogout()">تسجيل الخروج</button>
+        </aside>
+
+        <main class="details-section">
+            
+            <div class="card-box teacher-only" id="teacher-dashboard">
+                <h2 class="card-title">👨‍🏫 هويتك الأكاديمية (للمعلمين)</h2>
+                <div class="teacher-code-box">
+                    <div>
+                        <h3>الكود الأكاديمي الخاص بك</h3>
+                        <p id="teacher-code-text">TCH-XXXX</p>
+                    </div>
+                    <button class="copy-btn" onclick="copyTeacherCode()">نسخ الكود 📋</button>
+                </div>
+                <p style="margin-top: 15px; color: var(--text-light); font-size: 0.95rem;">
+                    * قم بإعطاء هذا الكود لطلابك ليربطوا حساباتهم بك، لتصلك نتائجهم مباشرة في لوحة التحكم.
+                </p>
+                <button onclick="window.location.href='academic-teacher.html'" class="btn-save" style="margin-top: 15px; width: 100%; background: var(--primary);">الذهاب إلى لوحة تحكم المعلم 🚀</button>
+            </div>
+
+            <!-- 🔴 الإضافة الجديدة: السجل الأكاديمي للعلوم الشرعية (يظهر للطلاب فقط) 🔴 -->
+            <div class="card-box student-only" id="sharia-achievements-dashboard" style="display: none; border-top: 5px solid #2980b9;">
+                <h2 class="card-title" style="color: #2980b9;">📜 السجل الأكاديمي للعلوم الشرعية</h2>
+                <p style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 15px;">يوثق هذا السجل جميع نتائجك واختباراتك في متون وكتب العلوم الشرعية المعتمدة.</p>
+                
+                <div class="loader-sharia" id="sharia-loader"></div>
+                <p id="no-achievements-msg" style="display: none; text-align: center; color: #7f8c8d; font-weight: bold; margin: 20px 0;">لم تقم باجتياز أي اختبارات شرعية بعد 📚.</p>
+                
+                <div class="achievements-grid" id="achievements-grid">
+                    <!-- سيتم حقن بطاقات الإنجازات هنا آلياً -->
+                </div>
+            </div>
+
+            <div class="card-box student-only" id="student-dashboard">
+                <h2 class="card-title">🎓 الارتباط الأكاديمي (للطلاب)</h2>
+                <div class="form-group">
+                    <label>كود المعلم المشرف الحالي (للمنهج المدرسي):</label>
+                    <input type="text" id="linked-teacher-input" placeholder="أدخل كود المعلم (مثال: TCH-1234)">
+                </div>
+                <button class="btn-save" onclick="updateLinkedTeacher()">💾 حفظ ارتباط المعلم</button>
+                <p style="margin-top: 15px; color: var(--text-light); font-size: 0.9rem;">
+                    * تأكد من إدخال كود معلمك بشكل صحيح لتصل نتائج تحدياتك إلى لوحته مباشرة.
+                </p>
+            </div>
+
+            <div class="card-box">
+                <h2 class="card-title">⚙️ إعدادات الحساب</h2>
+                
+                <div class="form-group">
+                    <label>الاسم الكامل:</label>
+                    <input type="text" id="edit-name-input">
+                </div>
+                <button class="btn-save" onclick="updateProfileName()">💾 تحديث الاسم</button>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 30px 0;">
+
+                <h3 style="font-size: 1.1rem; color: var(--text-dark); margin-bottom: 15px;">🔒 أمان الحساب</h3>
+                <p style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 15px;">
+                    هل ترغب في تغيير كلمة المرور الخاصة بك؟ سنرسل لك رابطاً آمناً إلى بريدك الإلكتروني لإعادة تعيينها.
+                </p>
+                <button class="btn-reset" onclick="sendResetEmail()">📧 إرسال رابط تغيير كلمة المرور</button>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="loading-msg" style="text-align: center; margin-top: 100px; font-size: 1.5rem; color: var(--primary); font-weight: bold;">
+        جاري تهيئة الملف الشخصي...
+    </div>
+
+    <!-- 🔴 تم إضافة الدوال الجديدة الخاصة بالفايربيز هنا 🔴 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        let currentUserUid = null;
+        let currentUserEmail = null;
+        let currentRole = null;
+        let myTeacherCodeVal = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                currentUserEmail = user.email;
+                document.getElementById('display-email').textContent = user.email;
+
+                try {
+                    const userDoc = await getDoc(doc(db, "users", currentUserUid));
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        currentRole = data.role || 'student';
+                        
+                        document.getElementById('display-name').textContent = data.name || "مستخدم غير معروف";
+                        document.getElementById('edit-name-input').value = data.name || "";
+                        
+                        if (currentRole === 'teacher') {
+                            document.getElementById('display-role').textContent = "حساب معلم 👨‍🏫";
+                            document.getElementById('avatar-icon').textContent = "👨‍🏫";
+                            document.querySelector('.teacher-only').style.display = 'block';
+                            
+                            myTeacherCodeVal = data.myTeacherCode || "غير متوفر";
+                            document.getElementById('teacher-code-text').textContent = myTeacherCodeVal;
+                        } else {
+                            // 🔴 إعدادات عرض الطالب (بما فيها السجل الأكاديمي للعلوم الشرعية) 🔴
+                            document.getElementById('display-role').textContent = "حساب طالب 🎓";
+                            document.getElementById('avatar-icon').textContent = "🎓";
+                            document.querySelectorAll('.student-only').forEach(el => el.style.display = 'block');
+                            
+                            if(data.teacherCode) {
+                                document.getElementById('linked-teacher-input').value = data.teacherCode;
+                            }
+
+                            // جلب إنجازات العلوم الشرعية
+                            fetchShariaAchievements(currentUserUid);
+                        }
+
+                        document.getElementById('loading-msg').style.display = 'none';
+                        document.getElementById('profile-container').style.display = 'grid';
+                    } else {
+                        alert("لا توجد بيانات مسجلة لهذا الحساب.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // 🔴 دالة جلب وعرض الإنجازات الشرعية 🔴
+        async function fetchShariaAchievements(uid) {
+            const loader = document.getElementById('sharia-loader');
+            const grid = document.getElementById('achievements-grid');
+            const noMsg = document.getElementById('no-achievements-msg');
+            
+            loader.style.display = 'block';
+
+            try {
+                // استعلام لجلب بيانات الطالب فقط
+                const q = query(collection(db, "sharia_student_achievements"), where("studentUid", "==", uid));
+                const querySnapshot = await getDocs(q);
+                
+                loader.style.display = 'none';
+
+                if (querySnapshot.empty) {
+                    noMsg.style.display = 'block';
+                } else {
+                    noMsg.style.display = 'none';
+                    grid.innerHTML = '';
+                    
+                    let records = [];
+                    querySnapshot.forEach(doc => records.push(doc.data()));
+                    
+                    // ترتيب الإنجازات محلياً من الأحدث للأقدم
+                    records.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+
+                    records.forEach(d => {
+                        const dateObj = d.timestamp ? d.timestamp.toDate() : new Date();
+                        const dateStr = dateObj.toLocaleString('ar-EG', { dateStyle: 'long', timeStyle: 'short' });
+                        
+                        // تعريب التصنيفات
+                        let catLabel = d.category;
+                        const catNames = { "FIQH": "فقه", "AQEEDAH": "عقيدة", "HADITH": "حديث", "TAFSIR": "تفسير", "SEERAH": "سيرة", "USOOL": "أصول فقه", "TAJWEED": "تجويد" };
+                        if (catNames[catLabel]) catLabel = catNames[catLabel];
+
+                        grid.innerHTML += `
+                            <div class="achiev-card">
+                                <div class="achiev-cat">📚 ${catLabel}</div>
+                                <div class="achiev-title">كتاب: ${d.book}</div>
+                                <div style="color: #7f8c8d; font-size: 0.95rem;">باب/فصل: ${d.chapter}</div>
+                                <div style="margin-top: 15px;">
+                                    <span class="achiev-score">${d.score}%</span>
+                                    <span class="achiev-level">${d.level}</span>
+                                </div>
+                                <div class="achiev-date">🕒 ${dateStr}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching Sharia achievements:", error);
+                loader.style.display = 'none';
+                noMsg.style.display = 'block';
+                noMsg.textContent = "حدث خطأ أثناء جلب السجل. يرجى تحديث الصفحة.";
+            }
+        }
+
+        window.updateProfileName = async function() {
+            const newName = document.getElementById('edit-name-input').value.trim();
+            if(!newName) return alert("الاسم لا يمكن أن يكون فارغاً!");
+
+            try {
+                await updateDoc(doc(db, "users", currentUserUid), { name: newName });
+                document.getElementById('display-name').textContent = newName;
+                alert("✅ تم تحديث الاسم بنجاح!");
+            } catch (error) {
+                alert("حدث خطأ أثناء التحديث: " + error.message);
+            }
+        };
+
+        window.updateLinkedTeacher = async function() {
+            let tCode = document.getElementById('linked-teacher-input').value.trim().toUpperCase();
+            if(tCode && !tCode.startsWith('TCH-')) {
+                tCode = 'TCH-' + tCode; 
+                document.getElementById('linked-teacher-input').value = tCode;
+            }
+
+            try {
+                await updateDoc(doc(db, "users", currentUserUid), { teacherCode: tCode || null });
+                alert("✅ تم تحديث كود المعلم المشرف بنجاح! جميع نتائجك القادمة ستُرسل إليه.");
+            } catch (error) {
+                alert("حدث خطأ أثناء حفظ كود المعلم.");
+            }
+        };
+
+        window.copyTeacherCode = function() {
+            if(myTeacherCodeVal && myTeacherCodeVal !== "غير متوفر") {
+                navigator.clipboard.writeText(myTeacherCodeVal);
+                alert("تم نسخ الكود: " + myTeacherCodeVal);
+            }
+        };
+
+        window.sendResetEmail = async function() {
+            if(confirm("سيتم إرسال رابط لإعادة تعيين كلمة المرور إلى إيميلك المسجل. هل تريد المتابعة؟")) {
+                try {
+                    await sendPasswordResetEmail(auth, currentUserEmail);
+                    alert("📧 تم إرسال الرابط! يرجى تفقد صندوق الوارد أو البريد المزعج (Spam).");
+                } catch (error) {
+                    alert("حدث خطأ أثناء إرسال البريد.");
+                }
+            }
+        };
+
+        window.handleLogout = function() {
+            if(confirm("هل أنت متأكد من رغبتك في تسجيل الخروج؟")) {
+                signOut(auth).then(() => {
+                    window.location.href = "index.html";
+                });
+            }
+        };
+    </script>
+</body>
+</html>

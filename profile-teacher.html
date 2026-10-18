@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملف المعلم - متابعة الطلاب | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 🛡️ للمعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1250px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#c0392b,#e67e22,#f39c12);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a, .top-links button {
+            background:rgba(255,255,255,.22); color:#fff; padding:9px 16px; border-radius:9px; text-decoration:none;
+            font-weight:bold; font-size:.92rem; border:none; cursor:pointer; font-family:'Cairo',sans-serif; transition:.25s;
+        }
+        .top-links a:hover, .top-links button:hover { background:rgba(255,255,255,.36); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#c0392b; margin-bottom:4px; border-right:5px solid #f39c12; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        .identity { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+        .avatar { width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg,#c0392b,#e67e22);
+                  display:flex; align-items:center; justify-content:center; font-size:3rem; color:#fff; flex-shrink:0;
+                  box-shadow:0 8px 20px rgba(192,57,43,.28); }
+        .id-info { flex:1; min-width:210px; }
+        .id-info h3 { font-size:1.6rem; font-weight:900; margin-bottom:6px; }
+        .id-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+        .chip { background:#f1f4f8; border:1px solid #e1e8ed; border-radius:20px; padding:5px 13px; font-size:.86rem; color:#34495e; font-weight:600; }
+
+        .code-box { text-align:center; background:#fff8e1; border:2px dashed #f1c40f; border-radius:14px; padding:18px 22px; min-width:230px; }
+        .code-box .lbl { font-size:.85rem; color:#7d6608; font-weight:700; margin-bottom:8px; }
+        .code-box .val { font-size:1.7rem; font-weight:900; color:#c0392b; letter-spacing:2px; direction:ltr; margin-bottom:10px; }
+        .code-box img { width:120px; height:120px; background:#fff; border-radius:8px; padding:5px; }
+        .code-box button { margin-top:10px; background:#c0392b; color:#fff; border:none; padding:8px 18px; border-radius:8px;
+                           font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.9rem; }
+
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:15px; margin-bottom:20px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; line-height:1.2; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.c1 { border-color:#3498db; } .stat.c1 .v { color:#3498db; }
+        .stat.c2 { border-color:#e67e22; } .stat.c2 .v { color:#e67e22; }
+        .stat.c3 { border-color:#27ae60; } .stat.c3 .v { color:#27ae60; }
+        .stat.c4 { border-color:#8e44ad; } .stat.c4 .v { color:#8e44ad; font-size:1.15rem; }
+        .stat.c5 { border-color:#16a085; } .stat.c5 .v { color:#16a085; }
+
+        /* ===== مجموعات الصفوف ===== */
+        .grade-block { border:1px solid #e6edf3; border-radius:14px; margin-bottom:20px; overflow:hidden; }
+        .grade-head {
+            background:linear-gradient(135deg,#c0392b,#e67e22); color:#fff; padding:14px 20px;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+        }
+        .grade-head .nm { font-weight:900; font-size:1.15rem; }
+        .grade-head .meta { display:flex; gap:8px; flex-wrap:wrap; }
+        .grade-head .tag {
+            background:rgba(255,255,255,.24); border-radius:20px; padding:4px 13px;
+            font-size:.85rem; font-weight:700; white-space:nowrap;
+        }
+        .grade-block table { min-width:660px; }
+        .grade-block th { background:#f8fafc; color:#5d6d7e; font-size:.86rem; border-bottom:2px solid #e6edf3; }
+        .not-started { color:#95a5a6; font-style:italic; font-size:.9rem; }
+        .link-badge {
+            font-size:.72rem; background:#eaf4fd; color:#2471a3; border-radius:10px;
+            padding:2px 8px; font-weight:700; margin-right:6px; white-space:nowrap;
+        }
+        .link-badge.unlinked { background:#fdf2e9; color:#ba4a00; }
+
+        /* ===== أدوات إدارة الطلاب ===== */
+        .row-actions { display:flex; gap:5px; align-items:center; flex-wrap:nowrap; }
+        .mini-select {
+            padding:6px 8px; border:1px solid #ccd1d9; border-radius:6px;
+            font-family:'Cairo',sans-serif; font-size:.82rem; cursor:pointer; max-width:120px;
+        }
+        .mini-btn {
+            border:none; border-radius:6px; padding:6px 10px; cursor:pointer;
+            font-size:.9rem; font-family:'Cairo',sans-serif; transition:.2s; line-height:1;
+        }
+        .mini-btn.save { background:#eafaf1; color:#1e8449; border:1px solid #a9dfbf; }
+        .mini-btn.save:hover:not(:disabled) { background:#27ae60; color:#fff; }
+        .mini-btn.del  { background:#fdedec; color:#c0392b; border:1px solid #f5b7b1; }
+        .mini-btn.del:hover { background:#e74c3c; color:#fff; }
+        .mini-btn:disabled { opacity:.5; cursor:not-allowed; }
+        .tag-btn {
+            border:none; cursor:pointer; font-family:'Cairo',sans-serif;
+            background:rgba(0,0,0,.22) !important; color:#fff; transition:.2s;
+        }
+        .tag-btn:hover { background:rgba(0,0,0,.4) !important; }
+
+        .tbl-scroll { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; min-width:700px; }
+        th { background:#c0392b; color:#fff; padding:13px 11px; text-align:right; font-size:.92rem; white-space:nowrap; }
+        td { padding:12px 11px; border-bottom:1px solid #eef2f6; font-size:.93rem; }
+        tr:hover td { background:#fdf8f7; }
+        .rank { display:inline-block; width:26px; height:26px; line-height:26px; border-radius:50%; background:#f1f4f8; text-align:center; font-weight:900; font-size:.82rem; }
+        .rank.r1 { background:#f1c40f; color:#fff; } .rank.r2 { background:#bdc3c7; color:#fff; } .rank.r3 { background:#d35400; color:#fff; }
+        .pill { font-weight:900; }
+        .mini-bar { height:8px; background:#eef2f6; border-radius:6px; overflow:hidden; margin-top:5px; }
+        .mini-bar > div { height:100%; border-radius:6px; }
+
+        .bloom-row { margin-bottom:14px; }
+        .bloom-row .lbl { display:flex; justify-content:space-between; font-weight:700; margin-bottom:6px; font-size:.95rem; }
+        .bloom-bar { height:20px; background:#eef2f6; border-radius:10px; overflow:hidden; }
+        .bloom-bar > div { height:100%; border-radius:10px; }
+
+        .tools { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; }
+        .tool { display:block; border:1px solid #e1e8ed; border-radius:12px; padding:18px; text-decoration:none; color:#2c3e50; transition:.25s; background:#fff; }
+        .tool:hover { transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,.09); border-color:#e67e22; }
+        .tool .ic { font-size:2rem; display:block; margin-bottom:8px; }
+        .tool .nm { font-weight:800; margin-bottom:4px; }
+        .tool .ds { font-size:.82rem; color:#95a5a6; line-height:1.6; }
+
+        .fld { margin-bottom:16px; }
+        .fld label { display:block; margin-bottom:7px; font-weight:700; font-size:.93rem; color:#34495e; }
+        .fld input { width:100%; padding:11px 14px; border:1px solid #ccd1d9; border-radius:8px; font-size:1rem; outline:none; font-family:'Cairo',sans-serif; }
+        .btn { background:#c0392b; color:#fff; border:none; padding:11px 22px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.98rem; }
+        .btn.g { background:#27ae60; }
+        .btn:hover { opacity:.9; }
+        .settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px; }
+
+        .empty { text-align:center; color:#95a5a6; padding:34px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #c0392b; border-radius:50%; width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .warn { background:#fff9e6; border:1px solid #f1c40f; border-radius:9px; padding:12px 15px; color:#7d6608; font-size:.9rem; line-height:1.7; margin-bottom:16px; }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>👨‍🏫 ملف المعلم</h1>
+        <div class="top-links">
+            <a href="index.html">الرئيسية 🏠</a>
+            <a href="academic-teacher.html">بناء الاختبارات ⚙️</a>
+            <a href="smart-generator.html">التوليد الذكي ⚡</a>
+            <button id="btn-logout">تسجيل الخروج</button>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <div class="card">
+        <div class="identity">
+            <div class="avatar">👨‍🏫</div>
+            <div class="id-info">
+                <h3 id="p-name">...</h3>
+                <div style="color:#7f8c8d; font-size:.94rem;" id="p-email"></div>
+                <div class="id-meta" id="p-chips"></div>
+            </div>
+            <div class="code-box">
+                <div class="lbl">كودي الأكاديمي — أعطه لطلابك</div>
+                <div class="val" id="tch-code">—</div>
+                <img id="tch-qr" alt="QR" style="display:none;">
+                <br><button id="btn-copy">نسخ الكود 📋</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-spin" class="spinner"></div>
+
+    <div id="content" class="hidden">
+
+        <div id="src-warn" class="warn hidden"></div>
+        <div id="code-warn" class="warn hidden"></div>
+
+        <div class="stats">
+            <div class="stat c1"><div class="v" id="s-students">0</div><div class="k">إجمالي طلابي</div></div>
+            <div class="stat c2"><div class="v" id="s-started">0</div><div class="k">من أرسل نتائج</div></div>
+            <div class="stat c5"><div class="v" id="s-grades">0</div><div class="k">عدد الصفوف</div></div>
+            <div class="stat c2"><div class="v" id="s-results">0</div><div class="k">النتائج المستلمة</div></div>
+            <div class="stat c3"><div class="v" id="s-avg">—</div><div class="k">المتوسط العام</div></div>
+            <div class="stat c4"><div class="v" id="s-top">—</div><div class="k">صاحب أعلى متوسط</div></div>
+        </div>
+
+        <!-- طلابي مقسّمين حسب الصف -->
+        <div class="card">
+            <h2>👥 طلابي وأداؤهم — مقسّمين حسب الصف</h2>
+            <p class="sub">
+                كل طلابك يظهرون هنا: من أرسل نتائج ومن لم يبدأ بعد، مرتّبين داخل كل صف حسب المتوسط.
+            </p>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; align-items:center;">
+                <button class="btn g" id="btn-export">تصدير إلى Excel 📊</button>
+                <select id="grade-filter" style="padding:11px 14px; border:1px solid #ccd1d9; border-radius:8px;
+                        font-family:'Cairo',sans-serif; font-size:.95rem; cursor:pointer;">
+                    <option value="">كل الصفوف</option>
+                </select>
+                <label style="display:flex; align-items:center; gap:7px; font-weight:600; color:#34495e; cursor:pointer;">
+                    <input type="checkbox" id="only-started" style="width:17px; height:17px; cursor:pointer;">
+                    من أرسل نتائج فقط
+                </label>
+                <button class="btn" id="btn-end-year" style="background:#7f8c8d; margin-right:auto;">
+                    🎓 بدء عام دراسي جديد
+                </button>
+            </div>
+
+            <div style="background:#eaf4fd; border:1px solid #aed6f1; border-radius:10px; padding:13px 16px;
+                        margin-bottom:18px; color:#1a5276; font-size:.9rem; line-height:1.85;">
+                🛡️ <strong>عن الإدارة والحذف:</strong>
+                تستطيع نقل أي طالب لصف آخر، أو إزالته من قائمتك، أو إنهاء صف كامل في آخر العام.
+                <strong>لا يُحذف أي حساب ولا أي نتيجة</strong> — الإزالة تعني فكّ ارتباط الطالب بكودك فقط،
+                ويبقى سجلّه كاملاً في ملفه الشخصي، ويستطيع العودة لك بإدخال كودك من جديد.
+            </div>
+
+            <div id="grades-container"></div>
+
+            <div id="stu-empty" class="empty hidden">
+                لا يوجد طلاب مرتبطون بكودك ولا نتائج واردة بعد.<br>
+                أعطِ طلابك كودك الأكاديمي أعلاه، وستظهر بياناتهم هنا تلقائياً.
+            </div>
+        </div>
+
+        <!-- أضعف الدروس -->
+        <div class="card hidden" id="weak-card">
+            <h2>📉 الدروس التي يحتاجها صفّك</h2>
+            <p class="sub">أقل الدروس متوسطاً لدى طلابك (بعد محاولتين على الأقل) — ابدأ خطة العلاج من هنا.</p>
+            <div class="tbl-scroll">
+                <table>
+                    <thead><tr><th>الدرس</th><th>عدد المحاولات</th><th>متوسط الصف</th></tr></thead>
+                    <tbody id="weak-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- بلوم للصف -->
+        <div class="card hidden" id="bloom-card">
+            <h2>🧠 مهارات التفكير لدى صفّي (مستويات بلوم)</h2>
+            <p class="sub">أي مهارة تفكير يقوى فيها صفّك وأيها يحتاج تدريباً — لا حسب الدرس بل حسب نوع السؤال.</p>
+            <div id="bloom-rows"></div>
+            <div id="bloom-advice" style="margin-top:16px; background:#fdf3f2; border-right:4px solid #c0392b; padding:14px 16px; border-radius:9px; line-height:1.9;"></div>
+        </div>
+
+        <!-- أدوات المعلم -->
+        <div class="card">
+            <h2>🧰 أدواتي</h2>
+            <p class="sub">اختصارات لكل ما تحتاجه في إدارة صفّك.</p>
+            <div class="tools">
+                <a class="tool" href="recitation-teacher.html" style="border-color:#16a085;">
+                    <span class="ic">🎧</span><div class="nm">تصحيح التسميع</div>
+                    <div class="ds">استمع لتلاوات طلابك وأعطهم الدرجة والملاحظة</div></a>
+                <a class="tool" href="memorization-teacher.html" style="border-color:#f1c40f;">
+                    <span class="ic">📿</span><div class="nm">متابعة الحفظ</div>
+                    <div class="ds">اعتمد ما حفظه طلابك من القرآن الكريم</div></a>
+                <a class="tool" href="academic-teacher.html"><span class="ic">⚙️</span><div class="nm">بناء الاختبارات</div><div class="ds">أنشئ اختباراً مخصّصاً وشاركه بـ QR</div></a>
+                <a class="tool" href="smart-generator.html"><span class="ic">⚡</span><div class="nm">التوليد الذكي</div><div class="ds">اختبار درس أو امتحان وحدة بضغطة</div></a>
+                <a class="tool" href="boroj-wall.html"><span class="ic">📌</span><div class="nm">الحائط التفاعلي</div><div class="ds">أنشئ حائط نقاش خاصاً بصفّك</div></a>
+                <a class="tool" href="teacher-dashboard.html"><span class="ic">📋</span><div class="nm">سجل الدرجات</div><div class="ds">نتائج يلا كويز الواردة لكودك</div></a>
+                <a class="tool" href="academic-lobby.html"><span class="ic">🏛️</span><div class="nm">غرفة التقييم</div><div class="ds">أنشئ غرفة جماعية وراقبها مباشرة</div></a>
+                <a class="tool" href="solutions.html"><span class="ic">📖</span><div class="nm">حلول الكتاب</div><div class="ds">الإجابات النموذجية للدروس</div></a>
+            </div>
+        </div>
+
+        <!-- الإعدادات -->
+        <div class="card">
+            <h2>⚙️ إعدادات حسابي</h2>
+            <div class="settings-grid">
+                <div>
+                    <div class="fld"><label for="e-name">الاسم</label><input type="text" id="e-name"></div>
+                    <div class="fld"><label for="e-school">المدرسة / المؤسسة</label><input type="text" id="e-school"></div>
+                    <button class="btn g" id="btn-save">حفظ البيانات ✔️</button>
+                </div>
+                <div>
+                    <p style="color:#7f8c8d; line-height:1.9; margin-bottom:16px;">
+                        كودك الأكاديمي ثابت ولا يتغيّر. إن احتجت تغييره تواصل مع إدارة المنصة.
+                    </p>
+                    <button class="btn" id="btn-reset-pass">إرسال رابط تغيير كلمة المرور 📧</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { doc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { auth, db } from "./firebase-shared.js";
+    import { GRADE_LABELS } from "./lesson-map.js";
+    import { onAuthReady } from "./roles.js";
+    import { loadTeacherRecords, buildStudentRoster, groupByGrade, weakestLessons, computeStats, SOURCES } from "./progress-engine.js";
+
+    let me = null, myCode = null, students = [], gradeGroups = [], exportRows = [];
+
+    // خيارات الصفوف لقوائم النقل
+    const GRADE_OPTIONS = Object.keys(GRADE_LABELS).map(v => ({ v, t: GRADE_LABELS[v] }));
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+    const clr = (p) => p >= 75 ? '#27ae60' : p >= 50 ? '#f39c12' : '#e74c3c';
+
+    document.getElementById('btn-logout').onclick = () => {
+        if (confirm('هل تريد تسجيل الخروج؟')) signOut(auth).then(() => location.href = 'index.html');
+    };
+
+    onAuthReady(async (profile) => {
+        me = profile;
+        myCode = me.raw.myTeacherCode || null;
+        renderIdentity();
+        await loadEverything();
+    });
+
+    function renderIdentity() {
+        document.getElementById('p-name').textContent  = me.name;
+        document.getElementById('p-email').textContent = me.email;
+        document.getElementById('e-name').value        = me.name || '';
+        document.getElementById('e-school').value      = me.raw.school || '';
+
+        const chips = [`<span class="chip">${esc(me.roleLabel)}</span>`];
+        if (me.raw.school) chips.push(`<span class="chip">🏫 ${esc(me.raw.school)}</span>`);
+        document.getElementById('p-chips').innerHTML = chips.join('');
+
+        document.getElementById('tch-code').textContent = myCode || 'غير متوفر';
+        if (myCode) {
+            const qr = document.getElementById('tch-qr');
+            qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(myCode)}`;
+            qr.style.display = 'inline-block';
+        }
+    }
+
+    document.getElementById('btn-copy').onclick = () => {
+        if (!myCode) return alert('لا يوجد كود أكاديمي لحسابك بعد. تواصل مع إدارة المنصة.');
+        navigator.clipboard.writeText(myCode);
+        alert('تم نسخ الكود: ' + myCode);
+    };
+
+    async function loadEverything() {
+        if (!myCode) {
+            const w = document.getElementById('code-warn');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ لا يوجد كود أكاديمي (TCH) مرتبط بحسابك، لذلك لن تصلك نتائج يلا كويز. افتح صفحة «بناء الاختبارات» مرة واحدة ليُصدر لك الكود تلقائياً.';
+        }
+
+        // النتائج + كشف الطلاب المرتبطين بالكود، معاً
+        const [{ records, errors }, linkedUsers] = await Promise.all([
+            loadTeacherRecords({ uid: me.uid, teacherCode: myCode }),
+            fetchLinkedUsers()
+        ]);
+
+        if (errors.length) {
+            const w = document.getElementById('src-warn');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ تعذّر تحميل بعض المصادر: ' +
+                esc(errors.map(e => SOURCES[e.source] ? SOURCES[e.source].label : e.source).join('، ')) + '.';
+        }
+
+        // دمج الطلاب المسجّلين بالكود مع أصحاب النتائج في كشف واحد
+        students    = buildStudentRoster(records, linkedUsers);
+        gradeGroups = groupByGrade(students);
+
+        const stats    = computeStats(records);
+        const percents = records.filter(r => r.percent !== null).map(r => r.percent);
+        const classAvg = percents.length ? Math.round(percents.reduce((a,b)=>a+b,0) / percents.length) : null;
+        const started  = students.filter(s => s.started);
+        const topStudent = started.filter(s => s.avg !== null)
+                                  .sort((a,b) => b.avg - a.avg)[0] || null;
+
+        document.getElementById('s-students').textContent = students.length;
+        document.getElementById('s-started').textContent  = started.length;
+        document.getElementById('s-grades').textContent   = gradeGroups.length;
+        document.getElementById('s-results').textContent  = records.length;
+        document.getElementById('s-avg').textContent      = classAvg === null ? '—' : classAvg + '%';
+        document.getElementById('s-top').textContent      = topStudent ? topStudent.name : '—';
+
+        buildGradeFilter();
+        renderGrades();
+        renderWeak(records);
+        renderBloom(stats);
+        document.getElementById('btn-end-year').onclick = endYearAll;
+
+        document.getElementById('load-spin').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+    }
+
+    // جلب الطلاب المرتبطين بكود المعلم
+    async function fetchLinkedUsers() {
+        if (!myCode) return [];
+        try {
+            const snap = await getDocs(query(collection(db, 'users'), where('teacherCode', '==', myCode)));
+            const list = [];
+            snap.forEach(d => list.push({ uid: d.id, ...d.data() }));
+            return list;
+        } catch (e) {
+            console.warn('تعذّر جلب الطلاب المرتبطين:', e.message);
+            return [];
+        }
+    }
+
+    function buildGradeFilter() {
+        const sel = document.getElementById('grade-filter');
+        sel.innerHTML = '<option value="">كل الصفوف</option>' +
+            gradeGroups.map(g =>
+                `<option value="${esc(g.grade || '__none__')}">${esc(g.label)} (${g.total})</option>`).join('');
+        sel.onchange = renderGrades;
+        document.getElementById('only-started').onchange = renderGrades;
+    }
+
+    function renderGrades() {
+        const filter      = document.getElementById('grade-filter').value;
+        const onlyStarted = document.getElementById('only-started').checked;
+        const container   = document.getElementById('grades-container');
+
+        exportRows = [];
+        let shown = 0;
+
+        const html = gradeGroups.map(g => {
+            if (filter && (g.grade || '__none__') !== filter) return '';
+
+            const list = onlyStarted ? g.students.filter(s => s.started) : g.students;
+            if (!list.length) return '';
+            shown += list.length;
+
+            const rows = list.map((s, i) => {
+                // أدوات الإدارة تعمل فقط مع الطلاب المرتبطين بكودي
+                const actions = s.linked && s.uid
+                    ? `<div class="row-actions">
+                           <select class="mini-select" data-newgrade="${esc(s.uid)}" title="نقل الطالب لصف آخر">
+                               <option value="">— الصف —</option>
+                               ${GRADE_OPTIONS.map(g =>
+                                   `<option value="${g.v}" ${s.grade === g.v ? 'selected' : ''}>${esc(g.t)}</option>`).join('')}
+                           </select>
+                           <button class="mini-btn save" data-savegrade="${esc(s.uid)}" title="حفظ الصف">💾</button>
+                           <button class="mini-btn del" data-unlink="${esc(s.uid)}"
+                                   data-name="${esc(s.name)}" title="إزالة من قائمتي">✖</button>
+                       </div>`
+                    : `<span style="color:#bdc3c7; font-size:.82rem;">غير مرتبط</span>`;
+
+                exportRows.push({
+                    'الصف': g.label,
+                    'الترتيب داخل الصف': i + 1,
+                    'اسم الطالب': s.name,
+                    'الحالة': s.started ? 'أرسل نتائج' : 'لم يبدأ بعد',
+                    'مرتبط بالكود': s.linked ? 'نعم' : 'لا',
+                    'عدد التقييمات': s.count,
+                    'المتوسط المئوي': s.avg === null ? '-' : s.avg + '%',
+                    'أعلى درجة': s.best === null ? '-' : s.best + '%',
+                    'مجموع النقاط': s.xp,
+                    'آخر نشاط': s.last ? s.last.toLocaleDateString('ar-EG') : '-'
+                });
+
+                // طالب لم يبدأ بعد
+                if (!s.started) {
+                    return `<tr>
+                        <td><span class="rank">${i + 1}</span></td>
+                        <td><strong>${esc(s.name)}</strong>
+                            <span class="link-badge">مرتبط بكودك</span></td>
+                        <td colspan="4" class="not-started">لم يُنهِ أي تقييم حتى الآن — يحتاج تذكيراً 🔔</td>
+                        <td>${actions}</td>
+                    </tr>`;
+                }
+
+                const avgTxt = s.avg === null
+                    ? `<span style="color:#e67e22; font-weight:800;">${s.xp} نقطة</span>`
+                    : `<span class="pill" style="color:${clr(s.avg)};">${s.avg}%</span>
+                       <div class="mini-bar"><div style="width:${s.avg}%; background:${clr(s.avg)};"></div></div>`;
+                const bestTxt = s.best === null ? '—'
+                    : `<span style="color:#27ae60; font-weight:800;">${s.best}%</span>`;
+                const rk = i < 3 ? `rank r${i + 1}` : 'rank';
+                const linkTag = s.linked
+                    ? '<span class="link-badge">مرتبط بكودك</span>'
+                    : '<span class="link-badge unlinked">غير مرتبط</span>';
+
+                return `<tr>
+                    <td><span class="${rk}">${i + 1}</span></td>
+                    <td><strong>${esc(s.name)}</strong> ${linkTag}</td>
+                    <td>${s.count}</td>
+                    <td>${avgTxt}</td>
+                    <td>${bestTxt}</td>
+                    <td style="color:#7f8c8d; font-size:.88rem;">${esc(fmtDate(s.last))}</td>
+                    <td>${actions}</td>
+                </tr>`;
+            }).join('');
+
+            const avgTag = g.gradeAvg === null
+                ? '<span class="tag">لا نتائج بعد</span>'
+                : `<span class="tag">متوسط الصف: ${g.gradeAvg}%</span>`;
+
+            const linkedInGrade = list.filter(s => s.linked && s.uid).length;
+
+            return `
+                <div class="grade-block">
+                    <div class="grade-head">
+                        <span class="nm">🎓 ${esc(g.label)}</span>
+                        <span class="meta">
+                            <span class="tag">${g.total} طالب</span>
+                            <span class="tag">${g.startedCount} بدأ</span>
+                            ${avgTag}
+                            ${linkedInGrade
+                                ? `<button class="tag tag-btn" data-endgrade="${esc(g.grade || '__none__')}"
+                                           data-label="${esc(g.label)}">🎓 إنهاء هذا الصف</button>`
+                                : ''}
+                        </span>
+                    </div>
+                    <div class="tbl-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th><th>اسم الطالب</th><th>عدد التقييمات</th>
+                                    <th>المتوسط</th><th>أعلى درجة</th><th>آخر نشاط</th><th>إدارة</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }).join('');
+
+        container.innerHTML = html;
+        document.getElementById('stu-empty').classList.toggle('hidden', shown > 0);
+
+        // ربط أزرار الإدارة
+        container.querySelectorAll('[data-savegrade]').forEach(b => {
+            b.onclick = () => saveStudentGrade(b.dataset.savegrade, b);
+        });
+        container.querySelectorAll('[data-unlink]').forEach(b => {
+            b.onclick = () => unlinkStudent(b.dataset.unlink, b.dataset.name);
+        });
+        container.querySelectorAll('[data-endgrade]').forEach(b => {
+            b.onclick = () => endGrade(b.dataset.endgrade, b.dataset.label);
+        });
+    }
+
+    // =====================================================================
+    // إدارة الطلاب
+    // ---------------------------------------------------------------------
+    // ⚠️ مبدأ مهم: المعلم لا يحذف حساب الطالب ولا نتائجه إطلاقاً.
+    // «الإزالة» هنا تعني فكّ ارتباط الطالب بكودك فقط: يختفي من قائمتك
+    // ويبقى حسابه وسجلّه الكامل ملكاً له. هذا يعطيك «بداية جديدة» كل عام
+    // دون إتلاف تاريخ أي طالب — وهو أيضاً ما تسمح به قواعد الحماية.
+    // =====================================================================
+
+    async function saveStudentGrade(uid, btn) {
+        const sel = document.querySelector(`[data-newgrade="${uid}"]`);
+        if (!sel) return;
+        const newGrade = sel.value || null;
+
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = '…';
+
+        try {
+            await updateDoc(doc(db, 'users', uid), { grade: newGrade });
+            const s = students.find(x => x.uid === uid);
+            if (s) s.grade = newGrade;
+            gradeGroups = groupByGrade(students);
+            buildGradeFilter();
+            renderGrades();
+        } catch (e) {
+            console.error(e);
+            alert(permissionMsg(e, 'تعذّر تغيير صف الطالب'));
+            btn.disabled = false;
+            btn.textContent = old;
+        }
+    }
+
+    async function unlinkStudent(uid, name) {
+        const ok = confirm(
+            `إزالة الطالب «${name}» من قائمتك؟\n\n` +
+            `• سيختفي من قوائمك وتقاريرك\n` +
+            `• لن يُحذف حسابه ولا أي من نتائجه — تبقى ملكاً له في ملفه الشخصي\n` +
+            `• يستطيع العودة لاحقاً بإدخال كودك مرة أخرى\n\nهل تريد المتابعة؟`
+        );
+        if (!ok) return;
+
+        try {
+            await updateDoc(doc(db, 'users', uid), { teacherCode: null });
+            students = students.filter(s => s.uid !== uid);
+            gradeGroups = groupByGrade(students);
+            refreshCounters();
+            buildGradeFilter();
+            renderGrades();
+        } catch (e) {
+            console.error(e);
+            alert(permissionMsg(e, 'تعذّرت إزالة الطالب'));
+        }
+    }
+
+    async function endGrade(gradeKey, label) {
+        const target = students.filter(s =>
+            s.linked && s.uid && (s.grade || '__none__') === gradeKey);
+
+        if (!target.length) return alert('لا يوجد طلاب مرتبطون بكودك في هذا الصف.');
+
+        const ok = confirm(
+            `إنهاء العام الدراسي لـ «${label}»؟\n\n` +
+            `سيُفكّ ارتباط ${target.length} طالباً من كودك.\n\n` +
+            `• لن يُحذف أي حساب ولا أي نتيجة\n` +
+            `• سجلّ كل طالب يبقى كاملاً في ملفه الشخصي\n` +
+            `• تبدأ العام الجديد بقائمة نظيفة\n\nهل تريد المتابعة؟`
+        );
+        if (!ok) return;
+
+        await bulkUnlink(target, `إنهاء ${label}`);
+    }
+
+    async function endYearAll() {
+        const target = students.filter(s => s.linked && s.uid);
+        if (!target.length) return alert('لا يوجد طلاب مرتبطون بكودك.');
+
+        const typed = prompt(
+            `⚠️ بدء عام دراسي جديد\n\n` +
+            `سيُفكّ ارتباط ${target.length} طالباً من كودك دفعة واحدة.\n` +
+            `لن يُحذف أي حساب ولا أي نتيجة — سجلّ كل طالب يبقى ملكاً له.\n\n` +
+            `للتأكيد اكتب كلمة:  نعم`
+        );
+        if (typed === null) return;
+        if (typed.trim() !== 'نعم') return alert('أُلغيت العملية — لم تُكتب كلمة التأكيد بشكل صحيح.');
+
+        await bulkUnlink(target, 'بدء عام جديد');
+    }
+
+    async function bulkUnlink(target, opLabel) {
+        const btn = document.getElementById('btn-end-year');
+        if (btn) { btn.disabled = true; btn.textContent = 'جاري التنفيذ...'; }
+
+        let done = 0, failed = 0;
+        for (const s of target) {
+            try {
+                await updateDoc(doc(db, 'users', s.uid), { teacherCode: null });
+                done++;
+            } catch (e) {
+                console.error('unlink failed for', s.uid, e);
+                failed++;
+            }
+        }
+
+        const removed = new Set(target.map(s => s.uid));
+        students = students.filter(s => !removed.has(s.uid));
+        gradeGroups = groupByGrade(students);
+        refreshCounters();
+        buildGradeFilter();
+        renderGrades();
+
+        if (btn) { btn.disabled = false; btn.textContent = '🎓 بدء عام دراسي جديد'; }
+
+        alert(failed
+            ? `${opLabel}: تم فكّ ارتباط ${done} طالباً، وتعذّر ${failed}.\nراجع صلاحياتك أو أعد المحاولة.`
+            : `✅ ${opLabel}: تم فكّ ارتباط ${done} طالباً بنجاح.\nسجلّاتهم محفوظة كاملة في ملفاتهم الشخصية.`);
+    }
+
+    function refreshCounters() {
+        const started = students.filter(s => s.started);
+        document.getElementById('s-students').textContent = students.length;
+        document.getElementById('s-started').textContent  = started.length;
+        document.getElementById('s-grades').textContent   = gradeGroups.length;
+    }
+
+    function permissionMsg(e, prefix) {
+        const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+        return denied
+            ? `${prefix}: قواعد الحماية ترفض العملية.\n\nتأكد من نشر أحدث نسخة من firestore.rules التي تسمح للمعلم بتعديل بيانات طلابه.`
+            : `${prefix}: ${e.message}`;
+    }
+
+    function renderWeak(records) {
+        const weak = weakestLessons(records).slice(0, 8);
+        if (!weak.length) return;
+        document.getElementById('weak-card').classList.remove('hidden');
+        document.getElementById('weak-body').innerHTML = weak.map(l => `
+            <tr>
+                <td><strong>${esc(l.title)}</strong></td>
+                <td>${l.attempts}</td>
+                <td><span class="pill" style="color:${clr(l.avg)};">${l.avg}%</span>
+                    <div class="mini-bar"><div style="width:${l.avg}%; background:${clr(l.avg)};"></div></div></td>
+            </tr>`).join('');
+    }
+
+    function renderBloom(stats) {
+        if (!stats.hasBloom) return;
+        document.getElementById('bloom-card').classList.remove('hidden');
+
+        const order = ['تذكر','فهم','تطبيق','تحليل','تركيب','تقويم','إبداع'];
+        const entries = Object.entries(stats.bloom).sort((a,b) =>
+            (order.indexOf(a[0]) + 99*(order.indexOf(a[0])<0)) - (order.indexOf(b[0]) + 99*(order.indexOf(b[0])<0)));
+
+        document.getElementById('bloom-rows').innerHTML = entries.map(([lvl, v]) => `
+            <div class="bloom-row">
+                <div class="lbl"><span>${esc(lvl)}</span><span style="color:${clr(v.percent)};">${v.percent}% (${v.correct}/${v.total})</span></div>
+                <div class="bloom-bar"><div style="width:${v.percent}%; background:${clr(v.percent)};"></div></div>
+            </div>`).join('');
+
+        const sorted = entries.slice().sort((a,b) => a[1].percent - b[1].percent);
+        document.getElementById('bloom-advice').innerHTML =
+            `💡 <strong>توصية تربوية:</strong> أضعف مهارة لدى صفّك هي <strong style="color:#c0392b;">${esc(sorted[0][0])}</strong> ` +
+            `بنسبة ${sorted[0][1].percent}%. خصّص أنشطة إضافية على أسئلة هذا المستوى، ` +
+            `وتستطيع توليد تقييم مركّز عليه من صفحة «التوليد الذكي».`;
+    }
+
+    document.getElementById('btn-export').onclick = () => {
+        if (!exportRows.length) return alert('لا توجد بيانات للتصدير.');
+        // يُصدَّر ما هو معروض حالياً (مع مراعاة الفلترة المطبّقة)
+        const ws = XLSX.utils.json_to_sheet(exportRows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'طلابي');
+        XLSX.writeFile(wb, 'تقرير_طلابي_حسب_الصف.xlsx');
+    };
+
+    document.getElementById('btn-save').onclick = async function () {
+        const name = document.getElementById('e-name').value.trim();
+        const school = document.getElementById('e-school').value.trim();
+        if (!name) return alert('الاسم لا يمكن أن يكون فارغاً!');
+
+        this.disabled = true; this.textContent = 'جاري الحفظ...';
+        try {
+            await setDoc(doc(db, 'users', me.uid), { name, school: school || null }, { merge: true });
+            me.name = name; me.raw.school = school || null;
+            renderIdentity();
+            alert('✅ تم حفظ بياناتك!');
+        } catch (e) { alert('تعذّر الحفظ: ' + e.message); }
+        finally { this.disabled = false; this.textContent = 'حفظ البيانات ✔️'; }
+    };
+
+    document.getElementById('btn-reset-pass').onclick = async () => {
+        if (!confirm('سيتم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك. متابعة؟')) return;
+        try {
+            await sendPasswordResetEmail(auth, me.email);
+            alert('📧 تم إرسال الرابط!');
+        } catch (e) { alert('تعذّر الإرسال: ' + e.message); }
+    };
+</script>
+
+</body>
+</html>

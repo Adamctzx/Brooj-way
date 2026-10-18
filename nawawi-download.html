@@ -1,0 +1,139 @@
+<script>
+    // ==========================================
+    // المجموعة الأولى: الأحاديث من 1 إلى 10
+    // ==========================================
+    const hadithsGroup1 = [
+        {
+            titleAr: 'الحديث الأول: الأعمال بالنيات',
+            titleEn: 'Hadith 1: Actions are by Intentions',
+            linkAr: '#', // <--- ضع رابط العربي هنا
+            linkEn: '#'  // <--- ضع رابط الإنجليزي هنا
+        },
+
+        {
+            titleAr: 'الحديث الثاني: مراتب الدين',
+            titleEn: 'Hadith 2: The Levels of Religion',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الثالث: أركان الإسلام',
+            titleEn: 'Hadith 3: The Pillars of Islam',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الرابع: مراحل الخلق',
+            titleEn: 'Hadith 4: Stages of Creation',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الخامس: النهي عن الابتداع',
+            titleEn: 'Hadith 5: Prohibition of Innovation',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث السادس: الحلال بيّن والحرام بيّن',
+            titleEn: 'Hadith 6: The Halal is Clear and The Haram is Clear',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث السابع: الدين النصيحة',
+            titleEn: 'Hadith 7: Religion is Sincere Advice',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الثامن: حرمة دم المسلم وماله',
+            titleEn: 'Hadith 8: Sanctity of a Muslim’s Blood and Property',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث التاسع: النهي عن كثرة السؤال',
+            titleEn: 'Hadith 9: Prohibition of Excessive Questioning',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث العاشر: سبب إجابة الدعاء',
+            titleEn: 'Hadith 10: The Cause for Answered Supplications',
+            linkAr: '#',
+            linkEn: '#'
+        }
+    ];
+
+    // ==========================================
+    // المجموعة الثانية: الأحاديث من 11 إلى 20
+    // ==========================================
+    const hadithsGroup2 = [
+        {
+            titleAr: 'الحديث الحادي عشر: دع ما يريبك',
+            titleEn: 'Hadith 11: Leave That Which Makes You Doubt',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الثاني عشر: من حسن إسلام المرء',
+            titleEn: 'Hadith 12: Perfection of a Person’s Islam',
+            linkAr: '#',
+            linkEn: '#'
+        },
+
+        {
+            titleAr: 'الحديث الثالث عشر: حب الخير للغير',
+            titleEn: 'Hadith 13: Loving Good for Others',
+            linkAr: '#',
+            linkEn: '#'
+        }
+        // يمكنك إضافة الأحاديث حتى 20 بنفس هذا التنسيق الرأسي المريح
+    ];
+
+    // ==========================================
+    // الدوال البرمجية (لا تحتاج لتعديلها)
+    // ==========================================
+    function showLessons(groupName, hadiths) {
+        const container = document.getElementById('lessonsContainer');
+        document.getElementById('modalTitle').innerText = groupName;
+        container.innerHTML = '';
+
+        if (hadiths.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding: 20px;">جاري تجهيز بقية الأحاديث...</p>';
+        } else {
+            hadiths.forEach(hadith => {
+                const card = document.createElement('div');
+                card.className = 'lesson-card';
+                card.innerHTML = `
+                    <span class="lesson-title-main">${hadith.titleAr}</span>
+                    <div class="download-row">
+                        <a href="download.html?url=${encodeURIComponent(hadith.linkAr)}" class="download-box ar-box">
+                            <span class="lang-label ar-label">العربية</span>
+                            <span class="lesson-name">تحميل العرض</span>
+                        </a>
+                        <a href="download.html?url=${encodeURIComponent(hadith.linkEn)}" class="download-box en-box" dir="ltr">
+                            <span class="lang-label en-label">English</span>
+                            <span class="lesson-name">Download PPT</span>
+                        </a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        document.getElementById('lessonModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('lessonModal').style.display = 'none'; }
+    window.onclick = function(event) { if (event.target.className === 'modal') closeModal(); }
+</script>

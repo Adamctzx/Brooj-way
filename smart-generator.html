@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مُولد التقييمات الذكي - BOrooj Way</title>
+
+    <!-- 🛡️ حارس الصلاحيات: هذه الصفحة لحسابات المعلمين والمديرين فقط -->
+    <script type="module" src="auth-guard.js" data-require-role="teacher"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; }
+        body { background: #f3f6f9; color: #2c3e50; padding-bottom: 50px; }
+        .header { background: linear-gradient(135deg, #1a2a6c, #112240); color: white; padding: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: 30px auto; padding: 20px; }
+        
+        .tabs { display: flex; gap: 15px; margin-bottom: 25px; }
+        .tab-btn { flex: 1; padding: 15px; text-align: center; background: #e1e8ed; border: none; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; color: #7f8c8d; transition: 0.3s; }
+        .tab-btn.active { background: #fff; color: #1a2a6c; border-bottom: 5px solid #27ae60; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .tab-content { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: none; border-top: 1px solid #eee; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #34495e; font-size: 0.95rem; }
+        .input-group select, .input-group input { width: 100%; padding: 12px; border: 1px solid #ccd1d9; border-radius: 6px; font-size: 1rem; outline: none; transition: border 0.3s; }
+        .input-group select:focus, .input-group input:focus { border-color: #3498db; }
+
+        .btn-generate { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; width: 100%; transition: 0.3s; margin-top: 10px; }
+        .btn-generate:hover { background: #219653; transform: translateY(-2px); }
+        .btn-generate:disabled { background: #95a5a6; cursor: not-allowed; transform: none; }
+
+        .result-box { display: none; background: #e8f5e9; border: 2px solid #a5d6a7; padding: 25px; border-radius: 12px; margin-top: 30px; text-align: center; }
+        .result-title { color: #2e7d32; font-size: 1.4rem; font-weight: bold; margin-bottom: 15px; }
+        .link-input { width: 100%; text-align: left; direction: ltr; padding: 12px; border: 1px dashed #2e7d32; border-radius: 6px; font-family: monospace; font-size: 1.1rem; background: #fff; margin-bottom: 15px; color: #333; }
+        
+        /* قسم المعاينة للمعلم */
+        .preview-section { display: none; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: right; }
+        .prev-header { display: flex; justify-content: space-between; align-items: center; background: #f0f2f5; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+        .btn-prev-nav { background: #1a2a6c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-prev-nav:disabled { background: #95a5a6; cursor: not-allowed; }
+        .opt-preview { padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; background: #fcfcfc; font-size: 1.1rem; }
+        .opt-correct { border-color: #27ae60; background: #e8f5e9; color: #1e8449; font-weight: bold; }
+
+        .share-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn-copy { background: #1a2a6c; color: white; padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-whatsapp { background: #25D366; color: white; padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; text-decoration: none; }
+        
+        #qrcode { display: flex; justify-content: center; margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; width: fit-content; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .status-msg { margin-top: 15px; font-weight: bold; color: #e74c3c; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>⚙️ مُولد التقييمات الذكي</h1>
+        <p style="margin-top: 10px; opacity: 0.9;">اصنع تمهيداً لدرسك أو امتحاناً شاملاً للوحدة بضغطة زر</p>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-lesson', this)">🚀 التمهيد السريع (درس)</button>
+            <button class="tab-btn" onclick="switchTab('tab-unit', this)">🏆 حصاد الوحدة (امتحان شهر)</button>
+        </div>
+
+        <div id="tab-lesson" class="tab-content active">
+            <div class="input-group" style="margin-bottom: 20px;">
+                <label>عنوان الاختبار القصير (سيظهر للطلاب):</label>
+                <input type="text" id="l-title" placeholder="مثال: تقييم قبلي - أحكام النون الساكنة">
+            </div>
+            <div class="form-grid">
+                <div class="input-group"><label>الصف</label><select id="l-grade"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                <div class="input-group"><label>الفصل</label><select id="l-term"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                <div class="input-group"><label>الوحدة</label><select id="l-unit"><option value="U1">U1</option><option value="U2">U2</option><option value="U3">U3</option><option value="U4">U4</option><option value="U5">U5</option><option value="U6">U6</option></select></div>
+                <div class="input-group"><label>الدرس</label><select id="l-lesson"><option value="L1">الدرس الأول (L1)</option><option value="L2">الدرس الثاني (L2)</option><option value="L3">الدرس الثالث (L3)</option><option value="L4">الدرس الرابع (L4)</option><option value="L5">الدرس الخامس (L5)</option><option value="L6">الدرس السادس (L6)</option><option value="L7">الدرس السابع (L7)</option></select></div>
+                <div class="input-group"><label>عدد الأسئلة المطلوب:</label><input type="number" id="l-count" value="5" min="1" max="15"></div>
+            </div>
+            <button id="btn-gen-lesson" class="btn-generate">توليد التقييم الآن ⚡</button>
+            <div id="status-lesson" class="status-msg"></div>
+        </div>
+
+        <div id="tab-unit" class="tab-content">
+            <div class="input-group" style="margin-bottom: 20px;">
+                <label>عنوان امتحان الوحدة الشامل:</label>
+                <input type="text" id="u-title" placeholder="مثال: الاختبار الشهري الأول - الوحدة الأولى">
+            </div>
+            <div class="form-grid">
+                <div class="input-group"><label>الصف</label><select id="u-grade"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                <div class="input-group"><label>الفصل</label><select id="u-term"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                <div class="input-group"><label>الوحدة المستهدفة</label><select id="u-unit"><option value="U1">الوحدة الأولى (U1)</option><option value="U2">الوحدة الثانية (U2)</option><option value="U3">الوحدة الثالثة (U3)</option><option value="U4">الوحدة الرابعة (U4)</option><option value="U5">الوحدة الخامسة (U5)</option><option value="U6">الوحدة السادسة (U6)</option></select></div>
+                <div class="input-group"><label>إجمالي عدد الأسئلة:</label><input type="number" id="u-count" value="15" min="5" max="50"></div>
+            </div>
+            <p style="color:#7f8c8d; font-size:0.9rem; margin-bottom:15px; text-align:center;">💡 سيقوم النظام بالبحث في جميع دروس هذه الوحدة ودمج الأسئلة عشوائياً.</p>
+            <button id="btn-gen-unit" class="btn-generate">توليد امتحان الوحدة 🏆</button>
+            <div id="status-unit" class="status-msg"></div>
+        </div>
+
+        <div id="result-area" class="result-box">
+            <div class="result-title">✅ تم توليد الاختبار بنجاح!</div>
+            <input type="text" id="final-link" class="link-input" readonly>
+            
+            <div id="preview-section" class="preview-section">
+                <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 10px;">👀 معاينة سريعة للأسئلة المختارة</h3>
+                <div class="prev-header">
+                    <button id="btn-prev-view" class="btn-prev-nav" onclick="prevPreview()">السابق</button>
+                    <span id="prev-counter" style="font-weight: bold; color: #34495e;">1 / 10</span>
+                    <button id="btn-next-view" class="btn-prev-nav" onclick="nextPreview()">التالي</button>
+                </div>
+                <h4 id="prev-text" style="color: #1a2a6c; font-size: 1.3rem; margin-bottom: 15px; line-height: 1.5;"></h4>
+                <div id="prev-options"></div>
+            </div>
+            
+            <div class="share-buttons">
+                <button class="btn-copy" onclick="copyLink()">📋 نسخ الرابط</button>
+                <a id="whatsapp-btn" href="#" target="_blank" class="btn-whatsapp">💬 إرسال عبر واتساب</a>
+            </div>
+            
+            <p style="color:#555; margin-bottom:10px; font-weight:bold;">أو دع الطلاب يمسحون الرمز لدخول الاختبار فوراً:</p>
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let teacherUid = null;
+
+        // التبديل بين التبويبات
+        window.switchTab = function(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            document.getElementById('result-area').style.display = 'none';
+        }
+
+        // خلط المصفوفة (العشوائية)
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ==========================================
+        // نظام معاينة الأسئلة الذكي للمعلم
+        // ==========================================
+        let previewQ = [];
+        let currentPrev = 0;
+
+        function renderPreview() {
+            if(previewQ.length === 0) return;
+            const q = previewQ[currentPrev];
+            document.getElementById('prev-counter').textContent = `السؤال ${currentPrev + 1} من ${previewQ.length}`;
+            document.getElementById('prev-text').textContent = q.textAr || q.ar;
+            
+            const optsDiv = document.getElementById('prev-options');
+            optsDiv.innerHTML = '';
+            
+            let opts = q.options || [];
+            opts.forEach((opt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'opt-preview';
+                
+                // تحديد الإجابة الصحيحة باللون الأخضر للمعلم
+                let isCorrect = (q.correctAnswerIndex !== undefined) ? (idx === q.correctAnswerIndex) : (opt.correct);
+                if(isCorrect) {
+                    div.classList.add('opt-correct');
+                    div.innerHTML = `✅ <strong>${opt.ar}</strong>`;
+                } else {
+                    div.innerHTML = `❌ ${opt.ar}`;
+                }
+                optsDiv.appendChild(div);
+            });
+            
+            document.getElementById('btn-prev-view').disabled = (currentPrev === 0);
+            document.getElementById('btn-next-view').disabled = (currentPrev === previewQ.length - 1);
+        }
+
+        window.nextPreview = function() { if(currentPrev < previewQ.length - 1) { currentPrev++; renderPreview(); } };
+        window.prevPreview = function() { if(currentPrev > 0) { currentPrev--; renderPreview(); } };
+
+        // إظهار النتيجة والـ QR Code والمعاينة
+        function displayResult(quizId, generatedQuestions) {
+            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+            const fullLink = `${baseUrl}/academic-quiz.html?customId=${quizId}`;
+            
+            document.getElementById('final-link').value = fullLink;
+            document.getElementById('whatsapp-btn').href = `https://api.whatsapp.com/send?text=مرحباً بك في الاختبار الجديد! اضغط على الرابط للدخول: ${fullLink}`;
+            
+            document.getElementById('qrcode').innerHTML = ''; 
+            new QRCode(document.getElementById("qrcode"), {
+                text: fullLink, width: 180, height: 180,
+                colorDark : "#1a2a6c", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // تفعيل المعاينة وإرسال الأسئلة لها
+            previewQ = generatedQuestions || [];
+            if(previewQ.length > 0) {
+                currentPrev = 0;
+                document.getElementById('preview-section').style.display = 'block';
+                renderPreview();
+            }
+
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        window.copyLink = function() {
+            const copyText = document.getElementById("final-link");
+            copyText.select(); document.execCommand("copy");
+            alert("تم نسخ الرابط! أرسله لطلابك الآن.");
+        }
+
+        // توليد اختبار درس مفرد
+        document.getElementById('btn-gen-lesson').addEventListener('click', async () => {
+            const title = document.getElementById('l-title').value.trim() || "تقييم درس سريع";
+            const reqCount = parseInt(document.getElementById('l-count').value);
+            const lessonId = `Islamic_${document.getElementById('l-grade').value}_${document.getElementById('l-term').value}_${document.getElementById('l-unit').value}_${document.getElementById('l-lesson').value}`;
+            
+            const btn = document.getElementById('btn-gen-lesson');
+            const statusBox = document.getElementById('status-lesson');
+            btn.disabled = true; btn.textContent = "جاري جلب الأسئلة..."; statusBox.textContent = "";
+
+            try {
+                const snap = await getDoc(doc(db, 'academic_question_banks', lessonId));
+                if (!snap.exists() || !snap.data().questions || snap.data().questions.length === 0) {
+                    throw new Error("لا توجد أسئلة مرفوعة لهذا الدرس في قاعدة البيانات.");
+                }
+
+                let allQ = snap.data().questions;
+                let shuffledQ = shuffleArray(allQ).slice(0, reqCount); // سحب العدد المطلوب عشوائياً
+
+                const docRef = await addDoc(collection(db, "custom_quizzes"), {
+                    teacherUid: teacherUid, title: title, questions: shuffledQ, createdAt: new Date(), type: "lesson_intro"
+                });
+
+                displayResult(docRef.id, shuffledQ); // إرسال الأسئلة للعرض
+            } catch (e) {
+                statusBox.textContent = "خطأ: " + e.message;
+            } finally {
+                btn.disabled = false; btn.textContent = "توليد التقييم الآن ⚡";
+            }
+        });
+
+        // توليد امتحان وحدة شامل (يسحب من كل الدروس)
+        document.getElementById('btn-gen-unit').addEventListener('click', async () => {
+            const title = document.getElementById('u-title').value.trim() || "امتحان الوحدة الشامل";
+            const reqCount = parseInt(document.getElementById('u-count').value);
+            const prefix = `Islamic_${document.getElementById('u-grade').value}_${document.getElementById('u-term').value}_${document.getElementById('u-unit').value}_`;
+            
+            const btn = document.getElementById('btn-gen-unit');
+            const statusBox = document.getElementById('status-unit');
+            btn.disabled = true; btn.textContent = "جاري تجميع أسئلة الوحدة..."; statusBox.textContent = "";
+
+            try {
+                let unitQuestionsPool = [];
+                // حلقة للمرور على جميع الدروس المحتملة (من L1 إلى L7)
+                for(let i = 1; i <= 7; i++) {
+                    let lId = prefix + "L" + i;
+                    let snap = await getDoc(doc(db, 'academic_question_banks', lId));
+                    if (snap.exists() && snap.data().questions) {
+                        unitQuestionsPool.push(...snap.data().questions);
+                    }
+                }
+
+                if (unitQuestionsPool.length === 0) {
+                    throw new Error("لم يتم العثور على أي أسئلة لأي درس داخل هذه الوحدة.");
+                }
+
+                if (unitQuestionsPool.length < reqCount) {
+                    statusBox.textContent = `ملاحظة: البنك يحتوي على ${unitQuestionsPool.length} سؤال فقط في هذه الوحدة. تم تضمينها جميعاً.`;
+                }
+
+                let shuffledQ = shuffleArray(unitQuestionsPool).slice(0, reqCount); // سحب عشوائي من سلة الوحدة كلها
+
+                const docRef = await addDoc(collection(db, "custom_quizzes"), {
+                    teacherUid: teacherUid, title: title, questions: shuffledQ, createdAt: new Date(), type: "unit_exam"
+                });
+
+                displayResult(docRef.id, shuffledQ); // إرسال الأسئلة للعرض
+            } catch (e) {
+                statusBox.textContent = "خطأ: " + e.message;
+            } finally {
+                btn.disabled = false; btn.textContent = "توليد امتحان الوحدة 🏆";
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { teacherUid = user.uid; } 
+            else { window.location.href = "login.html"; }
+        });
+    </script>
+</body>
+</html>

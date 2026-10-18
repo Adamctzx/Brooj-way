@@ -1,0 +1,2240 @@
+/* =============================
+   تنسيقات أساسية وعامة
+============================= */
+body {
+    font-family: 'Cairo', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1100px; /* العرض الأقصى الافتراضي */
+    margin: 0 auto;
+}
+
+/* =============================
+   تنسيق الهيدر الثابت (مع صورة خلفية)
+============================= */
+.site-header {
+    background: url('images/header-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 80px 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+    animation: headerZoom 20s infinite alternate ease-in-out;
+}
+
+/* تنسيق النصوص لتكون بارزة بوضوح على الخلفية الفاتحة */
+.site-header h1, 
+.site-header h2, 
+.site-header p {
+    color: #1a365d; /* لون أزرق داكن متناسق مع السماء */
+    text-shadow: 
+        2px 2px 0 #fff, 
+        -2px -2px 0 #fff, 
+        2px -2px 0 #fff, 
+        -2px 2px 0 #fff,
+        0 4px 10px rgba(0,0,0,0.4); /* إطار أبيض وظل داكن حول الكلمات */
+    font-weight: 900;
+    position: relative;
+    z-index: 2;
+}
+
+@keyframes headerZoom {
+    0% { background-size: 100% auto; }
+    100% { background-size: 120% auto; }
+}
+/* كود الحركة (تكبير وتصغير بطيء) */
+@keyframes headerZoom {
+    0% { background-size: 100% auto; }
+    100% { background-size: 120% auto; }
+}
+
+/* تنسيق النصوص لتكون بارزة بوضوح على الخلفية الفاتحة */
+.site-header h1, 
+.site-header h2, 
+.site-header p {
+    color: #1a365d; /* لون أزرق داكن متناسق مع السماء */
+    text-shadow: 
+        2px 2px 0 #fff, 
+        -2px -2px 0 #fff, 
+        2px -2px 0 #fff, 
+        -2px 2px 0 #fff,
+        0 4px 10px rgba(0,0,0,0.4); /* إطار أبيض وظل داكن حول الكلمات */
+    font-weight: 900;
+    position: relative;
+    z-index: 2;
+}
+
+@keyframes headerZoom {
+    0% { background-size: 100% auto; }
+    100% { background-size: 120% auto; }
+}
+
+/* كود الحركة (تكبير وتصغير بطيء) */
+@keyframes headerZoom {
+    0% { background-size: 100% auto; }
+    100% { background-size: 120% auto; }
+}
+/* تنسيق النصوص الجديدة في الهيدر */
+.site-header h1 {
+    font-size: 2.8rem; /* أكبر حجم للترحيب */
+    margin: 10px 0 5px 0;
+    color: #1abc9c; /* لون مميز (تركواز) للترحيب */
+}
+
+/* تنسيق النصوص الجديدة في الهيدر */
+.site-header h3 {
+    font-size: 2.8rem;
+    margin: 10px 0 5px 0;
+    color: #e74c3c; /* أحمر حيوي وعصري */
+}
+.site-header h2 {
+    font-size: 1.5rem; /* حجم متوسط للمهمة */
+    margin: 0 0 15px 0;
+    opacity: 0.9;
+    font-weight: 400; /* خط أخف للرسالة */
+}
+
+.site-header .header-callout {
+    font-size: 1.2rem;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.15); /* خلفية خفيفة للفت الانتباه */
+    padding: 8px 15px;
+    border-radius: 5px;
+    display: inline-block; /* ليأخذ الخلفية على قدر النص */
+    margin-top: 10px;
+    margin-bottom: 0; 
+}
+
+/* محتوى الهيدر ليكون فوق الخلفية (احتياطي) */
+.header-content {
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =============================
+   تنسيق أداة ترجمة جوجل (لجعلها في الزاوية العلوية)
+============================= */
+#google_translate_element {
+    padding: 10px;
+    text-align: left; 
+}
+
+html[dir="ltr"] #google_translate_element {
+    text-align: right;
+}
+
+
+/* =============================
+   تنسيق شريط التنقل
+============================= */
+.site-nav {
+    background-color: #333;
+    padding: 10px 0;
+}
+.site-nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+}
+.site-nav li {
+    display: inline-block;
+    margin: 0 15px;
+}
+.site-nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+.site-nav a:hover {
+    background-color: #555;
+}
+
+/* =============================
+   تنسيق القائمة الجانبية والمحتوى (للصفحة الرئيسية)
+============================= */
+.content-wrapper {
+    display: flex;
+    max-width: 1300px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+.sidebar {
+    width: 250px;
+    margin-left: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+html[dir="ltr"] .sidebar {
+    margin-left: 0;
+    margin-right: 20px;
+}
+
+.sidebar h3, .sidebar h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+    color: #34495e;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar li {
+    margin-bottom: 10px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #555;
+    background-color: #fff;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    border: 1px solid #eee;
+    font-weight: 500;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background-color: #006a4e;
+    color: white;
+    border-color: #005a3e;
+}
+
+.main-area {
+    flex: 1;
+    min-width: 0;
+}
+
+.main-area .main-content {
+     margin-top: 0;
+     padding-top: 0;
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);} /* بنفسجي */
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);} /* أزرق */
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);} /* برتقالي */
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);} /* أحمر */
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);} /* تركواز */
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق قسم رابط القرآن في الصفحة الرئيسية
+============================= */
+.quran-link-section {
+    margin-top: 0; 
+    padding-top: 40px;
+    padding-bottom: 40px;
+    border-top: 2px solid #8e44ad;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.quran-link-section h2 {
+    color: #8e44ad;
+    margin-bottom: 30px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.quran-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch; 
+}
+
+.quran-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.quran-box:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);}
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);}
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);}
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);}
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);}
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق قسم رابط القرآن في الصفحة الرئيسية
+============================= */
+.quran-link-section {
+    margin-top: 0; 
+    padding-top: 40px;
+    padding-bottom: 40px;
+    border-top: 2px solid #8e44ad;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.quran-link-section h2 {
+    color: #8e44ad;
+    margin-bottom: 30px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.quran-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch; 
+}
+
+.quran-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.quran-box:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);} /* بنفسجي */
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);} /* أزرق */
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);} /* برتقالي */
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);} /* أحمر */
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);} /* تركواز */
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق قسم رابط القرآن في الصفحة الرئيسية
+============================= */
+.quran-link-section {
+    margin-top: 0; 
+    padding-top: 40px;
+    padding-bottom: 40px;
+    border-top: 2px solid #8e44ad;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.quran-link-section h2 {
+    color: #8e44ad;
+    margin-bottom: 30px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.quran-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch; 
+}
+
+.quran-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.quran-box:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);}
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);}
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);}
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);}
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);}
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق قسم رابط القرآن في الصفحة الرئيسية
+============================= */
+.quran-link-section {
+    margin-top: 0; 
+    padding-top: 40px;
+    padding-bottom: 40px;
+    border-top: 2px solid #8e44ad;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.quran-link-section h2 {
+    color: #8e44ad;
+    margin-bottom: 30px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.quran-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch; 
+}
+
+.quran-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.quran-box:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);}
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);}
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);}
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);}
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);}
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق قسم رابط القرآن في الصفحة الرئيسية
+============================= */
+.quran-link-section {
+    margin-top: 0; 
+    padding-top: 40px;
+    padding-bottom: 40px;
+    border-top: 2px solid #8e44ad;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.quran-link-section h2 {
+    color: #8e44ad;
+    margin-bottom: 30px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.quran-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch; 
+}
+
+.quran-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.quran-box:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+/* =============================
+   تنسيق مربعات القواميس الجانبية
+============================= */
+
+/* المربع العام للقواميس */
+.sidebar .glossary-box,
+.sidebar .glossary-box-quran,
+.sidebar .glossary-box-hadith,
+.sidebar .glossary-box-names,
+.sidebar .glossary-box-student {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+    min-height: auto; 
+    width: auto; 
+    max-width: 100%; 
+    padding: 20px 15px;
+    margin-top: 15px;
+    border-radius: 10px; 
+    text-decoration: none; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.sidebar .glossary-box h3,
+.sidebar .glossary-box-quran h3,
+.sidebar .glossary-box-hadith h3,
+.sidebar .glossary-box-names h3,
+.sidebar .glossary-box-student h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.sidebar .glossary-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+/* الألوان الخاصة */
+.sidebar .glossary-box {background: linear-gradient(135deg, #8e44ad, #9b59b6);} /* بنفسجي */
+.sidebar .glossary-box:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3); background: linear-gradient(135deg, #9b59b6, #8e44ad);}
+
+.sidebar .glossary-box-quran {background: linear-gradient(135deg, #3498db, #2980b9);} /* أزرق */
+.sidebar .glossary-box-quran:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); background: linear-gradient(135deg, #2980b9, #3498db);}
+
+.sidebar .glossary-box-hadith {background: linear-gradient(135deg, #e67e22, #d35400);} /* برتقالي */
+.sidebar .glossary-box-hadith:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3); background: linear-gradient(135deg, #d35400, #e67e22);}
+
+.sidebar .glossary-box-names {background: linear-gradient(135deg, #e74c3c, #c0392b);} /* أحمر */
+.sidebar .glossary-box-names:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); background: linear-gradient(135deg, #c0392b, #e74c3c);}
+
+.sidebar .glossary-box-student {background: linear-gradient(135deg, #1abc9c, #16a085);} /* تركواز */
+.sidebar .glossary-box-student:hover {transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3); background: linear-gradient(135deg, #16a085, #1abc9c);}
+
+/* =============================
+   تنسيق نموذج بحث الدرر
+============================= */
+.sidebar-search-form {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-search-form h4 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #34495e;
+}
+
+.sidebar-search-form form {
+    display: flex;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.sidebar-search-form .search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-family: 'Cairo', sans-serif;
+    outline: none;
+}
+
+.sidebar-search-form .search-button {
+    border: none;
+    background-color: #006a4e;
+    color: white;
+    padding: 0 15px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.sidebar-search-form .search-button:hover {
+    background-color: #004a36;
+}
+
+/* =============================
+   تنسيق المحتوى الرئيسي العام
+============================= */
+.main-content {
+    padding-top: 0; 
+}
+
+.page-title {
+    text-align: center;
+    color: #006a4e;
+    margin-bottom: 40px;
+    font-size: 2.2rem;
+}
+
+/* =============================
+   تنسيق شبكة الصفوف (الصفحة الرئيسية)
+============================= */
+.grades-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.grade-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.grade-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.9rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.grade-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* ألوان بطاقات الصفوف الرئيسية */
+.grades-grid .grade-card:nth-child(1)  { background-color: #00a8c6; }
+.grades-grid .grade-card:nth-child(2)  { background-color: #40c0cb; }
+.grades-grid .grade-card:nth-child(3)  { background-color: #f08a4b; }
+.grades-grid .grade-card:nth-child(4)  { background-color: #e85a71; }
+.grades-grid .grade-card:nth-child(5)  { background-color: #006a4e; }
+.grades-grid .grade-card:nth-child(6)  { background-color: #8e44ad; }
+.grades-grid .grade-card:nth-child(7)  { background-color: #34495e; }
+.grades-grid .grade-card:nth-child(8)  { background-color: #f39c12; }
+.grades-grid .grade-card:nth-child(9)  { background-color: #d35400; }
+.grades-grid .grade-card:nth-child(10) { background-color: #16a085; }
+.grades-grid .grade-card:nth-child(11) { background-color: #c0392b; }
+.grades-grid .grade-card:nth-child(12) { background-color: #2c3e50; }
+
+/* =============================
+   تنسيق صفحات الصفوف والدروس الأخرى
+============================= */
+
+.lesson-breadcrumb {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 30px;
+}
+
+.lesson-breadcrumb a {
+    color: #555;
+    text-decoration: none;
+}
+
+.lesson-breadcrumb a:hover {
+    color: #006a4e;
+    text-decoration: underline;
+}
+
+/* تنسيق شبكة مربعات الدروس (مثل صف 9 و 10) */
+.main-content .lessons-color-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 20px !important;
+}
+
+.main-content .lessons-color-grid a.lesson-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 120px !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+    text-align: center !important;
+    color: white !important;
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.15) !important;
+    border: none !important;
+    margin: 0 !important;
+    background-image: none !important;
+}
+
+.main-content .lessons-color-grid a.lesson-box:hover {
+    transform: scale(1.04) !important;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.18) !important;
+}
+
+/* ألوان مربعات الدروس */
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+1) { background-color: #1abc9c !important; }
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+2) { background-color: #3498db !important; }
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+3) { background-color: #9b59b6 !important; }
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+4) { background-color: #e67e22 !important; }
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+5) { background-color: #e74c3c !important; }
+.main-content .lessons-color-grid a.lesson-box:nth-child(6n+0) { background-color: #34495e !important; }
+
+/* =============================
+   تنسيق صفحة فهرس السور (التي يظهر فيها المشكلة)
+============================= */
+.quran-grades-grid {
+    display: grid !important; 
+    grid-template-columns: repeat(4, 1fr) !important; 
+    gap: 20px !important; 
+}
+
+.quran-grade-box {
+    display: flex !important; 
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 150px !important;
+    padding: 20px !important;
+    border-radius: 10px !important;
+    text-decoration: none !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+    border: none !important; 
+}
+
+.quran-grade-box h3 {
+    margin: 0 !important;
+    color: white !important;
+    font-size: 1.9rem !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2) !important;
+    text-align: center !important;
+}
+
+.quran-grade-box:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+}
+
+/* ألوان مربعات صفوف القرآن */
+.quran-grades-grid .quran-grade-box:nth-child(4n+1) { background-color: #f39c12 !important; }
+.quran-grades-grid .quran-grade-box:nth-child(4n+2) { background-color: #16a085 !important; }
+.quran-grades-grid .quran-grade-box:nth-child(4n+3) { background-color: #2980b9 !important; }
+.quran-grades-grid .quran-grade-box:nth-child(4n+0) { background-color: #c0392b !important; }
+
+/* =============================
+   تنسيق صفحة فهرس قرآن الصف (التقسيم الداخلي للسور)
+============================= */
+.quran-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.quran-section-box {
+    display: block;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+    padding: 20px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid #eee;
+    position: relative;
+    overflow: hidden;
+}
+
+.quran-section-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: #ddd;
+}
+
+.quran-section-box .surah-name {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+    font-family: 'Amiri Quran', serif;
+}
+
+.quran-section-box .ayah-range {
+    display: block;
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.quran-section-box .language-tag {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 4px;
+}
+
+.quran-section-box.lang-ar .language-tag { background-color: #006a4e; }
+.quran-section-box.lang-en .language-tag { background-color: #2980b9; }
+
+.quran-section-box.lang-ar:hover { border-left: 5px solid #006a4e; }
+html[dir="ltr"] .quran-section-box.lang-ar:hover { border-left: none; border-right: 5px solid #006a4e; }
+.quran-section-box.lang-en:hover { border-left: 5px solid #2980b9; }
+html[dir="ltr"] .quran-section-box.lang-en:hover { border-left: none; border-right: 5px solid #2980b9; }
+
+
+/* =============================
+   تنسيق صفحة عرض القرآن
+============================= */
+.quran-page .container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    margin-top: 30px;
+}
+
+.quran-display-section {
+    margin-top: 30px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.quran-display-section h3 {
+    color: #006a4e;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.quran-text {
+    background-color: #fdfdfd;
+    border: 1px solid #f0f0f0;
+    padding: 25px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    text-align: justify;
+    direction: rtl;
+    line-height: 2.5;
+}
+
+.arabic-quran-text {
+    font-family: 'Amiri Quran', serif;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.arabic-quran-text p {
+    margin-bottom: 1em;
+}
+
+.arabic-quran-text p:first-of-type {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 1.5em;
+    font-size: 1.6rem;
+}
+
+/* =============================
+   تنسيق التذييل
+============================= */
+.site-footer {
+    background-color: #333;
+    color: #aaa;
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+}
+
+/* =============================
+   أكواد التجاوب العامة (توضع في النهاية)
+============================= */
+@media (max-width: 992px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 20px;
+        position: static;
+    }
+    html[dir="ltr"] .sidebar {
+       margin-right: 0;
+    }
+}
+@media (max-width: 992px) {
+    .grades-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .quran-grades-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .main-content .lessons-color-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 768px) {
+    .grades-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .grade-card h3 {
+        font-size: 1.5rem;
+    }
+    .quran-grades-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .quran-grade-box h3 {
+        font-size: 1.5rem !important;
+    }
+}
+@media (max-width: 576px) {
+    .main-content .lessons-color-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .main-content .lessons-color-grid a.lesson-box {
+        min-height: 100px !important;
+        font-size: 1.2rem !important;
+    }
+}
+@media (max-width: 480px) {
+    .quran-box {
+        font-size: 1.6rem;
+        min-height: 120px;
+    }
+    .quran-link-section h2 {
+        font-size: 2rem;
+    }
+ }
+
+ /* تنسيق الحاوية الرئيسية للبطاقات */
+.homepage-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; 
+    justify-content: center;
+    padding: 30px 15px;
+}
+
+/* تنسيق البطاقة الواحدة (وهي الرابط القابل للضغط) */
+.article-card-link {
+    display: block; 
+    width: 280px; /* حجم البطاقة */
+    text-decoration: none; /* إزالة خطوط الروابط */
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+}
+
+/* تأثير التفاعل عند مرور الماوس */
+.article-card-link:hover {
+    transform: translateY(-5px); 
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* تنسيق الصورة (JPG, PNG, GIF) */
+.article-image {
+    width: 100%;
+    height: 180px; 
+    object-fit: cover; /* لملء البطاقة دون تشويه الصورة/الجيف */
+    display: block; 
+}
+
+/* تنسيق العنوان أسفل الصورة */
+.article-caption {
+    padding: 15px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #f0fff0; /* خلفية خفيفة للعنون */
+    color: #007B5E; /* اللون الأخضر للعناوين */
+}
+/* تنسيق قسم المنشورات */
+.social-feed {
+    margin-top: 50px;
+    padding: 20px;
+    background-color: #f0f2f5; /* نفس لون خلفية فيسبوك */
+    border-radius: 15px;
+}
+
+.posts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.post-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 15px;
+    direction: rtl;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    margin-left: 10px;
+    border: 1px solid #ddd;
+}
+
+.author-name {
+    display: block;
+    font-weight: bold;
+    color: #050505;
+}
+
+.post-date {
+    font-size: 0.8rem;
+    color: #65676b;
+}
+
+.post-content p {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.post-image {
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 10px;
+    max-height: 250px;
+    object-fit: cover;
+}
+
+.post-actions {
+    border-top: 1px solid #eee;
+    margin-top: 15px;
+    padding-top: 10px;
+}
+
+.like-btn {
+    background: none;
+    border: none;
+    color: #65676b;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+}
+
+.like-btn:hover {
+    background-color: #f2f2f2;
+    border-radius: 5px;
+}
+/* تأثير عند مرور الماوس على صورة الفيديو */
+.post-video-link {
+    position: relative;
+    display: block;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.post-video-link:hover .post-image {
+    transform: scale(1.05); /* تكبير بسيط للصورة */
+    filter: brightness(0.8); /* تغميق الصورة قليلاً */
+}
+
+.post-video-link .post-image {
+    transition: all 0.3s ease;
+}
+
+/* إضافة مثلث التشغيل في منتصف الصورة */
+.play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 50px;
+    color: white;
+    opacity: 0; /* مخفي افتراضياً */
+    transition: opacity 0.3s ease;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.post-video-link:hover .play-overlay {
+    opacity: 1; /* يظهر عند مرور الماوس */
+}
+/* تصميم شريط الأخبار المطور لجميع المتصفحات */
+.aljazeera-ticker {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    background-color: #f0f0f0;
+    height: 40px;
+    line-height: 40px;
+    overflow: hidden;
+    direction: rtl;
+    border-bottom: 2px solid #ce1126;
+    margin-bottom: 10px;
+    position: relative;
+    width: 100%;
+}
+
+.ticker-title {
+    background-color: #ce1126;
+    color: white;
+    padding: 0 20px;
+    font-weight: bold;
+    z-index: 5; /* رفع الطبقة لضمان الظهور فوق النص */
+    white-space: nowrap;
+    position: relative;
+}
+
+.ticker-content {
+    -webkit-box-flex: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-text {
+    display: flex;
+    white-space: nowrap;
+    position: absolute;
+    right: 0; /* البداية من اليمين للمواقع العربية */
+    -webkit-animation: ticker-move 30s linear infinite;
+    animation: ticker-move 30s linear infinite;
+}
+
+.ticker-text span {
+    padding-left: 50px;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* التوافق مع كروم وسفاري */
+@-webkit-keyframes ticker-move {
+    0% { -webkit-transform: translateX(100%); }
+    100% { -webkit-transform: translateX(-100%); }
+}
+
+/* الحركة القياسية */
+@keyframes ticker-move {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+.ticker-content:hover .ticker-text {
+    -webkit-animation-play-state: paused;
+    animation-play-state: paused;
+}
+/* تصميم قسم بوسترات الألعاب */
+.games-posters-section {
+    padding: 30px 0;
+    background-color: #f4f4f4;
+    border-top: 3px solid #ce1126;
+}
+
+.games-scroll-container {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto; /* يسمح بالتحريك لليمين واليسار */
+    padding: 10px;
+}
+.games-scroll-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+}
+
+.game-poster-card {
+    width: 180px;
+    flex: 0 0 auto;
+    transition: transform 0.3s;
+}
+
+.game-poster-card img {
+    width: 100%;
+    height: 250px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.game-poster-card p {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9rem;
+}
+.game-poster-card {
+    min-width: 180px; /* عرض البوستر */
+    transition: transform 0.3s;
+}
+.games-scroll-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+}
+
+.game-poster-card {
+    width: 180px;
+    flex: 0 0 auto;
+    transition: transform 0.3s;
+}
+
+.game-poster-card img {
+    width: 100%;
+    height: 250px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.game-poster-card p {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9rem;
+}
+.game-poster-card:hover {
+    transform: scale(1.05); /* تكبير بسيط عند وضع الماوس */
+}
+
+.game-poster-card img {
+    width: 100%;
+    height: 250px; /* طول البوستر مثل الأفلام */
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.game-poster-card p {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9rem;
+}
+.games-scroll-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+}
+
+.game-poster-card {
+    width: 180px;
+    flex: 0 0 auto;
+    transition: transform 0.3s;
+}
+
+.game-poster-card img {
+    width: 100%;
+    height: 250px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.game-poster-card p {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+/* 🔴 تصميم كارت الحلول الجديد (بارز وجذاب جداً) 🔴 */
+.feature-card {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* لون أزرق ملكي صلب بدلاً من الشفاف */
+    border: 2px solid #f1c40f; /* إطار ذهبي بارز */
+    border-radius: 20px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: right;
+    position: relative;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); /* ظل قوي يبرز الكارت */
+}
+
+.feature-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(241, 196, 15, 0.4); /* توهج ذهبي عند مرور الماوس */
+    background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+}
+
+.icon-box {
+    font-size: 3rem;
+    background: #f1c40f; /* خلفية ذهبية صلبة للأيقونة */
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    text-shadow: none; /* إزالة أي ظل للرموز التعبيرية لتكون واضحة */
+}
+
+.card-content h3 {
+    color: #ffffff; /* عنوان أبيض ناصع */
+    margin-bottom: 8px;
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* ظل خفيف للكلمات لزيادة الوضوح */
+}
+
+.card-content p {
+    color: #d1d8e0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.go-arrow {
+    position: absolute;
+    left: 20px;
+    font-size: 2rem;
+    color: #f1c40f; /* سهم ذهبي فاقع */
+    transition: 0.3s;
+    font-weight: bold;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.feature-card:hover .go-arrow {
+    left: 30px;
+    transform: scale(1.2);
+}

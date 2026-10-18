@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3232445252654445"
+     crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3232445252654445" crossorigin="anonymous"></script>
+    <title>تحميل الكتب الدراسية - إديوكيشن بازار</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* نفس التصميم الجميل الذي أعجبك لم يتغير */
+        body { font-family: 'Cairo', sans-serif; background-color: #f0f4f8; margin: 0; padding: 20px; direction: rtl; text-align: center; }
+        h1 { color: #2c3e50; margin-bottom: 30px; font-size: 2rem; }
+        .grades-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .grade-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; border-radius: 15px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; font-size: 1.3rem; font-weight: bold; position: relative; overflow: hidden;
+        }
+        .grade-box:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+        /* ألوان الصفوف */
+        .grade-box:nth-child(1) { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%); color: #333; }
+        .grade-box:nth-child(2) { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+        .grade-box:nth-child(3) { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #333; }
+        .grade-box:nth-child(4) { background: linear-gradient(135deg, #fccb90 0%, #d57eeb 100%); }
+        .grade-box:nth-child(5) { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); color: #333; }
+        .grade-box:nth-child(6) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .grade-box:nth-child(7) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .grade-box:nth-child(8) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #333; }
+        .grade-box:nth-child(9) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .grade-box:nth-child(10) { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); }
+        .grade-box:nth-child(11) { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
+        .grade-box:nth-child(12) { background: linear-gradient(135deg, #b721ff 0%, #21d4fd 100%); }
+
+        /* النافذة المنبثقة */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { background-color: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; text-align: center; position: relative; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-btn { position: absolute; top: 15px; left: 15px; font-size: 24px; cursor: pointer; color: #666; background: none; border: none; }
+        .modal-title { margin-top: 0; color: #333; margin-bottom: 25px; font-size: 1.5rem; }
+        .terms-grid { display: grid; gap: 15px; }
+        .term-btn { display: block; padding: 15px; text-decoration: none; color: white; font-weight: bold; font-size: 1.2rem; border-radius: 10px; transition: transform 0.2s; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .term-btn:hover { transform: scale(1.02); }
+        .term-btn.disabled { background: #ccc !important; pointer-events: none; opacity: 0.6; }
+        .term-1 { background: linear-gradient(to right, #11998e, #38ef7d); }
+        .term-2 { background: linear-gradient(to right, #f2994a, #f2c94c); color: #333; }
+        .term-3 { background: linear-gradient(to right, #00b4db, #0083b0); }
+    </style>
+</head>
+<body>
+
+    <h1>اختر الصف الدراسي لتحميل الكتب</h1>
+
+    <div class="grades-container">
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الأول"
+             data-link1="https://www.mediafire.com/file/dau2gzkb6ce8nu6/الصف+الأول+1.pdf/file"
+             data-link2="https://www.mediafire.com/file/mrouu8ee7j0fyig/الصف+الأول+2.pdf/file"
+             data-link3="https://www.mediafire.com/file/6w23zedtcsesknh/الصف+الأول+3.pdf/file">
+             الصف الأول
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الثاني"
+             data-link1="https://www.mediafire.com/file/v8zhu32lvh9jnd5/كتاب+الترم+الأول+صف+ثاني.pdf/file"
+             data-link2="https://www.mediafire.com/file/4gk9gltu0n5dwhy/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/vw78m4pwjf9phv8/3.pdf/file">
+             الصف الثاني
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الثالث"
+             data-link1="https://www.mediafire.com/file/c9owr6f02v9e6p7/1.pdf/file"
+             data-link2="https://www.mediafire.com/file/oasdup850q625cq/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/j6h4yum5as09xav/3.pdf/file">
+             الصف الثالث
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الرابع"
+             data-link1="https://www.mediafire.com/file/o243xhzpn6low39/كتاب+الترم+الأول.pdf/file"
+             data-link2="https://www.mediafire.com/file/j9xffs6yg6qr0nw/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/xqr0055vtgni2hd/كتاب+الترم+الثالث+صف+رابع.pdf/file">
+             الصف الرابع
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الخامس"
+             data-link1="https://www.mediafire.com/file/5hs3m3ajiejk8vz/كتاب+صف+خامس+الترم+الأول.pdf/file"
+             data-link2="https://www.mediafire.com/file/jgucj1w7eriuenw/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/b8vyw6qz2vzyj64/كتاب+الترم+الثالث+صف+خامس.pdf/file">
+             الصف الخامس
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف السادس"
+             data-link1="https://www.mediafire.com/file/126t691u2e0f02m/صف+6+-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/xgohnni5aeld0lk/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/isun4a9cibmo5nv/صف+سادس+3.pdf/file">
+             الصف السادس
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف السابع"
+             data-link1="https://www.mediafire.com/file/aupbl3asinzgxpf/صف+7-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/xfhlxxcpl3u92co/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/2sdxmxrbnx62i26/صف+سابع+3.pdf/file">
+             الصف السابع
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الثامن"
+             data-link1="https://www.mediafire.com/file/tbvwif86lnjs6cu/8-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/06arzavjq25lhtc/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/71k0kwebt18uu3y/3.pdf/file">
+             الصف الثامن
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف التاسع"
+             data-link1="https://www.mediafire.com/file/v0s22421abwkbha/9-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/0d5lv9khp7luccw/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/z4us53lrzyvhety/Gr+9+T3.pdf/file">
+             الصف التاسع
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف العاشر"
+             data-link1="https://www.mediafire.com/file/a1xzkh1jz65d5l5/10-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/3kpb6k4vygemfj2/2.pdf/file"
+             data-link3="https://www.mediafire.com/file/vexpvbt6pkwcyc0/Gr+10+T3.pdf/file">
+             الصف العاشر
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الحادي عشر"
+             data-link1="https://www.mediafire.com/file/81gdo7p8ytww2ii/11-1.pdf/file"
+             data-link2="https://www.mediafire.com/file/pvv9f6hi1vk35f0/Islamic+G11+P2+Full.pdf/file"
+             data-link3="https://www.mediafire.com/file/01j4b71ojegl0lw/Gr+11+T3.pdf/file">
+             الصف الحادي عشر
+        </div>
+
+        <div class="grade-box" onclick="setupModal(this)" 
+             data-name="الصف الثاني عشر"
+             data-link1="https://www.mediafire.com/file/fhm0hnd0vbnsu94/كتاب+الطالب+12+1.pdf/file"
+             data-link2="https://www.mediafire.com/file/ns33bt0asje3qk2/كتاب+الطالب+12+31.pdf/file"
+             data-link3="https://www.mediafire.com/file/n229eyd0laamujs/كتاب12+الترم+3.pdf/file">
+             الصف الثاني عشر
+        </div>
+    </div>
+
+    <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2 id="modalTitle" class="modal-title">عنوان الصف</h2>
+            <div class="terms-grid">
+                <a href="#" id="btn-term1" class="term-btn term-1" target="_blank">الفصل الدراسي الأول</a>
+                <a href="#" id="btn-term2" class="term-btn term-2" target="_blank">الفصل الدراسي الثاني</a>
+                <a href="#" id="btn-term3" class="term-btn term-3" target="_blank">الفصل الدراسي الثالث</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔴 لا تعدل أي شيء في هذا الجزء (البرمجة التلقائية) 🔴
+        const modal = document.getElementById('termsModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const btns = [
+            document.getElementById('btn-term1'),
+            document.getElementById('btn-term2'),
+            document.getElementById('btn-term3')
+        ];
+
+        function setupModal(element) {
+            // جلب البيانات من المربع الذي تم الضغط عليه
+            const gradeName = element.getAttribute('data-name');
+            const links = [
+                element.getAttribute('data-link1'),
+                element.getAttribute('data-link2'),
+                element.getAttribute('data-link3')
+            ];
+
+            modalTitle.textContent = gradeName;
+
+            // ضبط الأزرار تلقائياً
+            links.forEach((link, index) => {
+                const btn = btns[index];
+                if (link && link.trim() !== "") {
+                    // إذا كان هناك رابط، قم بتحويله لصفحة الانتظار والربح
+                    btn.href = `download.html?url=${encodeURIComponent(link)}`;
+                    btn.classList.remove('disabled');
+                    btn.innerHTML = `الفصل الدراسي ${index === 0 ? 'الأول' : index === 1 ? 'الثاني' : 'الثالث'}`;
+                } else {
+                    // إذا لم يكن هناك رابط، قم بتعطيل الزر
+                    btn.href = "#";
+                    btn.classList.add('disabled');
+                    btn.innerHTML = `قريباً - الفصل الدراسي ${index === 0 ? 'الأول' : index === 1 ? 'الثاني' : 'الثالث'}`;
+                }
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) closeModal();
+        }
+    </script>
+</body>
+</html>

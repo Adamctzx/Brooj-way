@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملفي الشخصي - سجل التحصيل | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- 🛡️ يتطلب تسجيل دخول -->
+    <script type="module" src="auth-guard.js" data-require-role="student"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1200px; margin:0 auto; padding:0 18px; }
+
+        /* ===== الترويسة ===== */
+        .top {
+            background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d);
+            background-size:300% 300%; animation:bg 14s ease infinite;
+            color:#fff; padding:26px 0 70px; margin-bottom:-50px;
+        }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a, .top-links button {
+            background:rgba(255,255,255,.2); color:#fff; padding:9px 16px; border-radius:9px;
+            text-decoration:none; font-weight:bold; font-size:.92rem; border:none; cursor:pointer;
+            font-family:'Cairo',sans-serif; transition:.25s;
+        }
+        .top-links a:hover, .top-links button:hover { background:rgba(255,255,255,.34); }
+
+        /* ===== البطاقات ===== */
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#1a2a6c; margin-bottom:4px; border-right:5px solid #fdbb2d; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        /* ===== الهوية + المستوى ===== */
+        .identity { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+        .avatar {
+            width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg,#1a2a6c,#2980b9);
+            display:flex; align-items:center; justify-content:center; font-size:3rem; color:#fff; flex-shrink:0;
+            box-shadow:0 8px 20px rgba(26,42,108,.28);
+        }
+        .id-info { flex:1; min-width:220px; }
+        .id-info h3 { font-size:1.6rem; font-weight:900; margin-bottom:6px; }
+        .id-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+        .chip { background:#f1f4f8; border:1px solid #e1e8ed; border-radius:20px; padding:5px 13px; font-size:.86rem; color:#34495e; font-weight:600; }
+        .chip.gold { background:#fff8e1; border-color:#f1c40f; color:#7d6608; }
+
+        .level-box { min-width:250px; flex:1; background:#f8fafc; border:1px solid #e6edf3; border-radius:14px; padding:18px; }
+        .level-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+        .level-name { font-size:1.2rem; font-weight:900; color:#1a2a6c; }
+        .level-num { background:#fdbb2d; color:#1a2a6c; border-radius:8px; padding:3px 12px; font-weight:900; font-size:.9rem; }
+        .bar { height:14px; background:#e6edf3; border-radius:10px; overflow:hidden; }
+        .bar > div { height:100%; background:linear-gradient(90deg,#27ae60,#2ecc71); border-radius:10px; transition:width .8s ease; }
+        .level-foot { display:flex; justify-content:space-between; font-size:.84rem; color:#7f8c8d; margin-top:8px; }
+
+        /* ===== الإحصاءات ===== */
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:15px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; line-height:1.2; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.c1 { border-color:#f39c12; } .stat.c1 .v { color:#f39c12; }
+        .stat.c2 { border-color:#3498db; } .stat.c2 .v { color:#3498db; }
+        .stat.c3 { border-color:#27ae60; } .stat.c3 .v { color:#27ae60; }
+        .stat.c4 { border-color:#8e44ad; } .stat.c4 .v { color:#8e44ad; }
+        .stat.c5 { border-color:#e74c3c; } .stat.c5 .v { color:#e74c3c; }
+
+        /* ===== الاختصارات ===== */
+        .shortcuts { display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:14px; }
+        .sc {
+            display:block; border:1px solid #e6edf3; border-radius:14px; padding:20px 16px;
+            text-decoration:none; color:#2c3e50; background:#fff; transition:.25s; border-top:4px solid #bdc3c7;
+        }
+        .sc:hover { transform:translateY(-5px); box-shadow:0 10px 24px rgba(0,0,0,.1); }
+        .sc .ic { font-size:2.3rem; display:block; margin-bottom:9px; }
+        .sc .nm { font-weight:900; font-size:1.04rem; margin-bottom:5px; }
+        .sc .ds { font-size:.83rem; color:#95a5a6; line-height:1.65; }
+        .sc-quiz   { border-top-color:#e67e22; } .sc-quiz:hover   { border-color:#e67e22; }
+        .sc-acad   { border-top-color:#3498db; } .sc-acad:hover   { border-color:#3498db; }
+        .sc-rec    { border-top-color:#16a085; } .sc-rec:hover    { border-color:#16a085; }
+        .sc-games  { border-top-color:#9b59b6; } .sc-games:hover  { border-color:#9b59b6; }
+        .sc-sharia { border-top-color:#1abc9c; } .sc-sharia:hover { border-color:#1abc9c; }
+        .sc-sol    { border-top-color:#2980b9; } .sc-sol:hover    { border-color:#2980b9; }
+        .sc-wall   { border-top-color:#8e44ad; } .sc-wall:hover   { border-color:#8e44ad; }
+        .sc-dict   { border-top-color:#f39c12; } .sc-dict:hover   { border-color:#f39c12; }
+
+        /* ===== التسميع ===== */
+        .rec-row {
+            display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+            border:1px solid #e6edf3; border-radius:12px; padding:14px 16px; margin-bottom:11px; background:#fff;
+        }
+        .rec-row.pending { border-right:5px solid #f39c12; }
+        .rec-row.reviewed { border-right:5px solid #27ae60; }
+        .rec-row .t { font-weight:800; }
+        .rec-row .m { color:#7f8c8d; font-size:.85rem; margin-top:3px; }
+        .rec-fb { background:#f4f8fd; border-right:3px solid #3498db; padding:10px 13px;
+                  border-radius:8px; margin-top:9px; font-size:.9rem; line-height:1.75; width:100%; }
+
+        /* ===== الأوسمة ===== */
+        .badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+        .badge {
+            border:2px solid #e6edf3; border-radius:14px; padding:16px 10px; text-align:center;
+            background:#fff; transition:.25s;
+        }
+        .badge.on { border-color:#f1c40f; background:linear-gradient(180deg,#fffdf5,#fff8e1); box-shadow:0 4px 14px rgba(241,196,15,.22); }
+        .badge.off { opacity:.42; filter:grayscale(1); }
+        .badge .ic { font-size:2.2rem; display:block; margin-bottom:6px; }
+        .badge .nm { font-weight:800; font-size:.95rem; color:#2c3e50; }
+        .badge .ds { font-size:.76rem; color:#95a5a6; margin-top:4px; line-height:1.5; }
+
+        /* ===== بلوم ===== */
+        .bloom-row { margin-bottom:14px; }
+        .bloom-row .lbl { display:flex; justify-content:space-between; font-weight:700; margin-bottom:6px; font-size:.95rem; }
+        .bloom-bar { height:20px; background:#eef2f6; border-radius:10px; overflow:hidden; }
+        .bloom-bar > div { height:100%; border-radius:10px; transition:width .8s ease; }
+
+        /* ===== خريطة المنهج ===== */
+        .unit { margin-bottom:20px; }
+        .unit-head { font-weight:800; color:#1a2a6c; margin-bottom:10px; font-size:1.02rem; background:#f1f4f8; padding:9px 14px; border-radius:9px; }
+        .lesson-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+        .lesson {
+            border:1px solid #e1e8ed; border-radius:10px; padding:11px 13px; font-size:.9rem;
+            background:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; line-height:1.5;
+        }
+        .lesson.done  { border-color:#27ae60; background:#f2fbf6; }
+        .lesson.mid   { border-color:#f39c12; background:#fffaf0; }
+        .lesson .pc   { font-weight:900; font-size:.9rem; white-space:nowrap; }
+
+        /* ===== الجدول ===== */
+        .filters { display:flex; gap:9px; flex-wrap:wrap; margin-bottom:16px; }
+        .fbtn {
+            border:1px solid #d9e2ea; background:#fff; border-radius:20px; padding:7px 15px;
+            cursor:pointer; font-family:'Cairo',sans-serif; font-weight:700; font-size:.88rem; color:#34495e; transition:.2s;
+        }
+        .fbtn.active { background:#1a2a6c; color:#fff; border-color:#1a2a6c; }
+        .tbl-scroll { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; min-width:640px; }
+        th { background:#1a2a6c; color:#fff; padding:13px 11px; text-align:right; font-size:.92rem; white-space:nowrap; }
+        td { padding:12px 11px; border-bottom:1px solid #eef2f6; font-size:.93rem; }
+        tr:hover td { background:#f8fafc; }
+        .src { display:inline-block; padding:3px 11px; border-radius:14px; font-size:.78rem; font-weight:bold; color:#fff; white-space:nowrap; }
+        .score-pill { font-weight:900; }
+
+        /* ===== الإعدادات ===== */
+        .fld { margin-bottom:16px; }
+        .fld label { display:block; margin-bottom:7px; font-weight:700; font-size:.93rem; color:#34495e; }
+        .fld input, .fld select { width:100%; padding:11px 14px; border:1px solid #ccd1d9; border-radius:8px; font-size:1rem; outline:none; font-family:'Cairo',sans-serif; }
+        .fld input:focus, .fld select:focus { border-color:#3498db; }
+        .btn { background:#1a2a6c; color:#fff; border:none; padding:11px 22px; border-radius:8px; font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:.98rem; transition:.25s; }
+        .btn:hover { background:#111d4a; }
+        .btn.g { background:#27ae60; } .btn.g:hover { background:#1e8449; }
+        .btn.r { background:#e74c3c; } .btn.r:hover { background:#c0392b; }
+        .settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px; }
+
+        .empty { text-align:center; color:#95a5a6; padding:34px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #1a2a6c; border-radius:50%; width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .warn { background:#fff9e6; border:1px solid #f1c40f; border-radius:9px; padding:12px 15px; color:#7d6608; font-size:.9rem; line-height:1.7; margin-bottom:16px; }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>🎓 ملفي الشخصي</h1>
+        <div class="top-links">
+            <a href="index.html">الرئيسية 🏠</a>
+            <a href="lobby.html">يلا كويز ⚔️</a>
+            <a href="sharia-portal.html">العلوم الشرعية 🕌</a>
+            <button id="btn-logout">تسجيل الخروج</button>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <!-- الهوية والمستوى -->
+    <div class="card">
+        <div class="identity">
+            <div class="avatar">🎓</div>
+            <div class="id-info">
+                <h3 id="p-name">...</h3>
+                <div style="color:#7f8c8d; font-size:.94rem;" id="p-email"></div>
+                <div class="id-meta" id="p-chips"></div>
+            </div>
+            <div class="level-box">
+                <div class="level-head">
+                    <span class="level-name" id="lv-name">—</span>
+                    <span class="level-num" id="lv-num">المستوى 1</span>
+                </div>
+                <div class="bar"><div id="lv-bar" style="width:0%"></div></div>
+                <div class="level-foot">
+                    <span id="lv-xp">0 نقطة</span>
+                    <span id="lv-next"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔑 حالة كود الدخول -->
+    <div class="card hidden" id="access-card">
+        <h2 id="access-title">🔑 كود الدخول</h2>
+        <p class="sub" id="access-sub"></p>
+        <div id="access-body"></div>
+    </div>
+
+    <!-- 🚀 اختصارات سريعة — تظهر فوراً بلا انتظار تحميل البيانات -->
+    <div class="card">
+        <h2>🚀 ابدأ التعلّم الآن</h2>
+        <p class="sub">كل تحدياتك وكويزاتك في مكان واحد — اضغط أي بطاقة للدخول مباشرة.</p>
+        <div class="shortcuts">
+            <a class="sc sc-quiz" href="lobby.html">
+                <span class="ic">⚔️</span>
+                <div class="nm">يلا كويز المباشر</div>
+                <div class="ds">تحدَّ زملاءك وجهاً لوجه، أو تدرّب منفرداً</div>
+            </a>
+            <a class="sc sc-acad" href="academic-lobby.html">
+                <span class="ic">📊</span>
+                <div class="nm">التقييمات الأكاديمية</div>
+                <div class="ds">تقييمات معيارية تُحتسب في سجلّك</div>
+            </a>
+            <a class="sc sc-rec" href="recitation-student.html">
+                <span class="ic">🎙️</span>
+                <div class="nm">ركن التسميع</div>
+                <div class="ds">سجّل تلاوتك أو حديثك وأرسله لمعلمك</div>
+            </a>
+            <a class="sc sc-games" id="sc-my-games" href="emirati-islamic-grades.html">
+                <span class="ic">🎮</span>
+                <div class="nm">ألعاب صفّي</div>
+                <div class="ds">ألعاب تفاعلية لكل دروس منهجك</div>
+            </a>
+            <a class="sc sc-sharia" href="sharia-portal.html">
+                <span class="ic">🕌</span>
+                <div class="nm">البوابة الشرعية</div>
+                <div class="ds">متون وملخصات واختبارات موثّقة</div>
+            </a>
+            <a class="sc sc-sol" href="solutions.html">
+                <span class="ic">📖</span>
+                <div class="nm">حلول الكتاب</div>
+                <div class="ds">الإجابات النموذجية لكل درس</div>
+            </a>
+            <a class="sc sc-wall" href="boroj-wall.html">
+                <span class="ic">📌</span>
+                <div class="nm">الحائط التفاعلي</div>
+                <div class="ds">شارك أفكارك مع زملائك</div>
+            </a>
+            <a class="sc sc-dict" href="tools/student-glossary.html">
+                <span class="ic">🎓</span>
+                <div class="nm">معجم الطالب</div>
+                <div class="ds">شرح المصطلحات التي تحتاجها</div>
+            </a>
+        </div>
+    </div>
+
+    <div id="load-spin" class="spinner"></div>
+
+    <div id="content" class="hidden">
+
+        <div id="src-warn" class="warn hidden"></div>
+
+        <!-- الإحصاءات -->
+        <div class="stats" style="margin-bottom:20px;">
+            <div class="stat c1"><div class="v" id="s-xp">0</div><div class="k">مجموع النقاط</div></div>
+            <div class="stat c2"><div class="v" id="s-count">0</div><div class="k">عدد التقييمات</div></div>
+            <div class="stat c3"><div class="v" id="s-avg">—</div><div class="k">المتوسط المئوي</div></div>
+            <div class="stat c4"><div class="v" id="s-best">—</div><div class="k">أعلى درجة</div></div>
+            <div class="stat c5"><div class="v" id="s-streak">0</div><div class="k">أيام متتالية 🔥</div></div>
+        </div>
+
+        <!-- منحنى التحسّن -->
+        <div class="card" id="chart-card">
+            <h2>📈 منحنى تحسّنك</h2>
+            <p class="sub">آخر التقييمات ذات الدرجة المئوية، مرتّبة من الأقدم إلى الأحدث.</p>
+            <div id="chart-holder"></div>
+        </div>
+
+        <!-- الأوسمة -->
+        <div class="card">
+            <h2>🏅 أوسمتي</h2>
+            <p class="sub">أوسمة تُفتح تلقائياً كلما تقدّمت. الباهتة لم تحصل عليها بعد.</p>
+            <div class="badges" id="badges"></div>
+        </div>
+
+        <!-- مسار الحفظ -->
+        <div class="card" id="memo-card">
+            <h2>📿 مسار حفظي</h2>
+            <p class="sub">ما حفظته من القرآن الكريم — سجّل تقدّمك ويعتمده معلمك.</p>
+            <div id="memo-summary"></div>
+            <div style="text-align:center; margin-top:16px;">
+                <a href="memorization.html" class="btn" style="text-decoration:none; display:inline-block;">
+                    📿 افتح مسار الحفظ
+                </a>
+            </div>
+        </div>
+
+        <!-- بوابة ولي الأمر -->
+        <div class="card" id="parent-card">
+            <h2>👨‍👩‍👧 بوابة ولي الأمر</h2>
+            <p class="sub">أنشئ كوداً لوالدك أو والدتك ليتابعا نتائجك وحفظك وتسميعك — بلا صلاحية تعديل.</p>
+            <div id="parent-link-area"></div>
+        </div>
+
+        <!-- التسميع -->
+        <div class="card" id="recitation-card">
+            <h2>🎙️ تسميعاتي وتقييم معلمي</h2>
+            <p class="sub">تلاواتك وأحاديثك المسجّلة، ودرجات معلمك وملاحظاته عليها.</p>
+            <div id="rec-stats" class="stats" style="margin-bottom:18px;"></div>
+            <div id="rec-list"></div>
+            <div style="text-align:center; margin-top:16px;">
+                <a href="recitation-student.html" class="btn" style="text-decoration:none; display:inline-block;">
+                    🎤 سجّل تسميعاً جديداً
+                </a>
+            </div>
+        </div>
+
+        <!-- تحليل بلوم -->
+        <div class="card hidden" id="bloom-card">
+            <h2>🧠 تحليل مهارات التفكير (مستويات بلوم)</h2>
+            <p class="sub">نقاط قوّتك وضعفك حسب نوع التفكير المطلوب في الأسئلة، لا حسب الدرس فقط.</p>
+            <div id="bloom-rows"></div>
+            <div id="bloom-advice" style="margin-top:16px; background:#f4f8fd; border-right:4px solid #3498db; padding:14px 16px; border-radius:9px; color:#2c3e50; line-height:1.9;"></div>
+        </div>
+
+        <!-- خريطة المنهج -->
+        <div class="card" id="curr-card">
+            <h2>🗺️ خريطة تقدّمي في المنهج</h2>
+            <p class="sub" id="curr-sub">الدروس التي أنجزتها من منهج صفّك.</p>
+            <div id="curriculum"></div>
+        </div>
+
+        <!-- سجل النتائج -->
+        <div class="card">
+            <h2>📋 سجل نتائجي الكامل</h2>
+            <p class="sub">كل نتائجك من جميع أقسام المنصة في مكان واحد.</p>
+            <div class="filters" id="filters"></div>
+            <div class="tbl-scroll">
+                <table id="res-table">
+                    <thead>
+                        <tr>
+                            <th>المصدر</th>
+                            <th>الدرس / المادة</th>
+                            <th>الدرجة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-body"></tbody>
+                </table>
+            </div>
+            <div id="res-empty" class="empty hidden">
+                لا توجد نتائج بعد.<br>
+                ابدأ من <a href="lobby.html" style="color:#1a2a6c; font-weight:bold;">يلا كويز</a>
+                أو <a href="sharia-portal.html" style="color:#1a2a6c; font-weight:bold;">البوابة الشرعية</a> وستظهر نتائجك هنا فوراً.
+            </div>
+        </div>
+
+        <!-- الإعدادات -->
+        <div class="card">
+            <h2>⚙️ إعدادات حسابي</h2>
+            <p class="sub">تعديل بياناتك الشخصية وربط حسابك بمعلمك.</p>
+            <div class="settings-grid">
+                <div>
+                    <div class="fld">
+                        <label for="e-name">الاسم</label>
+                        <input type="text" id="e-name">
+                    </div>
+                    <div class="fld">
+                        <label for="e-grade">الصف الدراسي</label>
+                        <select id="e-grade">
+                            <option value="">-- غير محدد --</option>
+                            <option value="G1">الصف الأول</option><option value="G2">الصف الثاني</option>
+                            <option value="G3">الصف الثالث</option><option value="G4">الصف الرابع</option>
+                            <option value="G5">الصف الخامس</option><option value="G6">الصف السادس</option>
+                            <option value="G7">الصف السابع</option><option value="G8">الصف الثامن</option>
+                            <option value="G9">الصف التاسع</option><option value="G10">الصف العاشر</option>
+                            <option value="G11">الصف الحادي عشر</option><option value="G12">الصف الثاني عشر</option>
+                        </select>
+                    </div>
+                    <button class="btn g" id="btn-save-info">حفظ البيانات ✔️</button>
+                </div>
+                <div>
+                    <div class="fld">
+                        <label for="e-teacher">كود المعلم المشرف</label>
+                        <input type="text" id="e-teacher" placeholder="TCH-XXXX">
+                        <small style="color:#95a5a6; font-size:.83rem; display:block; margin-top:6px;">نتائجك القادمة ستُرسل لهذا المعلم.</small>
+                    </div>
+                    <button class="btn" id="btn-save-teacher">حفظ كود المعلم</button>
+                    <hr style="margin:22px 0; border:none; border-top:1px solid #eef2f6;">
+                    <button class="btn r" id="btn-reset-pass">إرسال رابط تغيير كلمة المرور 📧</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { auth, db } from "./firebase-shared.js";
+    import { getUserProfile, onAuthReady } from "./roles.js";
+    import { GRADE_LABELS, gradeCurriculum } from "./lesson-map.js";
+    import { loadStudentRecords, computeStats, computeLevel, computeBadges, buildLessonProgress, SOURCES } from "./progress-engine.js";
+    import { RECITATION_TYPES, loadStudentRecitations, recitationStats, scoreColor, fmtDuration } from "./recitation-engine.js";
+    import { checkAccess, accessMessage } from "./access-codes.js";
+    import { loadMemorization, trackStats, overallStats } from "./memorization-engine.js";
+    import { TRACKS } from "./quran-data.js";
+
+    let me = null, allRecords = [], activeFilter = 'all';
+
+    // منع أي حقن HTML من بيانات المستخدمين
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+
+    document.getElementById('btn-logout').onclick = () => {
+        if (confirm('هل تريد تسجيل الخروج؟')) signOut(auth).then(() => location.href = 'index.html');
+    };
+
+    onAuthReady(async (profile) => {
+        me = profile;
+        renderIdentity();
+        renderAccessStatus();      // لا ننتظرها — تعمل بالتوازي
+        await loadEverything();
+    });
+
+    // ---------- 🔑 حالة كود الدخول ----------
+    async function renderAccessStatus() {
+        const card  = document.getElementById('access-card');
+        const title = document.getElementById('access-title');
+        const sub   = document.getElementById('access-sub');
+        const body  = document.getElementById('access-body');
+
+        let access;
+        try { access = await checkAccess(me); }
+        catch (e) { return; }
+
+        card.classList.remove('hidden');
+
+        if (access.allowed && access.reason === 'code') {
+            const exp = me.raw.accessExpiresAt && me.raw.accessExpiresAt.toDate
+                ? me.raw.accessExpiresAt.toDate() : null;
+            title.textContent = '🔑 كود الدخول — مُفعّل';
+            sub.textContent = 'وصولك للكويزات والتحديات مفتوح.';
+            body.innerHTML = `
+                <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+                            background:#eafaf1; border:1px solid #a9dfbf; border-radius:12px; padding:16px 18px;">
+                    <span style="font-size:1.8rem;">✅</span>
+                    <div style="flex:1; min-width:200px;">
+                        <div style="font-weight:900; color:#1e8449;">الكود: ${esc(access.code)}</div>
+                        <div style="color:#7f8c8d; font-size:.9rem; margin-top:3px;">
+                            ${exp ? 'صالح حتى ' + esc(fmtDate(exp)) : 'بلا تاريخ انتهاء'}
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        if (access.allowed) {
+            // معلم/مدير أو طالب معتمد — لا داعي لإظهار البطاقة
+            card.classList.add('hidden');
+            return;
+        }
+
+        // لا يملك وصولاً
+        title.textContent = '🔒 تحتاج كود دخول';
+        sub.textContent = 'الكويزات والتحديات مقفلة على أصحاب الأكواد.';
+        body.innerHTML = `
+            <div style="background:#fff9e6; border:1px solid #f1c40f; border-radius:12px;
+                        padding:18px 20px; color:#7d6608; line-height:1.9;">
+                ${esc(accessMessage(access.reason))}<br>
+                للحصول على كود تواصل مع معلمك أو إدارة المنصة على
+                <strong style="direction:ltr; display:inline-block;">0553169697</strong>.
+                <div style="margin-top:14px;">
+                    <a href="student-access.html" class="btn" style="text-decoration:none; display:inline-block;">
+                        🔑 عندي كود — أدخله الآن
+                    </a>
+                </div>
+            </div>`;
+    }
+
+    function renderIdentity() {
+        document.getElementById('p-name').textContent  = me.name;
+        document.getElementById('p-email').textContent = me.email;
+        document.getElementById('e-name').value        = me.name || '';
+        document.getElementById('e-grade').value       = me.raw.grade || '';
+        document.getElementById('e-teacher').value     = me.raw.teacherCode || '';
+
+        // ربط اختصار «ألعاب صفّي» بصفحة صف الطالب مباشرة
+        const gradeNum = me.raw.grade ? parseInt(String(me.raw.grade).replace('G', ''), 10) : null;
+        const gamesLink = document.getElementById('sc-my-games');
+        if (gamesLink) {
+            gamesLink.href = (gradeNum >= 1 && gradeNum <= 12)
+                ? `grade-${gradeNum}.html`
+                : 'emirati-islamic-grades.html';
+            gamesLink.querySelector('.ds').textContent = (gradeNum >= 1 && gradeNum <= 12)
+                ? `ألعاب ${GRADE_LABELS['G' + gradeNum] || ''} التفاعلية`
+                : 'حدّد صفّك من الإعدادات لتصل لألعابك مباشرة';
+        }
+
+        const chips = [`<span class="chip">${esc(me.roleLabel)}</span>`];
+        if (me.raw.grade)  chips.push(`<span class="chip">${esc(GRADE_LABELS[me.raw.grade] || me.raw.grade)}</span>`);
+        if (me.raw.school) chips.push(`<span class="chip">🏫 ${esc(me.raw.school)}</span>`);
+        if (me.raw.teacherCode) chips.push(`<span class="chip gold">👨‍🏫 ${esc(me.raw.teacherCode)}</span>`);
+        document.getElementById('p-chips').innerHTML = chips.join('');
+    }
+
+    async function loadEverything() {
+        const { records, errors } = await loadStudentRecords(me.uid);
+        allRecords = records;
+
+        const stats = computeStats(records);
+        const lvl   = computeLevel(stats.totalXP);
+
+        // المستوى
+        document.getElementById('lv-name').textContent = lvl.name;
+        document.getElementById('lv-num').textContent  = 'المستوى ' + lvl.level;
+        document.getElementById('lv-bar').style.width  = lvl.progressPct + '%';
+        document.getElementById('lv-xp').textContent   = `${stats.totalXP} نقطة`;
+        document.getElementById('lv-next').textContent = lvl.isMax
+            ? 'بلغت أعلى مستوى 👑'
+            : `متبقٍ ${lvl.remaining} نقطة إلى «${lvl.nextName}»`;
+
+        // الإحصاءات
+        document.getElementById('s-xp').textContent     = stats.totalXP;
+        document.getElementById('s-count').textContent  = stats.total;
+        document.getElementById('s-avg').textContent    = stats.avgPercent === null ? '—' : stats.avgPercent + '%';
+        document.getElementById('s-best').textContent   = stats.bestPercent === null ? '—' : stats.bestPercent + '%';
+        document.getElementById('s-streak').textContent = stats.streak;
+
+        if (errors.length) {
+            const w = document.getElementById('src-warn');
+            w.classList.remove('hidden');
+            w.innerHTML = '⚠️ تعذّر تحميل بعض المصادر: ' + esc(errors.map(e => SOURCES[e.source] ? SOURCES[e.source].label : e.source).join('، ')) +
+                          '. بقية النتائج معروضة بشكل صحيح.';
+        }
+
+        renderChart(records);
+        renderBadges(records, stats);
+        renderBloom(stats);
+        renderCurriculum(records);
+        renderFilters(stats);
+        renderTable();
+        renderRecitations();
+        renderMemorization();
+        renderParentLink();
+
+        document.getElementById('load-spin').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+    }
+
+    // ---------- 📿 مسار الحفظ ----------
+    async function renderMemorization() {
+        const area = document.getElementById('memo-summary');
+        let memo;
+        try { memo = await loadMemorization(me.uid); }
+        catch (e) { area.innerHTML = `<div class="empty">تعذّر تحميل سجل الحفظ.</div>`; return; }
+
+        const surahs = memo.surahs || {};
+        const o = overallStats(surahs);
+
+        if (o.memorized === 0 && o.inProgress === 0) {
+            area.innerHTML = `<div class="empty">
+                لم تبدأ مسار الحفظ بعد.<br>
+                سجّل ما حفظته من جزء عمّ وتابع تقدّمك سورة بسورة.
+            </div>`;
+            return;
+        }
+
+        const rows = TRACKS.map(t => {
+            const st = trackStats(surahs, t.key);
+            if (st.memorized === 0 && st.inProgress === 0) return '';
+            return `<div style="margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; font-weight:700; margin-bottom:6px; font-size:.95rem;">
+                    <span>${t.icon} ${esc(t.label)}</span>
+                    <span style="color:${t.color};">${st.memorized} / ${st.total} سورة (${st.percent}%)</span>
+                </div>
+                <div class="bar"><div style="width:${st.percent}%; background:${t.color};"></div></div>
+            </div>`;
+        }).join('');
+
+        area.innerHTML = `
+            <div class="stats" style="margin-bottom:18px;">
+                <div class="stat c3"><div class="v">${o.confirmed}</div><div class="k">معتمدة من معلمي</div></div>
+                <div class="stat c2"><div class="v">${o.memorized}</div><div class="k">سور حفظتها</div></div>
+                <div class="stat c1"><div class="v">${o.ayahsDone}</div><div class="k">آية محفوظة</div></div>
+            </div>
+            ${rows}`;
+    }
+
+    // ---------- 👨‍👩‍👧 كود ولي الأمر ----------
+    async function renderParentLink() {
+        const area = document.getElementById('parent-link-area');
+        const existing = me.raw.parentCode || null;
+
+        function box(code) {
+            return `<div style="background:#faf4fd; border:2px dashed #ce93d8; border-radius:14px;
+                        padding:22px; text-align:center;">
+                    <div style="font-size:.9rem; color:#6a1b9a; font-weight:700; margin-bottom:10px;">
+                        كود ولي الأمر — أعطِه لوالدك أو والدتك
+                    </div>
+                    <div style="font-size:1.9rem; font-weight:900; color:#4a148c; letter-spacing:3px;
+                                direction:ltr; margin-bottom:14px;">${esc(code)}</div>
+                    <button class="btn" id="btn-copy-parent" style="background:#6a1b9a;">📋 نسخ الكود</button>
+                    <button class="btn" id="btn-new-parent" style="background:#95a5a6; margin-right:8px;">↻ كود جديد</button>
+                    <div style="font-size:.85rem; color:#7f8c8d; margin-top:14px; line-height:1.8;">
+                        يسجّل ولي الأمر حساباً بصفة «ولي أمر» ثم يدخل هذا الكود.<br>
+                        إنشاء كود جديد يُلغي القديم فوراً.
+                    </div>
+                </div>`;
+        }
+
+        if (existing) {
+            area.innerHTML = box(existing);
+        } else {
+            area.innerHTML = `<div style="text-align:center;">
+                <button class="btn" id="btn-gen-parent" style="background:#6a1b9a;">
+                    🔗 إنشاء كود لولي الأمر
+                </button>
+            </div>`;
+        }
+
+        const gen = document.getElementById('btn-gen-parent');
+        if (gen) gen.onclick = () => createParentCode(gen);
+
+        const copy = document.getElementById('btn-copy-parent');
+        if (copy) copy.onclick = () => {
+            navigator.clipboard.writeText(me.raw.parentCode);
+            alert('تم نسخ الكود: ' + me.raw.parentCode);
+        };
+
+        const renew = document.getElementById('btn-new-parent');
+        if (renew) renew.onclick = () => {
+            if (confirm('إنشاء كود جديد سيُلغي الكود الحالي.\nهل تريد المتابعة؟')) createParentCode(renew);
+        };
+    }
+
+    async function createParentCode(btn) {
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = 'جاري الإنشاء...';
+
+        const code = 'PAR-' + Math.floor(100000 + Math.random() * 900000);
+        try {
+            // إلغاء الكود القديم إن وُجد
+            if (me.raw.parentCode) {
+                try { await setDoc(doc(db, 'parent_links', me.raw.parentCode), { isActive: false }, { merge: true }); }
+                catch (e) { /* قد يكون محذوفاً */ }
+            }
+
+            await setDoc(doc(db, 'parent_links', code), {
+                code,
+                studentUid: me.uid,
+                studentName: me.name,
+                isActive: true,
+                createdAt: new Date()
+            });
+
+            await setDoc(doc(db, 'users', me.uid), { parentCode: code }, { merge: true });
+            me.raw.parentCode = code;
+            renderParentLink();
+
+        } catch (e) {
+            console.error(e);
+            const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+            alert(denied
+                ? 'تعذّر إنشاء الكود: قواعد الحماية ترفض العملية.\n\nتأكد من نشر أحدث نسخة من firestore.rules.'
+                : 'تعذّر إنشاء الكود: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = old;
+        }
+    }
+
+    // ---------- التسميع ----------
+    async function renderRecitations() {
+        const statsEl = document.getElementById('rec-stats');
+        const listEl  = document.getElementById('rec-list');
+
+        let list = [];
+        try {
+            list = await loadStudentRecitations(me.uid);
+        } catch (e) {
+            listEl.innerHTML = `<div class="empty">تعذّر تحميل تسميعاتك: ${esc(e.message)}</div>`;
+            return;
+        }
+
+        const st = recitationStats(list);
+        statsEl.innerHTML = `
+            <div class="stat c3"><div class="v">${st.total}</div><div class="k">عدد تسميعاتي</div></div>
+            <div class="stat c1"><div class="v">${st.pending}</div><div class="k">بانتظار التصحيح</div></div>
+            <div class="stat c2"><div class="v">${st.avgScore === null ? '—' : st.avgScore + '%'}</div><div class="k">متوسط تسميعي</div></div>`;
+
+        if (!list.length) {
+            listEl.innerHTML = `<div class="empty">
+                لم تسجّل أي تسميع بعد.<br>
+                سجّل تلاوتك أو حديثاً بصوتك، وسيصحّحه لك معلمك ويظهر تقييمه هنا.
+            </div>`;
+            return;
+        }
+
+        // نعرض آخر ٥ فقط هنا، والباقي في صفحة التسميع
+        listEl.innerHTML = list.slice(0, 5).map(r => {
+            const t = RECITATION_TYPES[r.type] || RECITATION_TYPES.other;
+            const reviewed = r.status === 'reviewed' && r.score !== null;
+            return `<div class="rec-row ${reviewed ? 'reviewed' : 'pending'}">
+                <div>
+                    <div class="t">${t.icon} ${esc(r.title)}${r.reference ? ' — ' + esc(r.reference) : ''}</div>
+                    <div class="m">${esc(t.label)} · ${fmtDuration(r.durationSec)} · ${esc(fmtDate(r.createdAt))}</div>
+                </div>
+                <div style="text-align:left;">
+                    ${reviewed
+                        ? `<div style="font-size:1.5rem; font-weight:900; color:${scoreColor(r.score)};">${r.score}%</div>
+                           <div style="font-size:.83rem; color:#7f8c8d;">${esc(r.level)}</div>`
+                        : `<span style="background:#fef5e7; color:#b9770e; padding:5px 14px; border-radius:20px;
+                                 font-size:.83rem; font-weight:bold;">⏳ بانتظار التصحيح</span>`}
+                </div>
+                ${r.feedback ? `<div class="rec-fb">💬 <strong>ملاحظة معلمك:</strong> ${esc(r.feedback)}</div>` : ''}
+            </div>`;
+        }).join('') + (list.length > 5
+            ? `<div style="text-align:center; color:#7f8c8d; font-size:.9rem; margin-top:10px;">
+                 وهناك ${list.length - 5} تسميعاً آخر — اضغط الزر بالأسفل لعرضها كلها
+               </div>`
+            : '');
+    }
+
+    // ---------- منحنى التحسّن (SVG بسيط بلا مكتبات) ----------
+    function renderChart(records) {
+        const pts = records.filter(r => r.percent !== null && r.date)
+                           .sort((a,b) => a.date - b.date).slice(-20);
+        const holder = document.getElementById('chart-holder');
+
+        if (pts.length < 2) {
+            holder.innerHTML = '<div class="empty">تحتاج تقييمين على الأقل لرسم منحنى تحسّنك 📈</div>';
+            return;
+        }
+
+        const W = 760, H = 230, P = 34;
+        const x = i => P + (i * (W - P*2)) / (pts.length - 1);
+        const y = v => H - P - ((v / 100) * (H - P*2));
+
+        const line = pts.map((p,i) => `${x(i)},${y(p.percent)}`).join(' ');
+        const area = `${P},${H-P} ${line} ${x(pts.length-1)},${H-P}`;
+
+        const grid = [0,25,50,75,100].map(v =>
+            `<line x1="${P}" y1="${y(v)}" x2="${W-P}" y2="${y(v)}" stroke="#eef2f6" stroke-width="1"/>
+             <text x="${P-8}" y="${y(v)+4}" font-size="11" fill="#95a5a6" text-anchor="end">${v}</text>`).join('');
+
+        const dots = pts.map((p,i) =>
+            `<circle cx="${x(i)}" cy="${y(p.percent)}" r="4.5" fill="#fff" stroke="${SOURCES[p.source].color}" stroke-width="3">
+                <title>${esc(p.title)} — ${p.percent}% — ${esc(fmtDate(p.date))}</title>
+             </circle>`).join('');
+
+        holder.innerHTML = `
+            <div style="overflow-x:auto;">
+              <svg viewBox="0 0 ${W} ${H}" style="width:100%; min-width:520px; height:auto; display:block;">
+                <defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3498db" stop-opacity=".28"/>
+                    <stop offset="100%" stop-color="#3498db" stop-opacity="0"/>
+                </linearGradient></defs>
+                ${grid}
+                <polygon points="${area}" fill="url(#grad)"/>
+                <polyline points="${line}" fill="none" stroke="#3498db" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+                ${dots}
+              </svg>
+            </div>
+            <div style="text-align:center; color:#95a5a6; font-size:.85rem; margin-top:6px;">
+                من ${esc(fmtDate(pts[0].date))} إلى ${esc(fmtDate(pts[pts.length-1].date))} — مرّر على النقاط لتفاصيلها
+            </div>`;
+    }
+
+    // ---------- الأوسمة ----------
+    function renderBadges(records, stats) {
+        document.getElementById('badges').innerHTML = computeBadges(records, stats).map(b => `
+            <div class="badge ${b.earned ? 'on' : 'off'}">
+                <span class="ic">${b.icon}</span>
+                <div class="nm">${esc(b.name)}</div>
+                <div class="ds">${esc(b.desc)}</div>
+            </div>`).join('');
+    }
+
+    // ---------- بلوم ----------
+    function renderBloom(stats) {
+        if (!stats.hasBloom) return;
+
+        const card = document.getElementById('bloom-card');
+        card.classList.remove('hidden');
+
+        const order = ['تذكر','فهم','تطبيق','تحليل','تركيب','تقويم','إبداع'];
+        const entries = Object.entries(stats.bloom)
+            .sort((a,b) => (order.indexOf(a[0]) + 99*(order.indexOf(a[0])<0)) - (order.indexOf(b[0]) + 99*(order.indexOf(b[0])<0)));
+
+        document.getElementById('bloom-rows').innerHTML = entries.map(([lvl, v]) => {
+            const color = v.percent >= 80 ? '#27ae60' : v.percent >= 60 ? '#f39c12' : '#e74c3c';
+            return `<div class="bloom-row">
+                <div class="lbl"><span>${esc(lvl)}</span><span style="color:${color};">${v.percent}% (${v.correct}/${v.total})</span></div>
+                <div class="bloom-bar"><div style="width:${v.percent}%; background:${color};"></div></div>
+            </div>`;
+        }).join('');
+
+        const sorted = entries.slice().sort((a,b) => a[1].percent - b[1].percent);
+        const weakest = sorted[0], strongest = sorted[sorted.length - 1];
+        document.getElementById('bloom-advice').innerHTML =
+            `💡 <strong>قراءة سريعة:</strong> أقوى مهاراتك هي <strong style="color:#27ae60;">${esc(strongest[0])}</strong> بنسبة ${strongest[1].percent}%، ` +
+            `وأضعفها <strong style="color:#e74c3c;">${esc(weakest[0])}</strong> بنسبة ${weakest[1].percent}%. ` +
+            `ركّز في مراجعتك القادمة على أسئلة «${esc(weakest[0])}».`;
+    }
+
+    // ---------- خريطة المنهج ----------
+    function renderCurriculum(records) {
+        const grade = me.raw.grade;
+        const holder = document.getElementById('curriculum');
+
+        if (!grade) {
+            holder.innerHTML = '<div class="empty">حدّد صفّك الدراسي من الإعدادات بالأسفل لتظهر لك خريطة تقدّمك في المنهج 🗺️</div>';
+            return;
+        }
+
+        const curr = gradeCurriculum(grade);
+        document.getElementById('curr-sub').textContent = `دروس ${GRADE_LABELS[grade] || grade} — الأخضر أنجزته، الأصفر يحتاج تحسيناً، الرمادي لم تبدأه.`;
+
+        if (!curr.length) {
+            holder.innerHTML = '<div class="empty">لم تُرفع بعد خريطة دروس هذا الصف.</div>';
+            return;
+        }
+
+        const prog = buildLessonProgress(records);
+        let doneCount = 0, totalCount = 0;
+
+        const html = curr.map(u => {
+            const lessons = u.lessons.map(l => {
+                totalCount++;
+                const p = prog[l.id];
+                let cls = '', right = '<span class="pc" style="color:#bdc3c7;">—</span>';
+                if (p) {
+                    doneCount++;
+                    if (p.best === null)      { cls = 'done'; right = `<span class="pc" style="color:#27ae60;">✔</span>`; }
+                    else if (p.best >= 60)    { cls = 'done'; right = `<span class="pc" style="color:#27ae60;">${p.best}%</span>`; }
+                    else                      { cls = 'mid';  right = `<span class="pc" style="color:#f39c12;">${p.best}%</span>`; }
+                }
+                return `<div class="lesson ${cls}"><span>${esc(l.name)}</span>${right}</div>`;
+            }).join('');
+            return `<div class="unit">
+                        <div class="unit-head">${esc(u.termLabel)} — الوحدة ${esc(u.unit.slice(1))}</div>
+                        <div class="lesson-grid">${lessons}</div>
+                    </div>`;
+        }).join('');
+
+        const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+        holder.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid #e6edf3; border-radius:12px; padding:16px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; font-weight:800; margin-bottom:8px;">
+                    <span>إجمالي التقدّم في المنهج</span>
+                    <span style="color:#27ae60;">${doneCount} / ${totalCount} درساً (${pct}%)</span>
+                </div>
+                <div class="bar"><div style="width:${pct}%"></div></div>
+            </div>${html}`;
+    }
+
+    // ---------- الفلاتر والجدول ----------
+    function renderFilters(stats) {
+        const items = [{ key:'all', label:'الكل', n:stats.total }];
+        Object.values(SOURCES).forEach(s => {
+            if (stats.perSource[s.key] > 0) items.push({ key:s.key, label:`${s.icon} ${s.label}`, n:stats.perSource[s.key] });
+        });
+        document.getElementById('filters').innerHTML = items.map(i =>
+            `<button class="fbtn ${i.key==='all'?'active':''}" data-k="${i.key}">${esc(i.label)} (${i.n})</button>`).join('');
+
+        document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => {
+            document.querySelectorAll('.fbtn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            activeFilter = b.dataset.k;
+            renderTable();
+        });
+    }
+
+    function renderTable() {
+        const rows = activeFilter === 'all' ? allRecords : allRecords.filter(r => r.source === activeFilter);
+        const body = document.getElementById('res-body');
+
+        document.getElementById('res-empty').classList.toggle('hidden', rows.length > 0);
+        document.getElementById('res-table').classList.toggle('hidden', rows.length === 0);
+
+        body.innerHTML = rows.map(r => {
+            const s = SOURCES[r.source];
+            const score = r.percent !== null
+                ? `<span class="score-pill" style="color:${r.percent>=75?'#27ae60':r.percent>=50?'#f39c12':'#e74c3c'};">${r.percent}%</span>`
+                : `<span class="score-pill" style="color:#e67e22;">${r.rawScore} نقطة</span>`;
+            return `<tr>
+                <td><span class="src" style="background:${s.color};">${s.icon} ${esc(s.label)}</span></td>
+                <td>${esc(r.title)}</td>
+                <td>${score}</td>
+                <td style="color:#7f8c8d; font-size:.88rem;">${esc(fmtDate(r.date))}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ---------- الإعدادات ----------
+    document.getElementById('btn-save-info').onclick = async function () {
+        const name  = document.getElementById('e-name').value.trim();
+        const grade = document.getElementById('e-grade').value;
+        if (!name) return alert('الاسم لا يمكن أن يكون فارغاً!');
+
+        this.disabled = true; this.textContent = 'جاري الحفظ...';
+        try {
+            await setDoc(doc(db, 'users', me.uid), { name, grade: grade || null }, { merge: true });
+            me.name = name; me.raw.grade = grade || null;
+            renderIdentity();
+            renderCurriculum(allRecords);
+            alert('✅ تم حفظ بياناتك بنجاح!');
+        } catch (e) { alert('تعذّر الحفظ: ' + e.message); }
+        finally { this.disabled = false; this.textContent = 'حفظ البيانات ✔️'; }
+    };
+
+    document.getElementById('btn-save-teacher').onclick = async function () {
+        let code = document.getElementById('e-teacher').value.trim().toUpperCase();
+        if (code && !code.startsWith('TCH-')) { code = 'TCH-' + code; document.getElementById('e-teacher').value = code; }
+
+        this.disabled = true; this.textContent = 'جاري الحفظ...';
+        try {
+            await setDoc(doc(db, 'users', me.uid), { teacherCode: code || null }, { merge: true });
+            me.raw.teacherCode = code || null;
+            renderIdentity();
+            alert('✅ تم تحديث كود المعلم المشرف!');
+        } catch (e) { alert('تعذّر الحفظ: ' + e.message); }
+        finally { this.disabled = false; this.textContent = 'حفظ كود المعلم'; }
+    };
+
+    document.getElementById('btn-reset-pass').onclick = async () => {
+        if (!confirm('سيتم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك. متابعة؟')) return;
+        try {
+            await sendPasswordResetEmail(auth, me.email);
+            alert('📧 تم إرسال الرابط! تفقّد صندوق الوارد أو البريد المزعج.');
+        } catch (e) { alert('تعذّر الإرسال: ' + e.message); }
+    };
+</script>
+
+</body>
+</html>

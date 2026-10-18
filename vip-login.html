@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دخول منصة الاختبارات - VIP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); 
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            height: 100vh; display: flex; justify-content: center; align-items: center; 
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px; border-radius: 20px; width: 90%; max-width: 450px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 4px solid #f1c40f;
+            position: relative;
+        }
+
+        .vip-badge {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            background: #f1c40f; color: #2c3e50; padding: 5px 20px; border-radius: 20px;
+            font-weight: 900; font-size: 1.2rem; box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            letter-spacing: 2px;
+        }
+
+        h1 { color: #1a2a6c; font-size: 2rem; margin-bottom: 10px; font-weight: 900; }
+        p { color: #7f8c8d; margin-bottom: 30px; font-size: 1.1rem; }
+
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group input {
+            width: 100%; padding: 15px; font-size: 1.5rem; text-align: center;
+            border: 2px solid #bdc3c7; border-radius: 10px; outline: none;
+            transition: 0.3s; letter-spacing: 3px; font-weight: bold; color: #2c3e50;
+            text-transform: uppercase;
+        }
+        .input-group input:focus { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
+
+        .btn-login {
+            background: linear-gradient(135deg, #1a2a6c, #2980b9);
+            color: white; border: none; padding: 15px; width: 100%;
+            border-radius: 10px; font-size: 1.3rem; font-weight: bold;
+            cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .btn-login:disabled { background: #95a5a6; cursor: not-allowed; transform: none; }
+
+        .error-msg { color: #e74c3c; font-weight: bold; margin-top: 15px; display: none; }
+        
+        .qr-btn {
+            background: none; border: none; color: #1a2a6c; font-weight: bold;
+            margin-top: 20px; cursor: pointer; text-decoration: underline; font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="vip-badge">VIP ACCESS</div>
+        <h1>BoRooJ Way</h1>
+        <p>أدخل الكود الخاص بك للبدء بالاختبارات</p>
+
+        <div class="input-group">
+            <input type="text" id="access-code" placeholder="أدخل الكود هنا" autocomplete="off">
+        </div>
+
+        <button class="btn-login" id="btn-submit" onclick="verifyCode()">تسجيل الدخول 🚀</button>
+        <div id="error-message" class="error-msg">❌ الكود غير صحيح أو منتهي الصلاحية!</div>
+
+        <button class="qr-btn" onclick="alert('سيتم تفعيل كاميرا الـ QR Code قريباً!')">📷 أو امسح الـ QR Code</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.verifyCode = async function() {
+            const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
+            const btn = document.getElementById('btn-submit');
+            const errorMsg = document.getElementById('error-message');
+
+            if (!codeInput) {
+                errorMsg.textContent = "⚠️ الرجاء إدخال الكود أولاً!";
+                errorMsg.style.display = "block";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "جاري التحقق... ⏳";
+            errorMsg.style.display = "none";
+
+            try {
+                // 🔒 القراءة بالمعرّف المباشر بدل استعراض المجموعة كاملة.
+                // الاستعلام القديم كان يتطلب صلاحية سرد كل الأكواد، وهو ما
+                // يكشف أسماء الطلاب ومدارسهم — وقواعد الحماية تمنعه الآن.
+                const codeSnap = await getDoc(doc(db, "premium_codes", codeInput));
+
+                if (!codeSnap.exists()) {
+                    errorMsg.textContent = "❌ الكود غير صحيح، تأكد من الأحرف والأرقام.";
+                    errorMsg.style.display = "block";
+                    btn.disabled = false;
+                    btn.textContent = "تسجيل الدخول 🚀";
+                } else {
+                    const codeData = codeSnap.data();
+
+                    if (codeData.isActive === false) {
+                        errorMsg.textContent = "❌ هذا الكود تم إيقافه أو استخدامه مسبقاً.";
+                        errorMsg.style.display = "block";
+                        btn.disabled = false;
+                        btn.textContent = "تسجيل الدخول 🚀";
+                    } else {
+                        // حفظ بيانات الطالب في الجلسة لدخول الاختبارات
+                        sessionStorage.setItem('vip_student_code', codeData.code);
+                        sessionStorage.setItem('vip_student_name', codeData.studentName);
+                        sessionStorage.setItem('vip_student_school', codeData.school);
+                        sessionStorage.setItem('vip_student_grade', codeData.grade);
+                        
+                        btn.style.background = "#27ae60";
+                        btn.textContent = "تم التحقق! جاري الدخول... ✅";
+                        
+                        // توجيه الطالب إلى اللوبي الخاص بالمدفوع (سنصممه لاحقاً)
+                        setTimeout(() => {
+                            window.location.href = "vip-lobby.html"; 
+                        }, 1000);
+                    }
+                }
+            } catch (error) {
+                errorMsg.textContent = "⚠️ حدث خطأ في الاتصال بالخادم.";
+                errorMsg.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "تسجيل الدخول 🚀";
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>

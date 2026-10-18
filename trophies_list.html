@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تشكيلة الميداليات الفاخرة - إديوكيشن بازار</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* (هنا ضع نفس تنسيقات CSS الموجودة في teachers-accessories.html لضمان التناسق) */
+        /* أمثلة للتنسيق الأساسي للكروت الجديدة */
+        .listing-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .item-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            padding: 20px;
+            text-align: center;
+        }
+        .item-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .item-card h3 {
+            color: #4A00E0;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        .item-card p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .quantity-control {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+        }
+        .quantity-control input[type="number"] {
+            width: 60px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 0 10px;
+        }
+        .add-to-cart-btn {
+            background-color: #38ef7d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🥇 الميداليات المتاحة للشراء</h1>
+        <p>اختر التصميم والكمية المناسبة لاحتفاليتك</p>
+    </header>
+
+    <div class="listing-container">
+
+        <div class="item-card">
+            <img src="images/medal_gold.png" alt="ميدالية ذهبية فاخرة">
+            <h3>ميدالية المركز الأول (ذهبي)</h3>
+            <p>السعر: 15 ر.س</p>
+            <p>ميدالية نحاسية مطلية بالذهب، مثالية للمتفوقين.</p>
+
+            <div class="quantity-control">
+                <label for="qty1">الكمية:</label>
+                <input type="number" id="qty1" value="1" min="1">
+            </div>
+            <button class="add-to-cart-btn">أضف إلى السلة <i class="fas fa-shopping-cart"></i></button>
+        </div>
+
+        <div class="item-card">
+            <img src="images/medal_silver.png" alt="ميدالية فضية للوصيف">
+            <h3>ميدالية المركز الثاني (فضي)</h3>
+            <p>السعر: 12 ر.س</p>
+            <p>ميدالية فضية بجودة عالية، تناسب الوصيفين.</p>
+
+            <div class="quantity-control">
+                <label for="qty2">الكمية:</label>
+                <input type="number" id="qty2" value="1" min="1">
+            </div>
+            <button class="add-to-cart-btn">أضف إلى السلة <i class="fas fa-shopping-cart"></i></button>
+        </div>
+
+        </div>
+
+</body>
+</html>

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حائط بروج التفاعلي - BoRooJ Wall</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        
+        body { 
+            background-color: #f0f2f5; 
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #2c3e50; 
+            min-height: 100vh; 
+        }
+
+        .hidden { display: none !important; }
+
+        /* =========================================
+           1. شاشة البداية (اختيار الحائط)
+        ========================================= */
+        .lobby-container { max-width: 800px; margin: 50px auto; padding: 20px; }
+        .lobby-panel { background: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 6px solid #1a2a6c; margin-bottom: 25px; text-align: center; }
+        .lobby-panel h2 { color: #1a2a6c; margin-bottom: 15px; font-size: 1.8rem; font-weight: 900; }
+        .lobby-panel p { color: #7f8c8d; margin-bottom: 25px; font-size: 1.1rem; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; text-align: right; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #34495e; font-size: 0.95rem; }
+        .input-group select, .input-group input { width: 100%; padding: 12px; border: 1px solid #ccd1d9; border-radius: 6px; font-size: 1rem; outline: none; transition: border 0.3s; }
+        .input-group select:focus, .input-group input:focus { border-color: #3498db; }
+
+        .btn-main { background: #27ae60; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; width: 100%; transition: 0.3s; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
+        .btn-main:hover { background: #219653; transform: translateY(-2px); }
+        .btn-secondary { background: #e67e22; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; }
+        .btn-secondary:hover { background: #d35400; }
+        
+        .divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: #7f8c8d; font-weight: bold; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #ddd; }
+        .divider:not(:empty)::before { margin-left: .25em; }
+        .divider:not(:empty)::after { margin-right: .25em; }
+
+        /* =========================================
+           2. شاشة الحائط التفاعلي (Padlet UI)
+        ========================================= */
+        .wall-header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .wall-header h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 10px; }
+        .wall-header p { font-size: 1.3rem; opacity: 0.95; font-weight: bold; background: rgba(255,255,255,0.15); display: inline-block; padding: 10px 25px; border-radius: 30px; }
+
+        .notes-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; align-items: start; padding-bottom: 100px; }
+        
+        .sticky-note { padding: 20px; border-radius: 10px; box-shadow: 3px 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease, box-shadow 0.3s ease; position: relative; animation: popIn 0.4s ease-out forwards; }
+        .sticky-note:hover { transform: scale(1.05) rotate(0deg) !important; box-shadow: 5px 10px 20px rgba(0,0,0,0.15); z-index: 10; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        .note-yellow { background: #fff9c4; border-top: 5px solid #fbc02d; }
+        .note-blue { background: #e3f2fd; border-top: 5px solid #1976d2; }
+        .note-green { background: #e8f5e9; border-top: 5px solid #388e3c; }
+        .note-pink { background: #fce4ec; border-top: 5px solid #c2185b; }
+
+        .note-author { font-weight: bold; font-size: 1.1rem; color: #333; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 5px; }
+        .note-content { font-size: 1.05rem; line-height: 1.6; color: #444; word-wrap: break-word; white-space: pre-wrap; }
+
+        /* 🛡️ أدوات الإشراف */
+        #moderation-bar {
+            display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+            background: linear-gradient(135deg, #1a2a6c, #2980b9); color: #fff;
+            padding: 14px 22px; border-radius: 14px; margin: 0 auto 22px; max-width: 1200px;
+            box-shadow: 0 6px 20px rgba(26,42,108,.25); font-weight: 600;
+        }
+        #moderation-bar .mod-label { flex: 1; min-width: 240px; font-size: .98rem; }
+        #moderation-bar .mod-stat { background: rgba(255,255,255,.2); padding: 5px 14px; border-radius: 20px; font-size: .9rem; }
+        #moderation-bar button {
+            background: #e74c3c; color: #fff; border: none; padding: 9px 18px; border-radius: 9px;
+            font-weight: bold; cursor: pointer; font-family: inherit; font-size: .92rem; transition: .25s;
+        }
+        #moderation-bar button:hover:not(:disabled) { background: #c0392b; }
+        #moderation-bar button:disabled { background: #95a5a6; cursor: not-allowed; }
+
+        .note-del {
+            position: absolute; top: 8px; left: 8px; z-index: 5;
+            background: rgba(231,76,60,.92); color: #fff; border: none;
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+            font-size: .95rem; line-height: 1; opacity: 0; transition: opacity .2s, transform .2s;
+            box-shadow: 0 3px 10px rgba(0,0,0,.25);
+        }
+        .sticky-note:hover .note-del { opacity: 1; }
+        .note-del:hover { transform: scale(1.15); background: #c0392b; }
+        /* على الشاشات اللمسية يبقى الزر ظاهراً دائماً */
+        @media (hover: none) { .note-del { opacity: 1; } }
+        .note-time { font-size: 0.8rem; color: #777; text-align: left; margin-top: 15px; display: block; }
+
+        .fab-add { position: fixed; bottom: 30px; right: 30px; background: #27ae60; color: white; width: 65px; height: 65px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(39,174,96,0.4); border: none; transition: 0.3s; z-index: 1000; }
+        .fab-add:hover { transform: scale(1.1) rotate(90deg); background: #219653; }
+
+        /* =========================================
+           3. النوافذ المنبثقة (Modals)
+        ========================================= */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1001; }
+        .modal-box { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: right; }
+        .modal-box h3 { margin-bottom: 15px; color: #1a2a6c; text-align: center; font-size: 1.4rem; }
+        .modal-box input, .modal-box textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; outline: none; }
+        .modal-box textarea { height: 120px; resize: vertical; }
+        
+        .color-picker { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .color-opt { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-opt.active { border-color: #333; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-submit { background: #27ae60; color: white; flex: 2; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
+        .btn-cancel { background: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby-screen" class="lobby-container">
+        
+        <div class="lobby-panel">
+            <h2>🌍 حائط الدروس العام</h2>
+            <p>اختر الدرس لتدخل الحائط وتشارك أفكارك وإجاباتك مع طلاب المدارس الأخرى.</p>
+            <div class="form-grid">
+                <div class="input-group"><label>الصف</label><select id="l-grade"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                <div class="input-group"><label>الفصل</label><select id="l-term"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                <div class="input-group"><label>الوحدة</label><select id="l-unit"><option value="U1">U1</option><option value="U2">U2</option><option value="U3">U3</option><option value="U4">U4</option><option value="U5">U5</option><option value="U6">U6</option></select></div>
+                <div class="input-group"><label>الدرس</label><select id="l-lesson"></select></div>
+            </div>
+            <button class="btn-main" onclick="joinPublicWall()">دخول الحائط العام 🚀</button>
+        </div>
+
+        <div class="divider">أو الدخول لحائط مغلق</div>
+
+        <div class="lobby-panel" style="border-top-color: #e67e22;">
+            <h2>🔒 حائط المعلم الخاص</h2>
+            <p>إذا أعطاك المعلم كوداً خاصاً للحائط، أدخله هنا.</p>
+            <div class="input-group" style="margin-bottom: 15px;">
+                <input type="text" id="private-code-input" placeholder="أدخل كود الحائط (مثال: BW-1234)" style="text-align: center; font-size: 1.2rem; letter-spacing: 2px;">
+            </div>
+            <button class="btn-secondary" onclick="joinPrivateWall()">دخول الحائط الخاص 🔑</button>
+            <button class="btn-secondary" style="background:#34495e; margin-top:20px;" onclick="openTeacherModal()">👨‍🏫 للمعلمين: إنشاء حائط خاص لفصلي</button>
+        </div>
+    </div>
+
+    <div id="wall-screen" class="hidden">
+        <header class="wall-header">
+            <h1 id="wall-title">حائط المناقشة</h1>
+            <p id="topic-question">جاري التحميل...</p>
+        </header>
+
+        <!-- 🛡️ شريط إشراف المعلم — يظهر لحسابات المعلمين والمديرين فقط -->
+        <div id="moderation-bar" style="display:none;">
+            <span class="mod-label">🛡️ وضع الإشراف مُفعّل — اضغط 🗑️ على أي ملصق لحذفه فوراً</span>
+            <span class="mod-stat">عدد الملصقات: <strong id="mod-count">0</strong></span>
+            <button id="btn-clear-wall" onclick="clearWholeWall()">🧹 تفريغ الحائط</button>
+        </div>
+
+        <div class="notes-container" id="wall-container"></div>
+        <button class="fab-add" onclick="openNoteModal()">+</button>
+    </div>
+
+    <div class="modal-overlay" id="add-note-modal">
+        <div class="modal-box">
+            <h3>📝 أضف إجابتك للحائط</h3>
+            <input type="text" id="student-name" placeholder="اسمك الأول (أو اللقب)..." maxlength="30">
+            <textarea id="student-answer" placeholder="اكتب إجابتك أو سؤالك هنا..." required></textarea>
+            
+            <p style="font-size: 0.9rem; margin-bottom: 5px; color: #555; text-align: center;">اختر لون الملصق:</p>
+            <div class="color-picker">
+                <div class="color-opt note-yellow active" data-color="note-yellow"></div>
+                <div class="color-opt note-blue" data-color="note-blue"></div>
+                <div class="color-opt note-green" data-color="note-green"></div>
+                <div class="color-opt note-pink" data-color="note-pink"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-submit" onclick="submitNote()">نشر الإجابة 🚀</button>
+                <button class="btn-cancel" onclick="closeModal('add-note-modal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="create-wall-modal">
+        <div class="modal-box">
+            <h3>👨‍🏫 إنشاء حائط خاص لطلابي</h3>
+            <p style="font-size: 0.95rem; color: #7f8c8d; margin-bottom: 15px; text-align: center;">اكتب سؤال المناقشة وسنقوم بإنشاء حائط مغلق ومولد رابط مشاركة لطلابك.</p>
+            <input type="text" id="teacher-wall-title" placeholder="عنوان الحائط (مثال: حائط صف عاشر متقدم)...">
+            <textarea id="teacher-wall-question" placeholder="اكتب السؤال التمهيدي أو نشاط العصف الذهني هنا..." style="height: 100px;"></textarea>
+            
+            <div class="modal-actions">
+                <button class="btn-submit" style="background: #1a2a6c;" onclick="generatePrivateWall()">إنشاء الرابط الآن 🔗</button>
+                <button class="btn-cancel" onclick="closeModal('create-wall-modal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="share-link-modal">
+        <div class="modal-box" style="text-align: center;">
+            <h3>✅ تم إنشاء الحائط بنجاح!</h3>
+            <p style="margin-bottom: 5px; color:#555;">أرسل هذا الرابط لطلابك أو اعطهم الكود المباشر:</p>
+            
+            <h2 id="generated-code" style="color: #e67e22; letter-spacing: 2px; margin-bottom: 10px; font-size: 2rem;">BW-XXXX</h2>
+            <input type="text" id="generated-link" readonly style="direction: ltr; text-align: left; background: #f8f9fa; width: 100%; padding: 10px; border: 1px dashed #27ae60; border-radius: 5px;">
+            
+            <p style="color:#7f8c8d; font-size:0.9rem; margin-top:15px; margin-bottom:5px;">أو دع الطلاب يمسحون هذا الرمز:</p>
+            <div id="wall-qrcode" style="display: flex; justify-content: center; margin: 0 auto 15px auto; padding: 10px; background: #fff; border-radius: 8px; width: fit-content; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"></div>
+
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn-submit" onclick="copyWallLink()">📋 نسخ الرابط والدخول</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, setDoc, doc, getDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        // 🛡️ الإشراف على المحتوى
+        import { getUserProfile } from "./roles.js";
+        import { checkContent, filterMessage } from "./content-filter.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+        let selectedColor = 'note-yellow';
+        let currentWallId = null;
+        let unsubscribeWall = null;
+
+        // ==========================================
+        // 📚 خريطة الدروس بالكامل 
+        // ==========================================
+        const lessonMap = {
+            "G1": { "T1": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T2": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T3": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}},
+            "G2": { "T1": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T2": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T3": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}},
+            "G3": { "T1": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T2": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}, "T3": {"U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}}},
+            "G4": {
+                "T1": {
+                    "U1": {"L1": "آداب الدخول والخروج من المنزل", "L2": "سورة البروج", "L3": "من أحكام التجويد", "L4": "المؤمن القوي", "L5": "بدء الدعوة للإسلام", "L6": "السيدة زينب بنت خزيمة", "L7": ""},
+                    "U2": {"L1": "الإيمان بالكتب السماوية", "L2": "سورة الطارق", "L3": "التثبت من الأخبار", "L4": "أهمية الصلاة المفروضة وآدابها", "L5": "أحسنكم أخلاقا", "L6": "", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "السنن الرواتب", "L2": "الهجرة إلى الحبشة", "L3": "سورة الأعلى", "L4": "صلاة الجماعة", "L5": "صلاة الجماعة", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة الغاشية", "L2": "البحث والتفكير العلمي", "L3": "حمد الله عز وجل على نعمه", "L4": "عام الحزن", "L5": "أخلاق المتقين", "L6": "صبر النبي صلى الله عليه وسلم", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "سورة الانشقاق", "L2": "المرافق العامة", "L3": "الرفق", "L4": "صيامي لربي", "L5": "في ظل صدقتي", "L6": "", "L7": ""},
+                    "U6": {"L1": "سورة المطففين", "L2": "الكرم", "L3": "من كمال الإيمان", "L4": "بيئتي مسؤوليتي", "L5": "ذو النوريين سيدنا عثمان", "L6": "", "L7": ""}
+                }
+            },
+            "G5": {
+                "T1": {
+                    "U1": {"L1": "سورة الانفطار", "L2": "المفلس الحقيقي", "L3": "أحب الأعمال إلى الله", "L4": "محبة الله تعالى", "L5": "دعوة أهل الطائف", "L6": "", "L7": ""},
+                    "U2": {"L1": "سورة التكوير", "L2": "الإحسان إلى الناس", "L3": "الإيمان باليوم الآخر", "L4": "صلاة الجماعة", "L5": "الإسراء والمعراج", "L6": "", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "سورة عبس", "L2": "القلقلة", "L3": "القرآن شفيعي", "L4": "آداب ركوب وسائل النقل", "L5": "فاطمة بنت عبد الملك", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة النازعات", "L2": "القلب الرحيم حديث شريف", "L3": "الرفق خير", "L4": "يسروا ولا تعسروا حديث شريف", "L5": "الهجرة إلى المدينة", "L6": "", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "الله القادر ( سورة النبأ 1-16)", "L2": "الطريق إلى الجنة", "L3": "نعمة العقل", "L4": "آداب الطريق", "L5": "صلاة الجمعة وصلاة العيدين", "L6": "", "L7": ""},
+                         "U6": {
+                        "L1": "الله الحكم العدل سورة النبأ 17-40",
+                        "L2": "مع رسولي صلى الله عليه وسلم في الجنة",
+                        "L3": "الشجاعة",
+                        "L4": "سيدنا عمر بن الخطاب رضي الله عنه",
+                        "L5": "الإنسان والكون",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G6": {
+                "T1": {
+                    "U1": {"L1": "الكتاب الحق ( سورة السجدة 1-12)", "L2": "من وصايا الرسول صلى الله عليه وسلم", "L3": "التطوع عبادة وانتماء", "L4": "حرمة المسلم", "L5": "فرائض الصلاة وسننها ومكروهاتها", "L6": "الإمارات في خدمة العالم", "L7": ""},
+                    "U2": {"L1": "صفات المؤمنين وجزاؤهم ( السجدة 13-22)", "L2": "أحكام النون الساكنة والتنوين ( الإظهار الحلقي )", "L3": "حاسبو أنفسكم", "L4": "آداب المسجد", "L5": "الحياة في المدينة المنورة بعد الهجرة", "L6": "سجود السهو وسجود التلاوة", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "الصبر واليقين ( السجدة 23-30)", "L2": "حكم الإدغام", "L3": "المؤمن بين الشكر والصبر", "L4": "من علامات الساعة", "L5": "الإمام مالك بن أنس رحمه الله تعالى ", "L6": "", "L7": ""},
+                    "U4": {"L1": "سبيل الهداية  ( سورة الملك 1-14 )", "L2": "الإقلاب", "L3": "أخلاق حميدة", "L4": "أنا متسامح", "L5": "غزوة بدر الكبرى", "L6": "", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "قدرة الله تعالى ( سورة الملك 15-24)", "L2": "الإخفاء الحقيقي", "L3": "اختيار الجليس", "L4": "التفكير العلمي", "L5": "غزوة أحد", "L6": "بيئتي أمانة", "L7": ""},
+                    "U6": {"L1": "دروس وعبر ( سورة الملك 25-30)", "L2": "يُسر الإسلام", "L3": "آداب الدعاء", "L4": "صيام التطوع", "L5": "السيدة عائشة أم المؤمنين رضي الله عنها", "L6": "", "L7": ""}
+                }
+            },
+            "G7": {
+                "T1": {
+                    "U1": {"L1": "البعث والنشور", "L2": "المستظلون في ظل الرحمن", "L3": "من بشائر المصلين", "L4": "أدلة وحدانية الله تعالى", "L5": "مراقبة الله تعالى", "L6": "سنن الفطرة", "L7": ""},
+                    "U2": {"L1": "الخلاق العليم", "L2": "التوبة فرصة العمر", "L3": "المغيث الحليم جل جلاله", "L4": "الغُسل", "L5": "التيمم والمسح على الخفين", "L6": "غزوة الأحزاب", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "بشارة ومواساه", "L2": "أحكام الميم الساكنة", "L3": "الاعتدال في الإنفاق", "L4": "الإمام أبو حنيفة النعمان رحمه الله تعالى ", "L5": "الحضارة العربية الإسلامية", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة الرحمن", "L2": "القلب وصلاح الإنسان", "L3": "الدين يُسر", "L4": "التتفكر في الإسلام", "L5": "العمل عبادة وحضارة", "L6": "صلاة المسافر وصلاة المريض", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "نعيمُ الحياة", "L2": "كفالة اليتيم", "L3": "التواضع", "L4": "صلاة التطوع الضحى والليل", "L5": "الفتح المبين", "L6": "", "L7": ""},
+                    "U6": {"L1": "جزاء الإحسان", "L2": "التعايش بين الناس", "L3": "المجالس وآدابها", "L4": "السيدة روفيدة الأسلمية ( رائدة العمل التطوعي )", "L5": "مشكلة الفقر في العالم الإسلامي", "L6": "", "L7": ""}
+                }
+            },
+            "G8": {
+                "T1": {
+                    "U1": {"L1": "صدق الرسول صلى اله عليه وسلم سورة يس 1-12", "L2": "أحكام المد: المد الأصلي", "L3": "الأعمال بالنيات", "L4": "الإخلاص ", "L5": "الكسب الطيب", "L6": "نعمة الأمن", "L7": ""},
+                    "U2": {"L1": "أصحاب القرية سورة يس 13-19", "L2": "التقرب إلى الله تعالى", "L3": "الإيمان بالقضاء والقدر", "L4": "الصلوات ذاتُ الأسباب الكسوف والاستسقاء والاستخارة", "L5": "الشفاء بنت عبد الله العدوية رضي الله عنها", "L6": "", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "قصة مؤمن آل يس سورة (يس 20-32)", "L2": "أقدس المساجد", "L3": "فتح مكة", "L4": "آداب السفر", "L5": "أحكام العمرة", "L6": "", "L7": ""},
+                    "U4": {"L1": "قدرة الله تعالى ( سورة يس 33-54", "L2": "المد الفرعي", "L3": "فضائل المؤمن", "L4": "تلاحم المجتمع", "L5": "حرمة ترويع الإنسان", "L6": "أنا خيركم لأهلي", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "الطريق إلى الجنة سورة يس 55-68", "L2": "الاقتداء في الخير", "L3": "الأيمان والنذور", "L4": "غزوة حُنين", "L5": "صحتي مسؤوليتي", "L6": "", "L7": ""},
+                    "U6": {"L1": "أدلة وحدانية اله تعالى سورة يس 69-83", "L2": "صلة الأرحام", "L3": "العلم نور ورفعة", "L4": "أقرأ باسم ربي", "L5": "الإمام الشافعي", "L6": "", "L7": ""}
+                }
+            },
+            "G9": {
+                "T1": {
+                    "U1": {"L1": "مع الله ورسوله وولي الأمر", "L2": "السبع الموبقات", "L3": "الغفور العدل سبحانه", "L4": "التناصح في الإسلام", "L5": "الزكاة في الإسلام", "L6": "", "L7": ""},
+                    "U2": {"L1": "سلامة المجتمع ووحدة أبنائه", "L2": "الحلال بيَن", "L3": "الدين النصيحة", "L4": "الحج", "L5": "حجة الوداع ووفاة النبي صلى الله عليه وسلم", "L6": "", "L7": ""},
+                    "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U3": {"L1": "الإيمان فضل من الله تعالى ", "L2": "للمجتمع رجاله ونسائه", "L3": "العدل في الإسلام", "L4": "ما يحل وما يحرم من الطعام والشراب", "L5": "الإمام مسلم رحمه الله تعالى", "L6": "الأمن والأمان", "L7": ""},
+                    "U4": {"L1": "سورة الواقعة 1-26", "L2": "سورة الواقعة 27-56", "L3": "تبشير وتحذير", "L4": "لا...للانتحار", "L5": "المنهج النبوي في تربية الجيل", "L6": "", "L7": ""},
+                    "U5": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U6": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U1": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U2": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U3": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""}, "U4": {"L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": ""},
+                    "U5": {"L1": "سورة الواقعة 57-74", "L2": "أحكام الراء", "L3": "لا ضرر ولا ضرار", "L4": "السنن الاجتماعية في القرآن الكريم", "L5": "التسامح الفكري", "L6": "الحكم الشرعي", "L7": ""},
+                    "U6": {"L1": "سورة الواقعة 75-96", "L2": "حق المسلم على المسلم", "L3": "آداب السوق والمرافق العامة", "L4": "الإمام أحمد بن حنبل رحمه ا", "L5": "التقليد الأعمى", "L6": "", "L7": ""}
+                }
+            },
+            "G10": {
+                "T1": {
+                    "U1": { "L1": "سورة الكهف 1-8", "L2": "القرآن المكي والمدني", "L3": "العقل في الإسلام", "L4": "المدارس الفقهية", "L5": "سكينة بنت الحسين", "L6": "", "L7": "" },
+                    "U2": { "L1": "أصحاب الكهف", "L2": "مراحل جمع القرآن", "L3": "منهجية التفكير في الإسلام", "L4": "الوقف عطاء ونماء", "L5": "التنمية البشرية في الإسلام", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "صاحب الجنتين", "L2": "السُنة النبوية", "L3": "آداب اللباس", "L4": "اختلاف الفقهاء", "L5": "منهج النبي صلى الله عليه وسلم في الدعوة", "L6": "", "L7": "" },
+                    "U4": { "L1": "الدنيا دار عمل", "L2": "تدوين السنة", "L3": "العفة", "L4": "أحكام الزواج", "L5": "رعاية الرسول صلى الله عليه وسلم لأهل بيته", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "موسى نبي الله عليه السلام", "L2": "جهود العلماء في حفظ السُنة", "L3": "الإيمان بالغيب", "L4": "طاعة ولي الأمر", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "ذو القرنين الرجل الصالح", "L2": "التسامح", "L3": "الجهاد في سبيل الله تعالى (1)", "L4": "الجهاد في سبيل الله تعالى  ( 2)", "L5": "الشيخ أحمد بن عبد العزيز آل مبارك", "L6": "", "L7": "" }
+                }
+            },
+            "G11": {
+                "T1": {
+                    "U1": { "L1": "الثبات على الحق", "L2": "العقل والنقل", "L3": "الاستعفاف", "L4": "العقود المالية في الإسلام", "L5": "اللغة والثقافة العربية", "L6": "", "L7": "" },
+                    "U2": { "L1": "غزوة الأحزاب", "L2": "القرآن الكريم والإعجاز العلمي", "L3": "أدب الحوار", "L4": "مصادر التشريع الإسلامي", "L5": "معالم التخطيط في سيرة الرسول صلى الله عليه وسلم", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "الاقتداء برسول الله صلى الله عليه وسلم", "L2": "أقسام الحديث الشريف", "L3": "منهج الإسلام في بناء الأسرة", "L4": "أم سلمة رضي الله عنها", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "وصايا وتوجيهات أخلاقية", "L2": "أقسام الحديث الشريف", "L3": "الشورى في الإسلام", "L4": "القواعد الفقهية", "L5": "الاستدامة في المنهج الإسلامي", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "رسول الله صلى الله عليه وسلم وخاتم النبيين", "L2": "أحكام وآداب بيت النبوة", "L3": "الإنصاف في الإسلام", "L4": "المحرمات من النساء", "L5": "من معالم الرسول صلى الله عليه وسلم", "L6": "", "L7": "" },
+                    "U6": { "L1": "ضوابط اجتماعية", "L2": "الإنسان والأمانة", "L3": "منهج التفكير في الإسلام", "L4": "الإسلام والتواصل الاجتماعي", "L5": "الإمام البخاري أمير المؤمنين في الحديث", "L6": "", "L7": "" }
+                }
+            },
+            "G12": {
+                "T1": {
+                    "U1": { "L1": "وقاية المجتمع من الجرائم الأخلاقية", "L2": "مناهج المفسرين", "L3": "الإسلام ينبذ التطرف", "L4": "الفراق بين الزوجين", "L5": "رسول اله صلى الله عليه وسلم والحياة الاجتماعية", "L6": "", "L7": "" },
+                    "U2": { "L1": "حديث الإفك - عظة وعبرة", "L2": "السُنن الربانية", "L3": "المسؤولية في الإٍسلام", "L4": "مقاصد التشريع الخمسة", "L5": "الشيخة فاطمة بنت مبارك - حفظها الله تعالى", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "التواصل الاجتماعي - سلوك وآداب", "L2": "المنهج النبوي في الرعاية الصحية", "L3": "البيوع المحرمة", "L4": "الخدمة الوطنية واجب شرعي ومطلب وطني", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "الزواج طريق الاستعفاف", "L2": "التفكير الابداعي في الإسلام", "L3": "فقه ترتيب الأعمال بحسب مقاصدها", "L4": "العولمة", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }, "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "الله نور السموات والأرض - سورة النور 35-45", "L2": "الطاعة والامتثال طريق الإيمان - سورة النو 46-57", "L3": "التسامح مع المخالفين في العقيدة", "L4": "آداب الإسلام في الرؤى والأحلام", "L5": "النظام الاقتصادي في الإسلام", "L6": "", "L7": "" },
+                    "U6": { "L1": "بيوت طاهرة - مجتمع نقي سورة النور 58-61", "L2": "الأدب مع الرسول صلى الله عليه وسلم - سورة النور 62-64", "L3": "الاتباع والتقليد", "L4": "الشيخ زايد بن سلطان رحمه الله تعالى ", "L5": "الإسلام واقتصاد المعرفة", "L6": "", "L7": "" }
+                }
+            }
+        };
+
+        // 📌 دالة تحديث أسماء الدروس في قائمة (Lobby) الحائط
+        function populateWallLessons() {
+            const grade = document.getElementById('l-grade').value;
+            const term = document.getElementById('l-term').value;
+            const unit = document.getElementById('l-unit').value;
+            const lessonSelect = document.getElementById('l-lesson');
+            
+            lessonSelect.innerHTML = ''; 
+            
+            const defaultLessons = ["L1", "L2", "L3", "L4", "L5", "L6", "L7"];
+            const namedLessons = (lessonMap[grade] && lessonMap[grade][term] && lessonMap[grade][term][unit]) ? lessonMap[grade][term][unit] : {};
+
+            defaultLessons.forEach(lCode => {
+                const option = document.createElement('option');
+                option.value = lCode;
+                const name = namedLessons[lCode] ? ` - ${namedLessons[lCode]}` : "";
+                option.textContent = lCode + name; 
+                lessonSelect.appendChild(option);
+            });
+        }
+
+        // ربط تحديث القوائم عند التغيير
+        ['l-grade', 'l-term', 'l-unit'].forEach(id => {
+            document.getElementById(id).addEventListener('change', populateWallLessons);
+        });
+
+        // تشغيلها للمرة الأولى عند فتح الصفحة
+        populateWallLessons();
+
+        // 📌 الفلترة انتقلت إلى content-filter.js
+        // القائمة القديمة محفوظة هنا للمرجع فقط ولم تعد مستخدمة — المرشّح
+        // الجديد يطبّع النص أولاً فيكشف الحيل مثل "ك ل ب" و "كلـــب" و "كَلْب".
+        const legacyBadWords = [
+            "كلب", "حمار", "غبي", "حيوان", "تفه", "لعن", "يلعن", "يا غبي", "يا حمار", "يا كلب",
+            "وسخ", "تفو", "امك", "ابوك", "كلاب", "حمير", "شتم", "شتيمة", "حقير", "سافل"
+        ];
+
+        // منع أي حقن HTML من نصوص الطلاب
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // هل يملك المستخدم الحالي صلاحية حذف الملصقات؟ (معلم أو مدير)
+        let canModerate = false;
+
+        // جلب اسم الطالب إن كان مسجلاً + تحديد صلاحية الإشراف
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if(userDoc.exists() && userDoc.data().name) {
+                    document.getElementById('student-name').value = userDoc.data().name;
+                }
+
+                try {
+                    const profile = await getUserProfile(user);
+                    canModerate = profile.isTeacher;   // المعلم والمدير
+                } catch (e) {
+                    canModerate = false;
+                }
+            } else {
+                currentUser = null;
+                canModerate = false;
+            }
+
+            // إعادة رسم الحائط ليظهر/يختفي زر الحذف حسب الصلاحية
+            if (typeof refreshWallView === 'function') refreshWallView();
+        });
+
+        // =========================================
+        // التحكم في النوافذ (Modals) واللون ومحدد الكلمات
+        // =========================================
+        window.openNoteModal = () => {
+            document.getElementById('add-note-modal').style.display = 'flex';
+            // إضافة عنصر عداد الكلمات أسفل صندوق النص برمجياً إذا لم يكن موجوداً
+            if (!document.getElementById('word-counter-display')) {
+                const textarea = document.getElementById('student-answer');
+                const counterDiv = document.createElement('div');
+                counterDiv.id = 'word-counter-display';
+                counterDiv.style.cssText = "text-align: left; font-size: 0.9rem; color: #7f8c8d; font-weight: bold; margin-top: -10px; margin-bottom: 15px;";
+                counterDiv.textContent = "الكلمات: 0 / 50";
+                textarea.parentNode.insertBefore(counterDiv, textarea.nextSibling);
+
+                // الاستماع للكتابة لحساب عدد الكلمات فوراً وقص الزائد
+                textarea.addEventListener('input', () => {
+                    let words = textarea.value.trim().split(/\s+/).filter(w => w.length > 0);
+                    if (words.length > 50) {
+                        textarea.value = words.slice(0, 50).join(" ") + " ";
+                        words = words.slice(0, 50);
+                    }
+                    counterDiv.textContent = `الكلمات: ${words.length} / 50`;
+                    counterDiv.style.color = words.length === 50 ? '#e74c3c' : '#7f8c8d';
+                });
+            } else {
+                document.getElementById('student-answer').value = '';
+                document.getElementById('word-counter-display').textContent = "الكلمات: 0 / 50";
+                document.getElementById('word-counter-display').style.color = '#7f8c8d';
+            }
+        };
+
+        window.openTeacherModal = () => document.getElementById('create-wall-modal').style.display = 'flex';
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        document.querySelectorAll('.color-opt').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedColor = e.target.dataset.color;
+            });
+        });
+
+        // =========================================
+        // الدخول للحوائط
+        // =========================================
+        
+        // 1. دخول الحائط العام للدرس
+        window.joinPublicWall = async () => {
+            const grade = document.getElementById('l-grade').value;
+            const term = document.getElementById('l-term').value;
+            const unit = document.getElementById('l-unit').value;
+            const lessonCode = document.getElementById('l-lesson').value;
+
+            // 🔴 التحقق من أن الدرس ليس فارغاً
+            const namedLessons = (lessonMap[grade] && lessonMap[grade][term] && lessonMap[grade][term][unit]) ? lessonMap[grade][term][unit] : {};
+            const lessonName = namedLessons[lessonCode];
+
+            if (!lessonName || lessonName.trim() === "") {
+                alert("⚠️ عذراً! هذا الدرس غير متوفر حالياً.\n\nيرجى التأكد من اختيار (الفصل) و (الوحدة) الصحيحين أولاً لتظهر أسماء الدروس.");
+                return; 
+            }
+
+            const lessonId = `Islamic_${grade}_${term}_${unit}_${lessonCode}`;
+            
+            // فتح الحائط بالعنوان الحقيقي للدرس
+            initWall(lessonId, `حائط عام: ${lessonName}`, `شاركنا أهم الفوائد، الأسئلة، أو الملاحظات حول درس (${lessonName}) ليراها الجميع.`);
+        };
+
+        // 2. دخول الحائط الخاص عبر الكود
+        window.joinPrivateWall = () => {
+            const code = document.getElementById('private-code-input').value.trim();
+            if(!code) { alert("يرجى إدخال كود الحائط أولاً!"); return; }
+            window.location.href = `boroj-wall.html?wallId=${code}`;
+        };
+
+        // 3. تهيئة وبناء الحائط
+        async function initWall(wallId, defaultTitle, defaultQuestion) {
+            currentWallId = wallId;
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('wall-screen').classList.remove('hidden');
+
+            const topicRef = doc(db, 'wall_topics', wallId);
+            const topicSnap = await getDoc(topicRef);
+            
+            if (topicSnap.exists()) {
+                document.getElementById('wall-title').textContent = topicSnap.data().title || "حائط المناقشة";
+                document.getElementById('topic-question').textContent = topicSnap.data().question;
+            } else {
+                document.getElementById('wall-title').textContent = defaultTitle || "حائط المناقشة";
+                document.getElementById('topic-question').textContent = defaultQuestion || "شاركنا أفكارك هنا...";
+                if(!wallId.startsWith('BW-')) {
+                    setDoc(topicRef, { title: defaultTitle, question: defaultQuestion, type: 'public', createdAt: serverTimestamp() });
+                }
+            }
+
+            const notesQuery = query(collection(db, 'wall_notes'), where('wallId', '==', wallId));
+            
+            if(unsubscribeWall) unsubscribeWall(); 
+            
+            unsubscribeWall = onSnapshot(notesQuery, (snapshot) => {
+                // نحتفظ بآخر لقطة لنعيد الرسم عند تغيّر صلاحية الإشراف
+                lastSnapshotDocs = snapshot.docs.map(d => ({ id: d.id, data: d.data() }));
+                drawNotes();
+            });
+        }
+
+        // آخر ملصقات وردت من قاعدة البيانات
+        let lastSnapshotDocs = [];
+
+        // إعادة الرسم (تُستدعى عند تغيّر حالة تسجيل الدخول)
+        function refreshWallView() {
+            if (currentWallId) drawNotes();
+        }
+        window.refreshWallView = refreshWallView;
+
+        function drawNotes() {
+            const wallContainer = document.getElementById('wall-container');
+            if (!wallContainer) return;
+
+            // شريط أدوات المعلم فوق الحائط
+            const modBar = document.getElementById('moderation-bar');
+            if (modBar) {
+                modBar.style.display = canModerate ? 'flex' : 'none';
+                const cnt = document.getElementById('mod-count');
+                if (cnt) cnt.textContent = lastSnapshotDocs.length;
+            }
+
+            wallContainer.innerHTML = '';
+
+            if (!lastSnapshotDocs.length) {
+                wallContainer.innerHTML = '<h3 style="text-align:center; grid-column: 1/-1; color:#7f8c8d; margin-top:50px; background:#fff; padding:30px; border-radius:15px; border:2px dashed #bdc3c7;">الحائط فارغ... كن أول من يشارك إجابته! ✨</h3>';
+                return;
+            }
+
+            const sorted = lastSnapshotDocs.slice().sort((a, b) => {
+                const timeA = a.data.createdAt ? a.data.createdAt.toMillis() : Date.now();
+                const timeB = b.data.createdAt ? b.data.createdAt.toMillis() : Date.now();
+                return timeB - timeA;
+            });
+
+            sorted.forEach(({ id, data }) => {
+                const noteEl = document.createElement('div');
+
+                const randomRotation = (Math.random() * 4) - 2;
+                noteEl.className = `sticky-note ${data.color || ''}`;
+                noteEl.style.transform = `rotate(${randomRotation}deg)`;
+
+                let timeString = "منذ قليل";
+                if (data.createdAt) {
+                    const date = data.createdAt.toDate();
+                    timeString = date.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}) + " | " + date.toLocaleDateString('ar-EG');
+                }
+
+                // 🗑️ زر الحذف السريع — للمعلم والمدير فقط
+                const delBtn = canModerate
+                    ? `<button class="note-del" data-del="${escapeHtml(id)}"
+                               data-author="${escapeHtml(data.author || 'طالب')}"
+                               title="حذف هذا الملصق">🗑️</button>`
+                    : '';
+
+                // ⚠️ كل نصوص الطلاب تُهرَّب قبل العرض لمنع حقن HTML
+                noteEl.innerHTML = `
+                    ${delBtn}
+                    <div class="note-author">
+                        <span>👤 ${escapeHtml(data.author || 'طالب')}</span>
+                    </div>
+                    <div class="note-content">${escapeHtml(data.text)}</div>
+                    <span class="note-time">${escapeHtml(timeString)}</span>
+                `;
+                wallContainer.appendChild(noteEl);
+            });
+
+            // ربط أزرار الحذف
+            wallContainer.querySelectorAll('[data-del]').forEach(b => {
+                b.onclick = (ev) => {
+                    ev.stopPropagation();
+                    deleteNote(b.dataset.del, b.dataset.author);
+                };
+            });
+        }
+
+        // =========================================
+        // 🗑️ الإشراف: حذف الملصقات
+        // =========================================
+        async function deleteNote(noteId, author) {
+            if (!confirm(`حذف ملصق «${author}» نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.`)) return;
+            try {
+                await deleteDoc(doc(db, 'wall_notes', noteId));
+                // onSnapshot سيحدّث العرض تلقائياً
+            } catch (e) {
+                alert(moderationError(e, 'تعذّر حذف الملصق'));
+            }
+        }
+
+        window.clearWholeWall = async function () {
+            if (!canModerate || !currentWallId) return;
+
+            const typed = prompt(
+                `⚠️ حذف كل ملصقات هذا الحائط (${lastSnapshotDocs.length} ملصقاً)\n\n` +
+                `يُستخدم عادة لتجهيز الحائط لدرس جديد.\n` +
+                `لا يمكن التراجع عن هذا الإجراء نهائياً.\n\n` +
+                `للتأكيد اكتب كلمة:  حذف`
+            );
+            if (typed === null) return;
+            if (typed.trim() !== 'حذف') { alert('أُلغيت العملية — لم تُكتب كلمة التأكيد بشكل صحيح.'); return; }
+
+            const btn = document.getElementById('btn-clear-wall');
+            if (btn) { btn.disabled = true; btn.textContent = 'جاري الحذف...'; }
+
+            let done = 0, failed = 0;
+            for (const n of lastSnapshotDocs.slice()) {
+                try { await deleteDoc(doc(db, 'wall_notes', n.id)); done++; }
+                catch (e) { failed++; }
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = '🧹 تفريغ الحائط'; }
+            alert(failed
+                ? `تم حذف ${done} ملصقاً، وتعذّر حذف ${failed}.`
+                : `✅ تم تفريغ الحائط بنجاح (${done} ملصقاً).`);
+        };
+
+        function moderationError(e, prefix) {
+            const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+            return denied
+                ? `${prefix}: قواعد الحماية ترفض العملية.\n\nتأكد أن حسابك مسجّل كمعلم، وأن أحدث نسخة من firestore.rules منشورة.`
+                : `${prefix}: ${e.message}`;
+        }
+
+        // =========================================
+        // إرسال الملصقات بعد تفعيل الفلترة والحدود
+        // =========================================
+        window.submitNote = async () => {
+            const nameInput = document.getElementById('student-name').value.trim() || 'طالب مجهول';
+            const answerInput = document.getElementById('student-answer').value.trim();
+            
+            if(!answerInput) { alert("لا يمكنك نشر ملصق فارغ!"); return; }
+
+            // 🛑 1. التحقق من قانون عدد الكلمات (50 كلمة)
+            let currentWords = answerInput.split(/\s+/).filter(w => w.length > 0);
+            if (currentWords.length > 50) {
+                alert("⚠️ خطأ: لقد تجاوزت الحد الأقصى المسموح به وهو 50 كلمة فقط!");
+                return;
+            }
+
+            // 🛑 2. فحص الألفاظ غير اللائقة (يفحص النص واسم الكاتب معاً)
+            const textCheck = checkContent(answerInput);
+            if (!textCheck.clean) { alert(filterMessage(textCheck)); return; }
+
+            const nameCheck = checkContent(nameInput);
+            if (!nameCheck.clean) {
+                alert('⚠️ الاسم المكتوب يحتوي على لفظ غير لائق.\n\nاكتب اسمك الحقيقي من فضلك.');
+                return;
+            }
+
+            const btn = document.querySelector('#add-note-modal .btn-submit');
+            btn.disabled = true; btn.textContent = 'جاري النشر...';
+
+            try {
+                await addDoc(collection(db, 'wall_notes'), {
+                    wallId: currentWallId,
+                    author: nameInput,
+                    text: answerInput,
+                    color: selectedColor,
+                    uid: currentUser ? currentUser.uid : 'guest',
+                    createdAt: serverTimestamp()
+                });
+                
+                document.getElementById('student-answer').value = '';
+                closeModal('add-note-modal');
+            } catch (error) { alert("خطأ: " + error.message); }
+            finally { btn.disabled = false; btn.textContent = 'نشر الإجابة 🚀'; }
+        };
+
+        window.generatePrivateWall = async () => {
+            const title = document.getElementById('teacher-wall-title').value.trim() || "حائط المعلم التفاعلي";
+            const question = document.getElementById('teacher-wall-question').value.trim();
+            
+            if(!question) { alert("يجب كتابة السؤال أولاً!"); return; }
+
+            const randomCode = "BW-" + Math.floor(1000 + Math.random() * 9000);
+
+            try {
+                await setDoc(doc(db, 'wall_topics', randomCode), {
+                    title: title,
+                    question: question,
+                    teacherUid: currentUser ? currentUser.uid : 'guest_teacher',
+                    type: 'private',
+                    createdAt: serverTimestamp()
+                });
+
+                closeModal('create-wall-modal');
+                document.getElementById('share-link-modal').style.display = 'flex';
+                
+                const fullLink = `${window.location.href.split('?')[0]}?wallId=${randomCode}`;
+                document.getElementById('generated-code').textContent = randomCode;
+                document.getElementById('generated-link').value = fullLink;
+
+                document.getElementById('wall-qrcode').innerHTML = '';
+                new QRCode(document.getElementById("wall-qrcode"), {
+                    text: fullLink,
+                    width: 150,
+                    height: 150,
+                    colorDark : "#1a2a6c",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+            } catch (e) { alert("خطأ في الإنشاء: " + e.message); }
+        };
+
+        window.copyWallLink = () => {
+            const copyText = document.getElementById("generated-link");
+            copyText.select(); document.execCommand("copy");
+            alert("تم نسخ الرابط! سيتم تحويلك للحائط الآن.");
+            window.location.href = copyText.value;
+        };
+
+        // =========================================
+        // التحقق من الرابط عند الفتح (Routing)
+        // =========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlWallId = urlParams.get('wallId');
+
+        if (urlWallId) {
+            initWall(urlWallId, "حائط مخصص", "جاري تحميل السؤال...");
+        }
+
+    </script>
+</body>
+</html>

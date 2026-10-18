@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3232445252654445"
+     crossorigin="anonymous"></script>
+    <title data-translate-key="lesson_g9u1l1_page_title">درس مع الله ورسوله وولي الأمر - الصف التاسع</title> 
+    <link rel="stylesheet" href="style.css"> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container header-content">
+            
+            <h1>أهلاً بكم في بروج واي Borouj Way</h1>
+            
+            <h2>كل ما يخص التعليم بالعالم العربي</h2>
+            
+            <p class="header-callout">المنهج الإماراتي - المصري - السعودي... والمزيد</p>
+            
+        </div>
+    </header>
+
+    <nav class="site-nav">
+        <div class="container">
+            <ul>
+                <li><a href="index.html" data-translate-key="nav_home">الرئيسية</a></li>
+                <li><a href="index.html#grades" data-translate-key="nav_grades">الصفوف الدراسية</a></li> 
+                <li><a href="#" data-translate-key="nav_about">عن الموقع</a></li>
+                <li><a href="#" data-translate-key="nav_contact">اتصل بنا</a></li>
+            </ul>
+        </div>
+    </nav>
+<div class="lesson-section interactive-game">
+                <h3 data-translate-key="lesson_game_title">لعبة تفاعلية مرتبطة بالدرس:</h3>
+                
+                <div class="game-container">
+                 <div class="lesson-section interactive-game">
+                <h3 data-translate-key="lesson_game_title">لعبة تفاعلية مرتبطة بالدرس:</h3>
+                
+                <div class="game-container">
+                    <iframe 
+                        src="games/g9-u1-l1-game/كويز مع الله ورسوله وولي الأمر.html" 
+                        width="800"  
+                        height="600" 
+                        frameborder="0" 
+                        scrolling="auto" /* تم التغيير للسماح بالتمرير إذا احتاج الكويز */
+                        allowfullscreen>
+                        <span data-translate-key="iframe_not_supported">متصفحك لا يدعم عرض الألعاب المضمنة.</span>
+                    </iframe>
+                </div>
+                 <p class="game-instructions" data-translate-key="lesson_g9u1l1_game_instructions">
+                   (هنا يمكنك وضع تعليمات بسيطة للكويز أو الهدف منه)
+                 </p>
+            </div>
+            ```
+
+**التغييرات:**
+* `src`: تم تحديثه ليشير مباشرة إلى ملف الكويز الذي أرسلته داخل المجلد الصحيح.
+* `scrolling="auto"`: غيرتها من `"no"` إلى `"auto"` للسماح بظهور شريط تمرير إذا كان محتوى الكويز أطول من أبعاد الإطار المحدد (`height="600"`). هذا أفضل للكويزات.
+* أضفت `<span>` ورسالة خطأ قابلة للترجمة داخل `<iframe>`.
+
+**3. إضافة ترجمة رسالة الخطأ (ملف `translate.js`):**
+
+* افتح ملف `translate.js` وأضف المفتاح التالي للترجمة في كل قسم لغة:
+
+    **داخل `en: { ... }` أضف:**
+    ```javascript
+    iframe_not_supported: "Your browser does not support embedded games/quizzes.",
+    ```
+
+    **داخل `es: { ... }` أضف:**
+    ```javascript
+    iframe_not_supported: "Su navegador no soporta juegos/cuestionarios incrustados.",
+    ```
+
+    **داخل `ar: { ... }` أضف:**
+    ```javascript
+    iframe_not_supported: "متصفحك لا يدعم عرض الألعاب/الكويزات المضمنة.",
+    ```
+
+**4. ملاحظة حول اسم الملف:**
+اسم الملف "كويز مع الله ورسوله وولي الأمر.html" يحتوي على مسافات وحروف عربية. بينما يعمل هذا في معظم المتصفحات الحديثة، **الأفضل دائماً** في تطوير الويب استخدام أسماء ملفات باللغة الإنجليزية بدون مسافات (استخدم الشرطة `-` أو الشرطة السفلية `_`) لتجنب أي مشاكل محتملة مع بعض الخوادم أو الأنظمة. مثلاً: `quiz-g9-u1-l1.html`.
+* **للآن، سنستخدم الاسم كما هو**. لكن إذا واجهتنا مشاكل لاحقاً، قد نحتاج لتغيير اسم الملف وتحديث مسار `src` في `<iframe>`.
+
+---
+
+### الخطوة التالية (لك) 🚀
+
+1.  **نظّم الملف:** ضع `كويز مع الله ورسوله وولي الأمر.html` في المجلد `games/g9-u1-l1-game/`.
+2.  **حدّث `<iframe>`:** استبدل كود `<iframe>` القديم بالكود الجديد في `lesson-g9-u1-l1.html`.
+3.  **أضف الترجمة:** أضف مفتاح `iframe_not_supported` لملف `translate.js`.
+4.  **احفظ** جميع الملفات المعدلة (`lesson-g9-u1-l1.html` و `translate.js`).
+5.  اذهب إلى صفحة الدرس الأول (`lesson-g9-u1-l1.html`) في المتصفح وقم بتحديثها (Refresh).
+
+يفترض أن ترى الآن الكويز الخاص بك معروضاً داخل الصفحة في قسم اللعبة التفاعلية.
+
+**جرب وأخبرني بالنتيجة! هل ظهر الكويز ويعمل بشكل صحيح؟ قد تحتاج لتعديل قيم `width` و `height` في `<iframe>` لتناسب تصميم الكويز بشكل أفضل.**
+                </div>
+                 <p class="game-instructions" data-translate-key="lesson_g9u1l1_game_instructions">
+                   (هنا يمكنك وضع تعليمات بسيطة للعبة أو الهدف منها)
+                 </p>
+            </div>
+            <div class="lesson-section concept-map">
+                <h3 data-translate-key="lesson_summary_title">أنظم مفاهيمي:</h3>
+                 <p data-translate-key="lesson_g9u1l1_summary_placeholder">(سيتم إضافة الخريطة الذهنية لاحقاً)</p> 
+            </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p data-translate-key="footer_rights">جميع الحقوق محفوظة &copy; 2025 - موقع الدروس الإسلامية</p>
+        </div>
+    </footer>
+
+    <script src="translate.js"></script>
+
+</body>
+</html>

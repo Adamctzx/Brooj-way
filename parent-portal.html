@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة ولي الأمر | BoRooJ Way</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- 🛡️ لأولياء الأمور فقط — دور جانبي لا يرثه الطالب ولا المعلم -->
+    <script type="module" src="auth-guard.js" data-require-role="student" data-exact-role="parent"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background:#f0f4f8; color:#2c3e50; padding-bottom:60px; }
+        .wrap { max-width:1150px; margin:0 auto; padding:0 18px; }
+
+        .top { background:linear-gradient(135deg,#4a148c,#7b1fa2,#e91e63);
+               background-size:300% 300%; animation:bg 14s ease infinite; color:#fff; padding:26px 0 70px; margin-bottom:-50px; }
+        @keyframes bg {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .top-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .top h1 { font-size:1.5rem; font-weight:900; }
+        .top-links { display:flex; gap:10px; flex-wrap:wrap; }
+        .top-links a, .top-links button {
+            background:rgba(255,255,255,.22); color:#fff; padding:9px 16px; border-radius:9px;
+            text-decoration:none; font-weight:bold; font-size:.92rem; border:none; cursor:pointer;
+            font-family:'Cairo',sans-serif; transition:.25s;
+        }
+        .top-links a:hover, .top-links button:hover { background:rgba(255,255,255,.36); }
+
+        .card { background:#fff; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); padding:24px; margin-bottom:20px; }
+        .card h2 { font-size:1.25rem; color:#6a1b9a; margin-bottom:4px; border-right:5px solid #e91e63; padding-right:12px; }
+        .card .sub { color:#7f8c8d; font-size:.92rem; margin-bottom:18px; padding-right:17px; line-height:1.7; }
+
+        .readonly-note {
+            background:#f3e5f5; border:1px solid #ce93d8; border-radius:10px;
+            padding:13px 17px; color:#4a148c; font-size:.92rem; line-height:1.85; margin-bottom:20px;
+        }
+
+        /* أبنائي */
+        .kids { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+        .kid {
+            border:2px solid #e6edf3; border-radius:14px; padding:14px 20px; cursor:pointer;
+            background:#fff; transition:.25s; display:flex; align-items:center; gap:11px; min-width:190px;
+        }
+        .kid:hover { transform:translateY(-3px); box-shadow:0 6px 16px rgba(0,0,0,.09); }
+        .kid.active { border-color:#7b1fa2; background:#faf4fd; box-shadow:0 6px 18px rgba(123,31,162,.18); }
+        .kid .av { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#7b1fa2,#e91e63);
+                   color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+        .kid .nm { font-weight:900; }
+        .kid .gr { font-size:.8rem; color:#95a5a6; }
+
+        /* الإحصاءات */
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-bottom:22px; }
+        .stat { background:#fff; border-radius:14px; padding:18px; text-align:center;
+                box-shadow:0 4px 15px rgba(0,0,0,.05); border-bottom:4px solid #bdc3c7; }
+        .stat .v { font-size:2rem; font-weight:900; line-height:1.2; }
+        .stat .k { color:#7f8c8d; font-size:.85rem; font-weight:600; margin-top:4px; }
+        .stat.a { border-color:#f39c12; } .stat.a .v { color:#f39c12; }
+        .stat.b { border-color:#3498db; } .stat.b .v { color:#3498db; }
+        .stat.c { border-color:#27ae60; } .stat.c .v { color:#27ae60; }
+        .stat.d { border-color:#8e44ad; } .stat.d .v { color:#8e44ad; }
+        .stat.e { border-color:#16a085; } .stat.e .v { color:#16a085; }
+
+        .tbl-scroll { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; min-width:600px; }
+        th { background:#6a1b9a; color:#fff; padding:13px 11px; text-align:right; font-size:.92rem; white-space:nowrap; }
+        td { padding:12px 11px; border-bottom:1px solid #eef2f6; font-size:.93rem; }
+        tr:hover td { background:#faf7fc; }
+        .src { display:inline-block; padding:3px 11px; border-radius:14px; font-size:.78rem; font-weight:bold; color:#fff; white-space:nowrap; }
+        .pill { font-weight:900; }
+
+        .rec-row { border:1px solid #e6edf3; border-radius:12px; padding:14px 16px; margin-bottom:11px;
+                   display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+        .rec-row.reviewed { border-right:5px solid #27ae60; }
+        .rec-row.pending  { border-right:5px solid #f39c12; }
+        .rec-fb { background:#f4f8fd; border-right:3px solid #3498db; padding:10px 13px;
+                  border-radius:8px; margin-top:9px; font-size:.9rem; line-height:1.75; width:100%; }
+
+        .memo-track { margin-bottom:14px; }
+        .memo-track .lbl { display:flex; justify-content:space-between; font-weight:700; margin-bottom:6px; font-size:.95rem; }
+        .memo-bar { height:18px; background:#eef2f6; border-radius:10px; overflow:hidden; }
+        .memo-bar > div { height:100%; border-radius:10px; transition:width .8s ease; }
+
+        /* ربط ابن جديد */
+        .link-box { display:flex; gap:11px; flex-wrap:wrap; align-items:center; }
+        .link-box input {
+            flex:1; min-width:210px; padding:13px 16px; border:1px solid #ccd1d9; border-radius:9px;
+            font-size:1.05rem; outline:none; font-family:'Cairo',sans-serif; text-align:center;
+            letter-spacing:2px; font-weight:800; direction:ltr; text-transform:uppercase;
+        }
+        .link-box input:focus { border-color:#7b1fa2; }
+        .btn { background:#6a1b9a; color:#fff; border:none; padding:13px 26px; border-radius:9px;
+               font-weight:bold; cursor:pointer; font-family:'Cairo',sans-serif; font-size:1rem; transition:.25s; }
+        .btn:hover:not(:disabled) { background:#4a148c; }
+        .btn:disabled { background:#95a5a6; cursor:not-allowed; }
+
+        .msg { display:none; margin-top:15px; padding:13px 16px; border-radius:9px; font-weight:600; font-size:.95rem; line-height:1.8; }
+        .msg.err { display:block; background:#fdedec; color:#c0392b; border:1px solid #f5b7b1; }
+        .msg.ok  { display:block; background:#eafaf1; color:#1e8449; border:1px solid #a9dfbf; }
+
+        .empty { text-align:center; color:#95a5a6; padding:34px 16px; line-height:1.9; }
+        .hidden { display:none !important; }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #7b1fa2; border-radius:50%;
+                   width:36px; height:36px; animation:spin 1s linear infinite; margin:24px auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <div class="wrap top-inner">
+        <h1>👨‍👩‍👧 بوابة ولي الأمر</h1>
+        <div class="top-links">
+            <a href="index.html">الرئيسية 🏠</a>
+            <button id="btn-logout">تسجيل الخروج</button>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+    <div class="card">
+        <h2>👋 أهلاً <span id="parent-name"></span></h2>
+        <p class="sub">تابع مستوى أبنائك ونتائجهم وتسميعهم وحفظهم — في مكان واحد.</p>
+
+        <div class="readonly-note">
+            🔒 <strong>هذه بوابة عرض فقط.</strong>
+            تستطيع متابعة كل شيء، ولا تستطيع تعديل أي نتيجة أو درجة —
+            حفاظاً على نزاهة سجل ابنك الأكاديمي.
+        </div>
+
+        <div id="kids-area">
+            <div id="kids" class="kids"></div>
+        </div>
+
+        <div id="no-kids" class="empty hidden">
+            لم تربط أي ابن بحسابك بعد.<br>
+            اطلب من ابنك <strong>كود ولي الأمر</strong> من ملفه الشخصي على المنصة، ثم أدخله بالأسفل.
+        </div>
+
+        <hr style="margin:22px 0; border:none; border-top:1px solid #eef2f6;">
+
+        <h2 style="font-size:1.05rem;">🔗 ربط ابن جديد</h2>
+        <p class="sub">يجد ابنك الكود في ملفه الشخصي على المنصة تحت «بوابة ولي الأمر».</p>
+        <div class="link-box">
+            <input type="text" id="link-code" placeholder="PAR-XXXXXX" autocomplete="off">
+            <button class="btn" id="btn-link">ربط الابن 🔗</button>
+        </div>
+        <div class="msg" id="link-msg"></div>
+    </div>
+
+    <div id="child-data" class="hidden">
+
+        <div id="data-spin" class="spinner"></div>
+
+        <div id="data-content" class="hidden">
+
+            <!-- الإحصاءات -->
+            <div class="stats">
+                <div class="stat a"><div class="v" id="c-xp">0</div><div class="k">مجموع النقاط</div></div>
+                <div class="stat b"><div class="v" id="c-count">0</div><div class="k">عدد التقييمات</div></div>
+                <div class="stat c"><div class="v" id="c-avg">—</div><div class="k">المتوسط المئوي</div></div>
+                <div class="stat d"><div class="v" id="c-rec">0</div><div class="k">التسميعات</div></div>
+                <div class="stat e"><div class="v" id="c-memo">0</div><div class="k">سور محفوظة</div></div>
+            </div>
+
+            <!-- مسار الحفظ -->
+            <div class="card">
+                <h2>📿 مسار الحفظ</h2>
+                <p class="sub">ما حفظه ابنك من القرآن الكريم حتى الآن.</p>
+                <div id="memo-area"></div>
+            </div>
+
+            <!-- التسميع -->
+            <div class="card">
+                <h2>🎙️ التسميع وتقييم المعلم</h2>
+                <p class="sub">تلاوات ابنك المسجّلة ودرجات معلمه عليها.</p>
+                <div id="rec-area"></div>
+            </div>
+
+            <!-- النتائج -->
+            <div class="card">
+                <h2>📋 سجل النتائج</h2>
+                <p class="sub">نتائج ابنك في كل تقييمات المنصة.</p>
+                <div class="tbl-scroll">
+                    <table id="res-table">
+                        <thead><tr><th>المصدر</th><th>الدرس / المادة</th><th>الدرجة</th><th>التاريخ</th></tr></thead>
+                        <tbody id="res-body"></tbody>
+                    </table>
+                </div>
+                <div id="res-empty" class="empty hidden">لم يُنهِ ابنك أي تقييم بعد.</div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { doc, getDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { auth, db } from "./firebase-shared.js";
+    import { onAuthReady } from "./roles.js";
+    import { GRADE_LABELS } from "./lesson-map.js";
+    import { loadStudentRecords, computeStats, SOURCES } from "./progress-engine.js";
+    import { RECITATION_TYPES, loadStudentRecitations, recitationStats, scoreColor, fmtDuration } from "./recitation-engine.js";
+    import { loadMemorization, trackStats, overallStats } from "./memorization-engine.js";
+    import { TRACKS } from "./quran-data.js";
+
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fmtDate = (d) => d ? d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+
+    let me = null, kids = [], activeKid = null;
+
+    document.getElementById('btn-logout').onclick = () => {
+        if (confirm('هل تريد تسجيل الخروج؟')) signOut(auth).then(() => location.href = 'index.html');
+    };
+
+    function showLinkMsg(text, type) {
+        const el = document.getElementById('link-msg');
+        el.className = 'msg ' + type;
+        el.innerHTML = text;
+    }
+
+    // ---------- ربط ابن ----------
+    document.getElementById('btn-link').onclick = async function () {
+        let code = document.getElementById('link-code').value.trim().toUpperCase();
+        if (!code) { showLinkMsg('⚠️ اكتب كود الربط أولاً.', 'err'); return; }
+        if (!code.startsWith('PAR-') && /^\d{6}$/.test(code)) code = 'PAR-' + code;
+
+        this.disabled = true;
+        this.textContent = 'جاري الربط...';
+
+        try {
+            const snap = await getDoc(doc(db, 'parent_links', code));
+            if (!snap.exists() || snap.data().isActive !== true) {
+                showLinkMsg('❌ كود الربط غير صحيح أو أُلغي.<br>اطلب من ابنك كوداً جديداً من ملفه الشخصي.', 'err');
+                return;
+            }
+
+            const link = snap.data();
+            if (kids.some(k => k.uid === link.studentUid)) {
+                showLinkMsg('ℹ️ هذا الابن مرتبط بحسابك بالفعل.', 'ok');
+                return;
+            }
+
+            await setDoc(doc(db, 'users', me.uid), {
+                childUids: arrayUnion(link.studentUid)
+            }, { merge: true });
+
+            showLinkMsg(`✅ تم ربط <strong>${esc(link.studentName || 'ابنك')}</strong> بحسابك بنجاح!`, 'ok');
+            document.getElementById('link-code').value = '';
+
+            me.childUids = [...me.childUids, link.studentUid];
+            await loadKids();
+
+        } catch (e) {
+            console.error(e);
+            const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+            showLinkMsg(denied
+                ? '❌ قواعد الحماية ترفض الربط.<br>تأكد من نشر أحدث نسخة من firestore.rules.'
+                : '❌ تعذّر الربط: ' + esc(e.message), 'err');
+        } finally {
+            this.disabled = false;
+            this.textContent = 'ربط الابن 🔗';
+        }
+    };
+
+    // ---------- أبنائي ----------
+    async function loadKids() {
+        kids = [];
+        for (const uid of (me.childUids || [])) {
+            try {
+                const s = await getDoc(doc(db, 'users', uid));
+                if (s.exists()) {
+                    const d = s.data();
+                    kids.push({ uid, name: d.name || 'ابني', grade: d.grade || null });
+                }
+            } catch (e) { console.warn('تعذّر جلب بيانات الابن:', e.message); }
+        }
+
+        document.getElementById('no-kids').classList.toggle('hidden', kids.length > 0);
+        document.getElementById('kids').innerHTML = kids.map((k, i) => `
+            <div class="kid ${i === 0 ? 'active' : ''}" data-kid="${esc(k.uid)}">
+                <span class="av">🎓</span>
+                <div>
+                    <div class="nm">${esc(k.name)}</div>
+                    <div class="gr">${k.grade ? esc(GRADE_LABELS[k.grade] || k.grade) : 'صف غير محدّد'}</div>
+                </div>
+            </div>`).join('');
+
+        document.querySelectorAll('[data-kid]').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('[data-kid]').forEach(o => o.classList.remove('active'));
+                el.classList.add('active');
+                selectKid(el.dataset.kid);
+            };
+        });
+
+        if (kids.length) selectKid(kids[0].uid);
+        else document.getElementById('child-data').classList.add('hidden');
+    }
+
+    // ---------- بيانات ابن واحد ----------
+    async function selectKid(uid) {
+        activeKid = kids.find(k => k.uid === uid);
+        document.getElementById('child-data').classList.remove('hidden');
+        document.getElementById('data-content').classList.add('hidden');
+        document.getElementById('data-spin').classList.remove('hidden');
+
+        // النتائج + التسميع + الحفظ معاً
+        const [recordsRes, recitations, memo] = await Promise.all([
+            loadStudentRecords(uid).catch(() => ({ records: [], errors: [] })),
+            loadStudentRecitations(uid).catch(() => []),
+            loadMemorization(uid).catch(() => ({ surahs: {} }))
+        ]);
+
+        const records = recordsRes.records || [];
+        const stats = computeStats(records);
+        const recStats = recitationStats(recitations);
+        const memoStats = overallStats(memo.surahs || {});
+
+        document.getElementById('c-xp').textContent    = stats.totalXP;
+        document.getElementById('c-count').textContent = stats.total;
+        document.getElementById('c-avg').textContent   = stats.avgPercent === null ? '—' : stats.avgPercent + '%';
+        document.getElementById('c-rec').textContent   = recStats.total;
+        document.getElementById('c-memo').textContent  = memoStats.memorized;
+
+        renderMemo(memo.surahs || {});
+        renderRecitations(recitations);
+        renderResults(records);
+
+        document.getElementById('data-spin').classList.add('hidden');
+        document.getElementById('data-content').classList.remove('hidden');
+    }
+
+    function renderMemo(surahs) {
+        const area = document.getElementById('memo-area');
+        const any = Object.keys(surahs).length > 0;
+
+        if (!any) {
+            area.innerHTML = '<div class="empty">لم يسجّل ابنك أي حفظ بعد.</div>';
+            return;
+        }
+
+        area.innerHTML = TRACKS.map(t => {
+            const st = trackStats(surahs, t.key);
+            if (st.memorized === 0 && st.inProgress === 0) return '';
+            return `<div class="memo-track">
+                <div class="lbl">
+                    <span>${t.icon} ${esc(t.label)}</span>
+                    <span style="color:${t.color};">${st.memorized} / ${st.total} سورة (${st.percent}%)</span>
+                </div>
+                <div class="memo-bar"><div style="width:${st.percent}%; background:${t.color};"></div></div>
+                ${st.confirmed ? `<div style="font-size:.83rem; color:#27ae60; margin-top:5px;">✓ ${st.confirmed} سورة معتمدة من المعلم</div>` : ''}
+            </div>`;
+        }).join('') || '<div class="empty">لم يسجّل ابنك أي حفظ بعد.</div>';
+    }
+
+    function renderRecitations(list) {
+        const area = document.getElementById('rec-area');
+        if (!list.length) {
+            area.innerHTML = '<div class="empty">لم يرسل ابنك أي تسميع بعد.</div>';
+            return;
+        }
+
+        area.innerHTML = list.slice(0, 8).map(r => {
+            const t = RECITATION_TYPES[r.type] || RECITATION_TYPES.other;
+            const reviewed = r.status === 'reviewed' && r.score !== null;
+            return `<div class="rec-row ${reviewed ? 'reviewed' : 'pending'}">
+                <div>
+                    <div style="font-weight:800;">${t.icon} ${esc(r.title)}${r.reference ? ' — ' + esc(r.reference) : ''}</div>
+                    <div style="color:#7f8c8d; font-size:.85rem; margin-top:3px;">
+                        ${esc(t.label)} · ${fmtDuration(r.durationSec)} · ${esc(fmtDate(r.createdAt))}
+                    </div>
+                </div>
+                <div style="text-align:left;">
+                    ${reviewed
+                        ? `<div style="font-size:1.5rem; font-weight:900; color:${scoreColor(r.score)};">${r.score}%</div>
+                           <div style="font-size:.83rem; color:#7f8c8d;">${esc(r.level)}</div>`
+                        : `<span style="background:#fef5e7; color:#b9770e; padding:5px 14px; border-radius:20px;
+                                 font-size:.83rem; font-weight:bold;">⏳ بانتظار التصحيح</span>`}
+                </div>
+                ${r.feedback ? `<div class="rec-fb">💬 <strong>ملاحظة المعلم:</strong> ${esc(r.feedback)}</div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function renderResults(records) {
+        const body = document.getElementById('res-body');
+        document.getElementById('res-empty').classList.toggle('hidden', records.length > 0);
+        document.getElementById('res-table').classList.toggle('hidden', records.length === 0);
+
+        body.innerHTML = records.slice(0, 40).map(r => {
+            const s = SOURCES[r.source];
+            const score = r.percent !== null
+                ? `<span class="pill" style="color:${r.percent>=75?'#27ae60':r.percent>=50?'#f39c12':'#e74c3c'};">${r.percent}%</span>`
+                : `<span class="pill" style="color:#e67e22;">${r.rawScore} نقطة</span>`;
+            return `<tr>
+                <td><span class="src" style="background:${s.color};">${s.icon} ${esc(s.label)}</span></td>
+                <td>${esc(r.title)}</td>
+                <td>${score}</td>
+                <td style="color:#7f8c8d; font-size:.88rem;">${esc(fmtDate(r.date))}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ---------- التشغيل ----------
+    onAuthReady(async (profile) => {
+        me = profile;
+        document.getElementById('parent-name').textContent = me.name;
+        await loadKids();
+    });
+</script>
+
+</body>
+</html>

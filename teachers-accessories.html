@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3232445252654445"
+     crossorigin="anonymous"></script>
+    <title>متجر المعلم المتميز - إديوكيشن بازار</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4A00E0;
+            --secondary-color: #8E2DE2;
+            --accent-color: #FFD700;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            direction: rtl;
+        }
+
+        /* === الهيدر التسويقي === */
+        header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            border-bottom-left-radius: 50px;
+            border-bottom-right-radius: 50px;
+            box-shadow: 0 10px 30px rgba(74, 0, 224, 0.2);
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        /* === شبكة المنتجات === */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        /* === تصميم الكارت (Card) === */
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            text-align: center;
+            padding-bottom: 20px;
+            border: 1px solid #eee;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        /* الجزء العلوي الملون للكارت */
+        .card-header {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 4rem;
+            position: relative;
+        }
+
+        /* ألوان مختلفة لكل قسم */
+        .card-medals .card-header { background: linear-gradient(45deg, #FFD700, #FDB931); } /* ذهبي للميداليات */
+        .card-trophies .card-header { background: linear-gradient(45deg, #C0C0C0, #E0E0E0); } /* فضي للكؤوس */
+        .card-shields .card-header { background: linear-gradient(45deg, #cd7f32, #b87333); } /* برونزي للدروع */
+        .card-maps .card-header { background: linear-gradient(45deg, #11998e, #38ef7d); } /* أخضر للوحات */
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 20px 0 10px;
+        }
+
+        .card-desc {
+            color: #666;
+            font-size: 0.95rem;
+            padding: 0 20px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .shop-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(74, 0, 224, 0.3);
+        }
+
+        .shop-btn:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        /* شارة "جديد" */
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #ff4757;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>💎 ركن المعلم المتميز</h1>
+        <p>لمسات فنية وأدوات راقية تليق بمكانتك</p>
+    </header>
+
+    <div class="container">
+
+        <div class="product-card card-medals">
+            <span class="badge">الأكثر مبيعاً</span>
+            <div class="card-header">
+                <i class="fas fa-medal"></i> </div>
+            <h2 class="card-title">ميداليات وتعليقات</h2>
+            <p class="card-desc">تشكيلة فاخرة من الميداليات الذهبية والفضية، وتعليقات مفاتيح أنيقة للمعلمين والطلاب المتميزين.</p>
+            <a href="medals_list.html" class="shop-btn">تصفح التشكيلة</a>
+        </div>
+
+        <div class="product-card card-trophies">
+            <div class="card-header">
+                <i class="fas fa-trophy"></i> </div>
+            <h2 class="card-title">كؤوس التميز</h2>
+            <p class="card-desc">كؤوس بتصاميم عالمية لتكريم الأوائل والفائزين في المسابقات المدرسية. اصنع لحظة لا تنسى.</p>
+            <a href="trophies_list.html" class="shop-btn">تصفح الكؤوس</a>
+        </div>
+
+        <div class="product-card card-shields">
+            <span class="badge">طباعة خاصة</span>
+            <div class="card-header">
+                <i class="fas fa-award"></i> </div>
+            <h2 class="card-title">دروع النجاح والتكريم</h2>
+            <p class="card-desc">دروع كريستال وخشبية فاخرة مع إمكانية كتابة اسم الطالب أو المعلم عليها لتخليد ذكرى النجاح.</p>
+            <a href="#" class="shop-btn">صمم درعك الآن</a>
+        </div>
+
+        <div class="product-card card-maps">
+            <div class="card-header">
+                <i class="fas fa-map-marked-alt"></i> </div>
+            <h2 class="card-title">لوحات وخرائط تعليمية</h2>
+            <p class="card-desc">وسائل إيضاح، خرائط جغرافية دقيقة، ولوحات حائطية تجعل من فصلك بيئة تعليمية متكاملة.</p>
+            <a href="#" class="shop-btn">استعرض الوسائل</a>
+        </div>
+
+    </div>
+
+    <div style="text-align: center; margin: 40px 0; color: #777;">
+        <p>جميع المنتجات متوفرة بجودة عالية وشحن سريع 🚚</p>
+    </div>
+
+</body>
+</html>

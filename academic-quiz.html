@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+
+    <!-- 🔑 محرك الاختبارات الأكاديمية: لا يدخلها الطالب إلا بكود دخول فعّال -->
+    <script type="module" src="auth-guard.js" data-require-role="student" data-require-access="true"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الاختبارات المعيارية</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #eef2f5; color: #2c3e50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .quiz-panel { background: #fff; border-radius: 12px; padding: 40px; width: 100%; max-width: 850px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #2980b9; margin-bottom: 20px; text-align: center; }
+        .hidden { display: none !important; }
+        
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ecf0f1; padding-bottom: 15px; margin-bottom: 25px; text-align: right; }
+        .bloom-badge { background: #34495e; color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
+        .score-badge { font-size: 1.2rem; font-weight: bold; color: #27ae60; }
+
+        #timer-container { width: 100%; background: #ecf0f1; border-radius: 6px; height: 10px; margin-bottom: 25px; overflow: hidden; }
+        #timer-bar { height: 100%; background: #3498db; width: 100%; transition: width 1s linear, background 0.3s; }
+        
+        .question-text { font-size: 1.6rem; font-weight: 700; margin-bottom: 10px; line-height: 1.5; color: #1a2a6c; text-align: right; }
+        .question-text-en { font-size: 1.2rem; color: #7f8c8d; margin-bottom: 20px; direction: ltr; text-align: left; }
+        .q-image { max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ccc; display: none; margin: 0 auto; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; }
+        .option-btn { background: #f8f9fa; border: 2px solid #bdc3c7; color: #2c3e50; padding: 20px; font-size: 1.15rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: right; font-weight: 600; display: flex; flex-direction: column; }
+        .option-btn:hover:not(:disabled) { background: #eef2f5; border-color: #3498db; }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .option-btn.correct { background: #d5f5e3 !important; border-color: #27ae60 !important; color: #1e8449; }
+        .option-btn.wrong { background: #fadbd8 !important; border-color: #e74c3c !important; color: #922b21; }
+        .opt-en-text { font-size: 0.95rem; color: #7f8c8d; margin-top: 5px; direction: ltr; text-align: left; }
+
+        .hint-btn { background: #f39c12; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; font-weight: bold; }
+        .hint-btn:hover { background: #d68910; }
+        #hint-text { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border-right: 4px solid #ffeeba; margin-bottom: 20px; font-size: 0.95rem; display: none; line-height: 1.5; text-align: right; }
+        #feedback-box { background: #e8f4f8; border-right: 5px solid #3498db; padding: 20px; margin-top: 25px; border-radius: 5px; display: none; line-height: 1.5; text-align: right; }
+        
+        .error-msg { background: #fadbd8; color: #922b21; padding: 20px; border-radius: 8px; border: 2px solid #e74c3c; margin-top: 20px; font-weight: bold; font-size: 1.2rem; text-align: center; line-height: 1.6; }
+
+        /* تنسيقات أزرار القارئ الصوتي الذكي */
+        .speak-opt-btn:hover { transform: scale(1.1); background: #f39c12 !important; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen" class="quiz-panel">
+        <h2 style="color: #34495e;">جاري تهيئة بيئة الاختبار... ⏳</h2>
+        <div id="debug-error" class="error-msg hidden"></div>
+        <button id="btn-return" class="hidden" onclick="window.location.href='academic-lobby.html'" style="margin-top:20px; padding:10px 20px; background:#34495e; color:white; border:none; border-radius:5px; cursor:pointer;">العودة للرئيسية</button>
+    </div>
+
+    <div id="quiz-screen" class="quiz-panel hidden">
+        
+        <!-- 🔊 لوحة التحكم في القارئ الصوتي الموحدة والذكية -->
+        <div id="tts-controls" style="background: #e8f4f8; padding: 15px; border-radius: 8px; border: 2px dashed #3498db; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <label style="font-weight: bold; color: #2c3e50; font-size: 1.1rem;">🗣️ لغة القارئ الصوتي:</label>
+            
+            <select id="global-voice-select" style="padding: 8px 10px; border-radius: 5px; border: 1px solid #bdc3c7; font-weight: bold; font-size: 1rem; outline: none; background: #fff; color: #2c3e50; min-width: 250px;">
+                <option value="ar-SA">🇸🇦 العربية (قياسي / فصحى)</option>
+                <option value="ar-AE">🇦🇪 العربية (لهجة إماراتية)</option>
+                <option value="ar-EG">🇪🇬 العربية (لهجة مصرية)</option>
+                <option value="en-US">🇺🇸 English (American)</option>
+                <option value="en-GB">🇬🇧 English (British)</option>
+            </select>
+            
+            <button onclick="stopSpeaking()" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">⏹️ إيقاف الصوت</button>
+        </div>
+        <!-- 🔊 نهاية لوحة التحكم الصوتي -->
+
+        <div class="header-bar">
+            <div>
+                <span id="question-counter" style="color: #7f8c8d; font-weight: bold; margin-left: 15px;">السؤال 1</span>
+                <span id="bloom-level" class="bloom-badge hidden">مستوى التفكير</span>
+            </div>
+            <div class="score-badge hidden" id="score-display">النقاط: <span id="my-score">0</span></div>
+        </div>
+
+        <div id="timer-container" class="hidden"><div id="timer-bar"></div></div>
+
+        <div style="text-align: right;">
+            <button id="btn-hint" class="hint-btn hidden">💡 طلب تلميح</button>
+            <div id="hint-text"></div>
+        </div>
+
+        <!-- 🔊 نصوص الأسئلة مزودة بأزرار القراءة المعرفة برمجياً -->
+        <div style="display: flex; align-items: flex-start; justify-content: flex-start; gap: 15px; margin-bottom: 10px;">
+            <button id="btn-speak-q-ar" style="background: #f1c40f; border: none; font-size: 1.5rem; cursor: pointer; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.3s; flex-shrink: 0; outline: none;" title="استمع للسؤال">🔊</button>
+            <h2 class="question-text" id="q-text-ar" style="margin-bottom: 0;">نص السؤال</h2>
+        </div>
+        
+        <div id="q-text-en-wrapper" style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 20px; direction: ltr;">
+            <button id="btn-speak-q-en" style="background: #f1c40f; border: none; font-size: 1.2rem; cursor: pointer; border-radius: 50%; width: 35px; height: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.3s; flex-shrink: 0; outline: none;" title="Listen to the question">🔊</button>
+            <h3 class="question-text-en" id="q-text-en" style="margin-bottom: 0;">Question text</h3>
+        </div>
+        <!-- 🔊 نهاية نصوص الأسئلة -->
+
+        <img id="q-image" class="q-image" src="" alt="صورة توضيحية">
+        
+        <div class="options-grid" id="options-container"></div>
+
+        <div id="feedback-box">
+            <h4 style="color: #2980b9; margin-bottom: 10px;">📌 التعليل العلمي:</h4>
+            <p id="feedback-text" style="color: #34495e; font-weight: bold;"></p>
+        </div>
+        
+        <div id="waiting-msg" style="text-align: center; margin-top: 25px; color: #7f8c8d; font-weight: bold; display: none;"></div>
+        <button id="btn-next-custom" class="hidden" style="background:#27ae60; color:white; padding:15px; width:100%; border:none; border-radius:5px; font-size:1.2rem; cursor:pointer; margin-top:20px;">الانتقال للسؤال التالي ⏭️</button>
+    </div>
+
+    <div id="result-screen" class="quiz-panel hidden">
+        <h1 id="result-title" style="color: #1a2a6c; margin-bottom: 20px; font-size: 2.5rem;">تقرير الأداء</h1>
+        <div id="final-results" style="font-size: 1.3rem; line-height: 2; color: #34495e; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px;"></div>
+        <button onclick="window.location.href='academic-lobby.html'" style="background: #1a2a6c; color: #fff; border: none; padding: 12px 30px; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">إنهاء والعودة للرئيسية</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, getDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        
+        // =========================================
+        // 🗣️ محرك القارئ الصوتي الذكي والموحد (Smart TTS)
+        // =========================================
+        window.availableVoices = [];
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.availableVoices = window.speechSynthesis.getVoices();
+        };
+
+        window.speakSmart = function(arText, enText) {
+            window.speechSynthesis.cancel(); // إيقاف أي صوت سابق فورا لعدم التداخل
+
+            const dialectSelect = document.getElementById('global-voice-select');
+            const selectedLang = dialectSelect ? dialectSelect.value : 'ar-SA';
+            
+            // تحديد النص الذي سيتم قراءته بصرامة بناءً على اللغة المختارة فقط
+            let textToSpeak = "";
+            if (selectedLang.startsWith('en')) {
+                textToSpeak = enText ? enText : arText; // إذا اختار إنجليزي يقرأ الإنجليزي فقط
+            } else {
+                textToSpeak = arText ? arText : enText; // إذا اختار عربي يقرأ العربي فقط
+            }
+
+            if (!textToSpeak || textToSpeak.trim() === "") return;
+
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = textToSpeak;
+            msg.lang = selectedLang;
+
+            if (window.availableVoices.length > 0) {
+                // البحث عن أصوات عالية الجودة واحترافية أولاً (مثل جوجل أو سيري)
+                let voice = window.availableVoices.find(v => (v.lang === selectedLang || v.lang.replace('_', '-') === selectedLang) && (v.name.includes('Google') || v.name.includes('Siri') || v.name.includes('Premium') || v.name.includes('Majed')));
+                
+                // إن لم يجد الصوت الاحترافي، يبحث عن أي صوت يطابق اللهجة
+                if (!voice) {
+                    voice = window.availableVoices.find(v => v.lang === selectedLang || v.lang.replace('_', '-') === selectedLang);
+                }
+                
+                // بديل أخير لضمان عدم تعطل الصوت
+                if (!voice) {
+                    const baseLang = selectedLang.split('-')[0];
+                    voice = window.availableVoices.find(v => v.lang.startsWith(baseLang));
+                }
+                
+                if (voice) {
+                    msg.voice = voice;
+                }
+            }
+
+            // ضبط سرعة ونبرة الصوت ليكون أكثر جدية واحترافية للأطفال
+            msg.rate = 0.8;  // سرعة مريحة وغير متعجلة
+            msg.pitch = 0.9; // نبرة صوت طبيعية غير حادة
+            window.speechSynthesis.speak(msg);
+        };
+
+        window.stopSpeaking = function() {
+            window.speechSynthesis.cancel();
+        };
+        // =========================================
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomId');
+        const customId = urlParams.get('customId');
+
+        let myUid = null;
+        let myName = "طالب";
+        // بيانات الاختبار المخصّص، تُقرأ عند التحميل وتُحفظ مع النتيجة
+        let customQuizTeacherUid = null;
+        let customQuizTitle = null;
+        let quizzes = []; 
+        let currentQIdx = -1;
+        let myScore = 0;
+        let myEssayAnswers = {}; 
+        let isHost = false;
+        let gameMode = 'single';
+        let isTransitioning = false;
+        let questionTimerInterval;
+        let hasAnswered = false;
+
+        let hostTimerInterval;
+        let hostSecondsElapsed = 0;
+
+        function showError(message) {
+            const errDiv = document.getElementById('debug-error');
+            errDiv.innerHTML = `❌ عذراً، لا يمكن بدء الاختبار:<br><br>${message}`;
+            errDiv.classList.remove('hidden');
+            document.getElementById('btn-return').classList.remove('hidden');
+            document.querySelector('#loading-screen h2').style.display = 'none';
+        }
+
+        window.renderHostDashboard = function(data) {
+            let dashboard = document.getElementById('host-dashboard-ui');
+            
+            if (!dashboard) {
+                document.getElementById('question-counter').parentElement.classList.add('hidden');
+                document.getElementById('q-text-ar').parentElement.classList.add('hidden');
+                if(document.getElementById('q-text-en-wrapper')) document.getElementById('q-text-en-wrapper').classList.add('hidden');
+                document.getElementById('q-image').classList.add('hidden');
+                document.getElementById('options-container').classList.add('hidden');
+                document.getElementById('timer-container').classList.add('hidden');
+                document.getElementById('btn-hint').classList.add('hidden');
+                document.getElementById('tts-controls').classList.add('hidden'); // إخفاء التحكم الصوتي للمعلم
+                
+                dashboard = document.createElement('div');
+                dashboard.id = 'host-dashboard-ui';
+                dashboard.style.width = "100%";
+                dashboard.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                        <h2 style="margin-bottom: 10px; font-size: 1.8rem;">👑 منصة تحكم المعلم المباشرة</h2>
+                        <div style="font-size: 3rem; font-weight: 900; color: #fdbb2d; letter-spacing: 2px;" id="host-timer-display">00:00</div>
+                        <p style="color: #ecf0f1; font-size: 1rem; font-weight: bold;">وقت الاختبار الكلي المنقضي</p>
+                    </div>
+                    
+                    <h3 style="color: #2980b9; margin-bottom: 15px; border-bottom: 3px solid #3498db; padding-bottom: 10px; text-align: right;">📊 الترتيب الحي للطلاب:</h3>
+                    <div id="host-leaderboard" style="display: flex; flex-direction: column; gap: 12px; max-height: 450px; overflow-y: auto; padding-left: 10px;"></div>
+                    
+                    <button onclick="endGroupQuizForEveryone()" style="background:#e74c3c; color:white; padding:15px; width:100%; border:none; border-radius:8px; font-size:1.3rem; cursor:pointer; margin-top:25px; font-weight:bold; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);">
+                        ⛔ إنهاء الاختبار واستخراج النتائج
+                    </button>
+                `;
+                document.getElementById('quiz-screen').appendChild(dashboard);
+
+                hostTimerInterval = setInterval(() => {
+                    hostSecondsElapsed++;
+                    let m = Math.floor(hostSecondsElapsed / 60).toString().padStart(2, '0');
+                    let s = (hostSecondsElapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('host-timer-display').textContent = `${m}:${s}`;
+                }, 1000);
+            }
+
+            const lbContainer = document.getElementById('host-leaderboard');
+            lbContainer.innerHTML = '';
+            
+            const playersArray = Object.values(data.players || {})
+                .filter(p => p.uid !== data.hostUid)
+                .sort((a,b) => (b.score || 0) - (a.score || 0));
+            
+            if(playersArray.length === 0) {
+                lbContainer.innerHTML = '<p style="text-align:center; color:#7f8c8d; font-weight:bold;">لا يوجد طلاب في الغرفة حالياً...</p>';
+            } else {
+                playersArray.forEach((p, index) => {
+                    let rankColor = index === 0 ? '#f1c40f' : (index === 1 ? '#bdc3c7' : (index === 2 ? '#cd7f32' : '#ecf0f1'));
+                    let rankText = index === 0 ? '#856404' : (index === 1 ? '#383d41' : (index === 2 ? '#6c757d' : '#2c3e50'));
+                    let answeredCount = p.answers ? Object.keys(p.answers).length : 0;
+                    
+                    lbContainer.innerHTML += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-right: 6px solid ${rankColor};">
+                            <div style="font-weight: bold; font-size: 1.15rem; color: #34495e; display: flex; align-items: center; gap: 10px;">
+                                <span style="display:inline-flex; justify-content:center; align-items:center; width:30px; height:30px; background:${rankColor}; color:${rankText}; border-radius:50%; font-size: 1rem;">${index + 1}</span>
+                                ${p.displayName || 'طالب غير معروف'}
+                                <span style="font-size:0.85rem; color:#7f8c8d; background:#eef2f5; padding:3px 8px; border-radius:12px;">أجاب ${answeredCount}/${quizzes.length}</span>
+                            </div>
+                            <div style="font-size: 1.25rem; font-weight: 900; color: #27ae60;">${p.score || 0} نقطة</div>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.endGroupQuizForEveryone = function() {
+            if(confirm("هل أنت متأكد من رغبتك في إنهاء الاختبار للجميع الآن؟ سيعرض الترتيب النهائي.")) {
+                clearInterval(hostTimerInterval);
+                endStandardQuiz(window.currentRoomData);
+            }
+        };
+
+        function moveToNextQuestionLocally() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            document.getElementById('waiting-msg').textContent = "يتم الانتقال للسؤال التالي...";
+            document.getElementById('waiting-msg').style.display = 'block';
+            
+            setTimeout(() => {
+                currentQIdx++;
+                if (currentQIdx >= quizzes.length) {
+                    endStandardQuiz(window.currentRoomData || {players: {}});
+                } else {
+                    hasAnswered = false;
+                    isTransitioning = false;
+                    document.getElementById('feedback-box').style.display = 'none';
+                    document.getElementById('waiting-msg').style.display = 'none';
+                    document.getElementById('hint-text').style.display = 'none';
+                    renderStandardQuestion(quizzes[currentQIdx], currentQIdx);
+                }
+            }, 3500); 
+        }
+
+        async function initStandardEngine() {
+            try {
+                const roomRef = doc(db, 'rooms', roomId);
+                const roomSnap = await getDoc(roomRef);
+                
+                if (!roomSnap.exists()) {
+                    showError("الغرفة المطلوبة غير موجودة. تأكد من الكود المدخل.");
+                    return;
+                }
+                
+                const roomData = roomSnap.data();
+                isHost = roomData.hostUid === myUid;
+                gameMode = roomData.mode;
+
+                if (!roomData.lessonId) {
+                    showError("الغرفة لا تحتوي على درس محدد!");
+                    return;
+                }
+
+                const bankSnap = await getDoc(doc(db, 'academic_question_banks', roomData.lessonId));
+                if (!bankSnap.exists() || !bankSnap.data().questions || bankSnap.data().questions.length === 0) {
+                    showError(`الأسئلة الأكاديمية للدرس (${roomData.lessonId}) غير موجودة !<br>سيتم رفعها قريباً إن شاء الله تعالى.`);
+                    return;
+                }
+
+                quizzes = bankSnap.data().questions;
+                
+                document.getElementById('timer-container').classList.remove('hidden');
+                document.getElementById('bloom-level').classList.remove('hidden');
+                if(gameMode !== 'group' || !isHost) document.getElementById('btn-hint').classList.remove('hidden');
+
+                onSnapshot(roomRef, (docSnap) => {
+                    const data = docSnap.data();
+                    if (!data) return;
+
+                    window.currentRoomData = data; 
+
+                    document.getElementById('my-score').textContent = (data.players && data.players[myUid] ? data.players[myUid].score : 0);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('quiz-screen').classList.remove('hidden');
+
+                    if (isHost && gameMode === 'group') {
+                        if(typeof renderHostDashboard === 'function') renderHostDashboard(data);
+                        return; 
+                    }
+
+                    if(currentQIdx >= quizzes.length) { endStandardQuiz(data); return; }
+
+                    if(currentQIdx === -1) {
+                        currentQIdx = 0;
+                        hasAnswered = false;
+                        isTransitioning = false;
+                        document.getElementById('feedback-box').style.display = 'none';
+                        document.getElementById('waiting-msg').style.display = 'none';
+                        document.getElementById('hint-text').style.display = 'none';
+                        renderStandardQuestion(quizzes[currentQIdx], currentQIdx);
+                    }
+                });
+
+            } catch (error) { 
+                showError("خطأ تقني أثناء تحميل الغرفة: " + error.message);
+            }
+        }
+
+        function renderStandardQuestion(q, idx) {
+            if (isHost && gameMode === 'group') return; 
+
+            document.getElementById('question-counter').textContent = `السؤال ${idx + 1} / ${quizzes.length}`;
+            document.getElementById('bloom-level').textContent = `مهارة: ${q.bloomLevel || 'فهم'}`;
+            document.getElementById('q-text-ar').textContent = q.textAr || q.ar;
+            
+            // تهيئة النصوص للناطق الصوتي لتفادي الأخطاء
+            const arText = q.textAr || q.ar || "";
+            const enText = q.textEn || q.en || "";
+            
+            // ربط أزرار قراءة السؤال بالدالة الذكية
+            const btnSpeakAr = document.getElementById('btn-speak-q-ar');
+            const btnSpeakEn = document.getElementById('btn-speak-q-en');
+            if(btnSpeakAr) btnSpeakAr.onclick = () => window.speakSmart(arText, enText);
+            if(btnSpeakEn) btnSpeakEn.onclick = () => window.speakSmart(arText, enText);
+
+            if(enText !== "") {
+                document.getElementById('q-text-en').textContent = enText;
+                document.getElementById('q-text-en-wrapper').style.display = 'flex';
+            } else {
+                document.getElementById('q-text-en-wrapper').style.display = 'none';
+            }
+            
+            const hintBtn = document.getElementById('btn-hint');
+            const hintText = document.getElementById('hint-text');
+            hintBtn.onclick = () => { hintText.textContent = q.hint || "لا يوجد تلميح."; hintText.style.display = 'block'; };
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            let timeLeft = 40; 
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.width = '100%'; timerBar.style.background = '#3498db';
+            clearInterval(questionTimerInterval); 
+            
+            let optionsToRender = [...(q.options || [])];
+            optionsToRender.sort(() => Math.random() - 0.5);
+
+            optionsToRender.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                
+                let enTextHtml = (opt.en) ? `<span class="opt-en-text" style="display:block; font-size:0.95rem; color:#7f8c8d; margin-top:5px; direction:ltr; text-align:left;">${opt.en}</span>` : '';
+                
+                // 🔊 زر استماع ذكي لكل خيار
+                btn.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div style="flex: 1; text-align: right;">
+                            <span>${opt.ar}</span>
+                            ${enTextHtml}
+                        </div>
+                        <div class="speak-opt-btn" style="font-size:1.5rem; padding:5px; margin-right:15px; background:#f1c40f; color:#fff; border-radius:50%; width:40px; height:40px; display:flex; justify-content:center; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer; flex-shrink: 0;" title="استمع للإجابة">🔊</div>
+                    </div>
+                `;
+                
+                let isCorrect = (q.correctAnswerIndex !== undefined && q.options.indexOf(opt) === q.correctAnswerIndex) || (opt.correct === true);
+                
+                btn.onclick = (e) => {
+                    // 🔊 تفعيل نطق الخيار عبر الدالة الذكية دون التسبب في اختياره كإجابة
+                    if (e.target.closest('.speak-opt-btn')) {
+                        e.stopPropagation(); 
+                        window.speakSmart(opt.ar, opt.en || "");
+                        return;
+                    }
+
+                    if(hasAnswered) return;
+                    hasAnswered = true; clearInterval(questionTimerInterval); 
+                    
+                    const allBtns = container.querySelectorAll('.option-btn');
+                    allBtns.forEach(b => b.disabled = true);
+                    
+                    if (!isCorrect) {
+                        btn.classList.add('wrong');
+                        allBtns.forEach(b => { if(b.dataset.isc === 'true') b.classList.add('correct'); });
+                    } else {
+                        btn.classList.add('correct');
+                        myScore += 10;
+                    }
+                    
+                    document.getElementById('feedback-text').textContent = q.feedback || "الإجابة واضحة من الدرس.";
+                    document.getElementById('feedback-box').style.display = 'block';
+                    updateDoc(doc(db,'rooms',roomId), { [`players.${myUid}.answers.q_${idx}`]: true, [`players.${myUid}.score`]: myScore });
+                    
+                    moveToNextQuestionLocally();
+                };
+                btn.dataset.isc = isCorrect;
+                container.appendChild(btn);
+            });
+
+            questionTimerInterval = setInterval(() => {
+                if (hasAnswered) { clearInterval(questionTimerInterval); return; }
+                timeLeft--;
+                timerBar.style.width = `${(timeLeft / 30) * 100}%`;
+                if (timeLeft <= 5) timerBar.style.background = '#e74c3c';
+
+                if (timeLeft <= 0) {
+                    clearInterval(questionTimerInterval); hasAnswered = true;
+                    container.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; if(b.dataset.isc === 'true') b.classList.add('correct'); });
+                    document.getElementById('feedback-text').textContent = "انتهى الوقت! " + (q.feedback || "");
+                    document.getElementById('feedback-box').style.display = 'block';
+                    updateDoc(doc(db,'rooms',roomId), { [`players.${myUid}.answers.q_${idx}`]: true });
+                    
+                    moveToNextQuestionLocally();
+                }
+            }, 1000);
+        }
+
+        function endStandardQuiz(data) {
+            clearInterval(questionTimerInterval); 
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            const finalLb = document.getElementById('final-results');
+            finalLb.innerHTML = '';
+
+            if (gameMode === 'single') {
+                let percentage = (myScore / (quizzes.length * 10)) * 100;
+                let rating = percentage >= 90 ? "ممتاز 🌟" : (percentage >= 75 ? "جيد جداً 👍" : "يحتاج لمراجعة 📖");
+                finalLb.innerHTML = `<div>النقاط: <strong style="color:#27ae60;">${myScore}</strong> من ${quizzes.length * 10}</div><div>الأداء: <strong>${rating}</strong></div>`;
+            } else {
+                const playersArray = Object.values(data.players || {}).sort((a,b) => b.score - a.score);
+                playersArray.forEach((p, index) => {
+                    if(p.uid === data.hostUid) return; 
+                    finalLb.innerHTML += `<div style="border-bottom: 1px solid #ddd; padding: 10px 0;">المركز ${index+1}: ${p.displayName} - <strong>${p.score} نقطة</strong></div>`;
+                });
+            }
+        }
+
+        // ========================================================
+        // المحرك الثاني: اختبار المعلم والمُولد الذكي
+        // ========================================================
+        async function initCustomEngine() {
+            try {
+                const quizSnap = await getDoc(doc(db, 'custom_quizzes', customId));
+                if (!quizSnap.exists()) {
+                    showError("هذا الاختبار الخاص تم حذفه أو غير موجود.");
+                    return;
+                }
+                
+                quizzes = quizSnap.data().questions;
+                // 🔧 نحتفظ بصاحب الاختبار وعنوانه ليُحفظا مع النتيجة،
+                // فيستطيع المعلم قراءة نتائج اختباراته وحدها بعد تفعيل
+                // قواعد الحماية، ويظهر عنوان الاختبار في ملف الطالب.
+                customQuizTeacherUid = quizSnap.data().teacherUid || null;
+                customQuizTitle = quizSnap.data().title || null;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                currentQIdx = 0; 
+                renderCustomQuestion(quizzes[currentQIdx]);
+
+            } catch (error) {
+                showError("خطأ أثناء تحميل الاختبار الخاص: " + error.message);
+            }
+        }
+
+        function renderCustomQuestion(q) {
+            document.getElementById('question-counter').textContent = `السؤال ${currentQIdx + 1} من ${quizzes.length}`;
+            document.getElementById('q-text-ar').textContent = q.textAr || q.ar || "سؤال بدون نص";
+            
+            const arText = q.textAr || q.ar || "";
+            const enText = q.textEn || q.en || "";
+            
+            const btnSpeakAr = document.getElementById('btn-speak-q-ar');
+            const btnSpeakEn = document.getElementById('btn-speak-q-en');
+            if(btnSpeakAr) btnSpeakAr.onclick = () => window.speakSmart(arText, enText);
+            if(btnSpeakEn) btnSpeakEn.onclick = () => window.speakSmart(arText, enText);
+
+            if(enText !== "") {
+                document.getElementById('q-text-en').textContent = enText;
+                document.getElementById('q-text-en-wrapper').style.display = 'flex';
+            } else {
+                document.getElementById('q-text-en-wrapper').style.display = 'none'; 
+            }
+            
+            const imgEl = document.getElementById('q-image');
+            if(q.image) { imgEl.src = q.image; imgEl.style.display = 'block'; } 
+            else { imgEl.style.display = 'none'; }
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            const btnNext = document.getElementById('btn-next-custom');
+            btnNext.classList.add('hidden');
+
+            if (currentQIdx === quizzes.length - 1) {
+                btnNext.innerHTML = "إرسال الإجابات للمعلم 📤";
+                btnNext.style.background = "#e67e22"; 
+            } else {
+                btnNext.innerHTML = "الانتقال للسؤال التالي ⏭️";
+                btnNext.style.background = "#27ae60"; 
+            }
+
+            if(q.type === 'mcq' || q.type === 'tf' || !q.type) {
+                let opts = [...(q.options || [])].sort(() => Math.random() - 0.5);
+                opts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    
+                    let enTextHtml = (opt.en) ? `<span class="opt-en-text" style="display:block; font-size:0.95rem; color:#7f8c8d; margin-top:5px; direction:ltr; text-align:left;">${opt.en}</span>` : '';
+                    
+                    btn.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div style="flex: 1; text-align: right;">
+                                <span>${opt.ar}</span>
+                                ${enTextHtml}
+                            </div>
+                            <div class="speak-opt-btn" style="font-size:1.5rem; padding:5px; margin-right:15px; background:#f1c40f; color:#fff; border-radius:50%; width:40px; height:40px; display:flex; justify-content:center; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer; flex-shrink: 0;" title="استمع للإجابة">🔊</div>
+                        </div>
+                    `;
+                    
+                    btn.onclick = (e) => {
+                        // 🔊 النطق الذكي للخيار
+                        if (e.target.closest('.speak-opt-btn')) {
+                            e.stopPropagation(); 
+                            window.speakSmart(opt.ar, opt.en || "");
+                            return;
+                        }
+
+                        container.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                        
+                        let isCorrect = (q.correctAnswerIndex !== undefined && q.options.indexOf(opt) === q.correctAnswerIndex) || (opt.correct === true);
+
+                        if(isCorrect) { 
+                            btn.classList.add('correct'); 
+                            myScore += Math.round(100 / quizzes.length); 
+                            document.getElementById('my-score').textContent = myScore; 
+                        } 
+                        else { 
+                            btn.classList.add('wrong'); 
+                            opts.forEach((o, i) => { 
+                                let oCorrect = (q.correctAnswerIndex !== undefined && q.options.indexOf(o) === q.correctAnswerIndex) || (o.correct === true);
+                                if(oCorrect) container.querySelectorAll('.option-btn')[i].classList.add('correct'); 
+                            }); 
+                        }
+                        btnNext.classList.remove('hidden');
+                    };
+                    container.appendChild(btn);
+                });
+            }
+
+            else if (q.type === 'essay') {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <div style="margin-top: 15px;">
+                        <textarea id="essay-input-${currentQIdx}" style="width: 100%; height: 180px; padding: 15px; border-radius: 8px; border: 2px solid #bdc3c7; font-size: 1.1rem; resize: vertical; outline: none;" placeholder="اكتب إجابتك هنا (الحد الأقصى 1000 كلمة)..."></textarea>
+                        <div id="word-count-${currentQIdx}" style="text-align: left; color: #7f8c8d; font-size: 0.95rem; margin-top: 5px; font-weight: bold;">الكلمات: 0 / 1000</div>
+                        <button id="submit-essay-${currentQIdx}" style="background: #3498db; color: white; padding: 12px 20px; border: none; border-radius: 5px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; transition: 0.3s;">اعتماد الإجابة 📝</button>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+
+                const textarea = document.getElementById(`essay-input-${currentQIdx}`);
+                const wordCountDisplay = document.getElementById(`word-count-${currentQIdx}`);
+                const submitBtn = document.getElementById(`submit-essay-${currentQIdx}`);
+
+                textarea.addEventListener('input', () => {
+                    let words = textarea.value.trim().split(/\s+/).filter(w => w.length > 0);
+                    if (words.length > 1000) {
+                        textarea.value = words.slice(0, 1000).join(" ") + " ";
+                        words = words.slice(0, 1000);
+                    }
+                    wordCountDisplay.textContent = `الكلمات: ${words.length} / 1000`;
+                    wordCountDisplay.style.color = words.length === 1000 ? '#e74c3c' : '#7f8c8d';
+                });
+
+                submitBtn.onclick = () => {
+                    if(!textarea.value.trim()) { alert("يرجى كتابة إجابة أولاً!"); return; }
+                    textarea.disabled = true;
+                    submitBtn.disabled = true;
+                    submitBtn.style.background = '#bdc3c7';
+                    submitBtn.textContent = "تم حفظ الإجابة ✔️";
+                    myEssayAnswers[`السؤال ${currentQIdx + 1}`] = textarea.value.trim();
+                    btnNext.classList.remove('hidden');
+                };
+            }
+            
+            else if (q.type === 'match') {
+                const pairs = q.pairs || [];
+                const columnB = pairs.map(p => p.b).sort(() => Math.random() - 0.5);
+                
+                const matchContainer = document.createElement('div');
+                matchContainer.style.display = 'flex';
+                matchContainer.style.flexDirection = 'column';
+                matchContainer.style.gap = '15px';
+                matchContainer.style.marginTop = '15px';
+
+                pairs.forEach((pair) => {
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.gap = '10px';
+                    row.style.alignItems = 'center';
+                    row.style.background = '#f8f9fa';
+                    row.style.padding = '15px';
+                    row.style.borderRadius = '8px';
+                    row.style.border = '1px solid #e1e8ed';
+                    
+                    let optionsHtml = columnB.map(b => `<option value="${b}">${b}</option>`).join('');
+                    
+                    // 🔊 إضافة زر استماع لأسئلة التوصيل مع الدالة الذكية
+                    row.innerHTML = `
+                        <div style="flex: 1; font-weight: bold; color: #2c3e50; text-align: right; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                            <button class="speak-opt-btn" onclick="window.speakSmart('${pair.a.replace(/'/g, "\\'")}', '')" style="background: #f1c40f; border: none; font-size: 1.2rem; cursor: pointer; border-radius: 50%; width: 35px; height: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-shrink: 0;" title="استمع">🔊</button>
+                            ${pair.a}
+                        </div>
+                        <div style="flex: 1;">
+                            <select class="match-select" data-correct="${pair.b}" style="width: 100%; padding: 12px; border-radius: 5px; border: 2px solid #bdc3c7; font-size: 1rem; cursor: pointer; outline: none; background: white;">
+                                <option value="" disabled selected>-- اختر المطابق --</option>
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    `;
+                    matchContainer.appendChild(row);
+                });
+
+                const submitMatchBtn = document.createElement('button');
+                submitMatchBtn.innerHTML = "اعتماد المطابقة 🔗";
+                submitMatchBtn.style.cssText = "background: #3498db; color: white; padding: 12px 20px; border: none; border-radius: 5px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; transition: 0.3s;";
+                
+                submitMatchBtn.onclick = () => {
+                    const selects = matchContainer.querySelectorAll('.match-select');
+                    let isAllAnswered = true;
+                    selects.forEach(s => { if(s.value === "") isAllAnswered = false; });
+                    
+                    if(!isAllAnswered) { alert("الرجاء اختيار مطابقة لجميع العناصر!"); return; }
+
+                    let correctCount = 0;
+                    selects.forEach(select => {
+                        select.disabled = true;
+                        if(select.value === select.dataset.correct) {
+                            select.style.borderColor = '#27ae60';
+                            select.style.background = '#d5f5e3';
+                            correctCount++;
+                        } else {
+                            select.style.borderColor = '#e74c3c';
+                            select.style.background = '#fadbd8';
+                        }
+                    });
+                    
+                    submitMatchBtn.disabled = true;
+                    submitMatchBtn.style.background = '#bdc3c7';
+                    
+                    let pointsPerQuestion = 100 / quizzes.length;
+                    let earnedPoints = Math.round(pointsPerQuestion * (correctCount / pairs.length));
+                    myScore += earnedPoints;
+                    document.getElementById('my-score').textContent = myScore;
+                    
+                    btnNext.classList.remove('hidden');
+                };
+
+                matchContainer.appendChild(submitMatchBtn);
+                container.appendChild(matchContainer);
+            }
+
+            btnNext.onclick = () => {
+                currentQIdx++;
+                if(currentQIdx < quizzes.length) renderCustomQuestion(quizzes[currentQIdx]);
+                else finishCustomEngine();
+            };
+        }
+
+       async function finishCustomEngine() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-title').textContent = "تم إرسال إجاباتك بنجاح! 🎉";
+            document.getElementById('final-results').innerHTML = `الدرجة: <strong style="color:#27ae60;">${myScore}%</strong>`;
+            
+            try {
+                await addDoc(collection(db, "custom_results"), {
+                    quizId: customId, studentName: myName, score: myScore, essayAnswers: myEssayAnswers, timestamp: new Date(),
+                    // 🔧 إضافة معرّف الطالب حتى تظهر هذه النتيجة في ملفه الشخصي.
+                    // كانت النتائج تُحفظ بالاسم فقط، فتعذّر ربطها بصاحبها.
+                    studentUid: myUid,
+                    teacherUid: customQuizTeacherUid,
+                    quizTitle: customQuizTitle
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // ========================================================
+        // 🚦 نقطة الانطلاق (البداية)
+        // ========================================================
+        onAuthStateChanged(auth, async (user) => {
+            try {
+                if (user) { 
+                    myUid = user.uid;
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if(userDoc.exists() && userDoc.data().name) myName = userDoc.data().name;
+                    
+                    if (customId) {
+                        initCustomEngine();
+                    } else if (roomId) {
+                        initStandardEngine();
+                    } else {
+                        showError("عذراً، الرابط غير مكتمل. يرجى الدخول من بوابة الاختبارات.");
+                    }
+                } else { 
+                    showError("أنت غير مسجل الدخول في المنصة! يرجى تسجيل الدخول أولاً.");
+                }
+            } catch (err) {
+                showError("خطأ في نظام التحقق: " + err.message);
+            }
+        });
+    </script>
+    <script>
+    // ==========================================
+    // 🛡️ درع الحماية ضد التلاعب البصري (Inspect Element)
+    // ==========================================
+    
+    // 1. منع الضغط بزر الماوس الأيمن (Right-Click)
+    document.addEventListener('contextmenu', function(event) {
+        event.preventDefault();
+    });
+
+    // 2. منع اختصارات الكيبورد الخاصة بالمطورين
+    document.addEventListener('keydown', function(event) {
+        // منع مفتاح F12
+        if (event.key === 'F12' || event.keyCode === 123) {
+            event.preventDefault();
+        }
+        // منع Ctrl + Shift + I (فتح قائمة فحص العنصر)
+        if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'i')) {
+            event.preventDefault();
+        }
+        // منع Ctrl + Shift + C (فحص العنصر المباشر)
+        if (event.ctrlKey && event.shiftKey && (event.key === 'C' || event.key === 'c')) {
+            event.preventDefault();
+        }
+        // منع Ctrl + Shift + J (فتح الكونسول)
+        if (event.ctrlKey && event.shiftKey && (event.key === 'J' || event.key === 'j')) {
+            event.preventDefault();
+        }
+        // منع Ctrl + U (عرض مصدر الصفحة)
+        if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
+            event.preventDefault();
+        }
+    });
+</script>
+</body>
+</html>

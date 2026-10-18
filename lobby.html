@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+
+    <!-- 🔑 يلا كويز — التحديات المباشرة: لا يدخلها الطالب إلا بكود دخول فعّال -->
+    <script type="module" src="auth-guard.js" data-require-role="student" data-require-access="true"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غرفة الانتظار - منصة التحديات</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(45deg, #1a2a6c, #b21f1f, #fdbb2d); background-size: 400% 400%; animation: gradientBG 15s ease infinite; color: #fff; overflow-x: hidden; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 40px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); margin-bottom: 50px; }
+        .hidden { display: none !important; }
+        h1, h2 { margin-bottom: 10px; font-weight: 600; }
+        .welcome-text { color: #f1c40f; font-weight: bold; font-size: 1.3rem; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; }
+        button { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; padding: 12px 25px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; margin: 10px 5px; width: calc(100% - 10px); font-weight: bold; transition: 0.3s; }
+        button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+        button:disabled { cursor: not-allowed; opacity: 0.5; }
+        input, select { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 10px; font-size: 1.1rem; border-radius: 8px; width: 100%; margin-bottom: 15px; }
+        select option { background: #2c3e50; color: #fff; }
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .lesson-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: right; }
+        .lesson-selectors label { font-size: 0.9rem; color: #ddd; margin-bottom: 5px; display: block; font-weight: bold; }
+        
+        .news-ticker { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0, 0, 0, 0.8); color: #fff; padding: 10px 0; z-index: 1000; overflow: hidden; white-space: nowrap; border-top: 2px solid #f1c40f; }
+        .ticker-content { display: inline-block; padding-right: 100%; animation: ticker 60s linear infinite; font-weight: bold; font-size: 1.1rem; }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        .ticker-item { display: inline-block; margin-right: 50px; color: #dcfd8b; }
+
+        #side-guide { position: fixed; right: -400px; top: 0; width: 380px; height: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: -5px 0 15px rgba(0,0,0,0.3); z-index: 1002; transition: right 0.4s ease; overflow-y: auto; padding: 20px; color: #333; }
+        #open-guide-btn { position: fixed; right: 0; top: 50%; transform: translateY(-50%); width: 40px; height: 150px; background: #f1c40f; color: #1a2a6c; border: none; border-radius: 10px 0 0 10px; cursor: pointer; z-index: 1001; font-weight: bold; writing-mode: vertical-rl; text-orientation: mixed; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: 0.3s; }
+        #open-guide-btn:hover { background: #f39c12; width: 45px; }
+        
+        .guide-item { margin-bottom: 25px; background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; }
+        .carousel-container { position: relative; width: 100%; height: 180px; overflow: hidden; border-radius: 8px; background: #eee; margin-top: 10px; }
+        .carousel-slide { display: none; width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: 0.3s; }
+        .carousel-slide.active { display: block; }
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 16px; }
+        .carousel-btn.prev { left: 5px; }
+        .carousel-btn.next { right: 5px; }
+        .image-counter { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
+
+        .modal { display: none; position: fixed; z-index: 3000; padding-top: 50px; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); }
+        .modal-content { margin: auto; display: block; width: 90%; max-width: 800px; border-radius: 10px; animation: zoom 0.3s; }
+        @keyframes zoom { from {transform:scale(0)} to {transform:scale(1)} }
+        .close-modal { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+
+        .guide-box { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(241, 196, 15, 0.5); border-radius: 10px; margin-bottom: 20px; text-align: right; transition: all 0.3s ease; }
+        .guide-box:hover { background: rgba(0, 0, 0, 0.4); border-color: #f1c40f; box-shadow: 0 4px 15px rgba(241, 196, 15, 0.2); }
+        .guide-box details { padding: 15px; }
+        .guide-box summary { font-weight: bold; color: #f1c40f; cursor: pointer; list-style: none; outline: none; font-size: 1.1rem; }
+        .guide-box summary::-webkit-details-marker { display: none; }
+        .guide-content { margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 15px; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .guide-content h4 { color: #3498db; margin-bottom: 10px; font-size: 1.1rem; text-decoration: underline; }
+        .guide-content ul { list-style-type: none; padding-right: 0; margin-bottom: 15px; }
+        .guide-content li { margin-bottom: 8px; font-size: 0.95rem; color: #ecf0f1; line-height: 1.5; }
+        .guide-content li span.code-hl { color: #e74c3c; background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; margin-left: 5px; }
+
+        .avatar-container { margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; text-align: center; }
+        .avatar-container h3 { font-size: 1.1rem; margin-bottom: 10px; color: #dcfd8b; }
+        .avatar-grid { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .avatar-btn { font-size: 2rem; background: rgba(255,255,255,0.1); border: 2px solid transparent; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding-bottom: 5px;}
+        .avatar-btn:hover { transform: scale(1.1); background: rgba(255,255,255,0.2); }
+        .avatar-btn.selected { border-color: #f1c40f; background: rgba(241, 196, 15, 0.3); transform: scale(1.15); box-shadow: 0 0 15px rgba(241, 196, 15, 0.5); }
+
+        /* 🔴 تنسيقات واجهة الشات بوت الذكي 🔴 */
+        .chat-bubble-user { background: #dcfd8b; padding: 10px 15px; border-radius: 15px 15px 0 15px; align-self: flex-end; max-width: 85%; border: 1px solid #c5e1a5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px;}
+        .chat-bubble-ai { background: #e1f5fe; padding: 10px 15px; border-radius: 15px 15px 15px 0; align-self: flex-start; max-width: 85%; line-height: 1.6; border: 1px solid #b3e5fc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px;}
+        .chat-typing { font-style: italic; color: #888; font-size: 0.85rem; align-self: flex-start; margin-bottom: 5px; background: transparent; padding: 0; box-shadow: none; border: none;}
+    </style>
+</head>
+<body>
+    <div id="google_translate_element" style="position: absolute; top: 20px; left: 20px; z-index: 9999; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3);"></div>
+    
+    <button id="open-guide-btn">📖 دليل المناهج</button>
+
+    <div id="side-guide">
+        <button id="close-guide-btn" style="background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; float: left; width: auto;">إغلاق ×</button>
+        <h3 style="margin-top: 40px; border-bottom: 2px solid #1a2a6c; padding-bottom: 10px; color: #1a2a6c;">دليل المناهج المصور 🗺️</h3>
+        <div id="guide-content" style="margin-top: 20px;">
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">استخدم الأسهم للتنقل بين صور الصف الواحد، واضغط على الصورة لتكبيرها.</p>
+            <div class="guide-item"><h4 style="color: #27ae60; text-align: right;">📍 الصف الأول</h4><div class="carousel-container" data-index="0"><img src="images/g1-u1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"></div></div>
+            <div class="guide-item"><h4 style="color: #2980b9; text-align: right;">📍 الصف الرابع</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g4-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g4-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #8e44ad; text-align: right;">📍 الصف الخامس</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g5-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g5-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #d35400; text-align: right;">📍 الصف السادس</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g6-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g6-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g6-3.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 3</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #16a085; text-align: right;">📍 الصف السابع</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g7-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g7-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #c0392b; text-align: right;">📍 الصف الثامن</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g8-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g8-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #2980b9; text-align: right;">📍 الصف التاسع</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g9-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g9-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #f39c12; text-align: right;">📍 الصف العاشر</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g10-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g10-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #27ae60; text-align: right;">📍 الصف الحادي عشر</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g11-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g11-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+            <div class="guide-item"><h4 style="color: #8e44ad; text-align: right;">📍 الصف الثاني عشر</h4><div class="carousel-container" data-index="0"><button class="carousel-btn prev">❮</button><img src="images/g12-1.jpg" class="carousel-slide active" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><img src="images/g12-2.jpg" class="carousel-slide" onerror="this.onerror=null;this.src='images/poster-placeholder.svg'"><div class="image-counter">1 / 2</div><button class="carousel-btn next">❯</button></div></div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <span class="close-modal" id="closeImageModal">&times;</span>
+        <img class="modal-content" id="fullImage">
+    </div>
+
+    <div id="auth-check" class="glass-panel">
+        <h2>جاري التحقق من هويتك... 🕵️‍♂️</h2>
+        <div class="loader"></div>
+    </div>
+
+    <div id="main-menu" class="glass-panel hidden">
+        <h1>منصة الاختبارات التعليمية</h1>
+        <div id="welcome-text" class="welcome-text">مرحباً بك</div>
+
+        <div class="avatar-container">
+            <h3>اختر شخصيتك (Avatar):</h3>
+            <div class="avatar-grid" id="avatar-grid">
+                <div class="avatar-btn selected" onclick="selectAvatar(this, '😎')">😎</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🥷')">🥷</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🦸‍♂️')">🦸‍♂️</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🤖')">🤖</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '👽')">👽</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🤠')">🤠</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🕵️‍♂️')">🕵️‍♂️</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '👨‍🚀')">👨‍🚀</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🧙‍♂️')">🧙‍♂️</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🤴')">🤴</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🦁')">🦁</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🐯')">🐯</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🐉')">🐉</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🦅')">🦅</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🦈')">🦈</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🦸‍♀️')">🦸‍♀️</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '👸')">👸</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🧚‍♀️')">🧚‍♀️</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '👩‍🚀')">👩‍🚀</div>
+                <div class="avatar-btn" onclick="selectAvatar(this, '🧝‍♀️')">🧝‍♀️</div>
+            </div>
+        </div>
+        
+        <div class="avatar-container" style="margin-top: 15px;">
+            <h3>اختر فريقك المفضل ⚽:</h3>
+            <div class="avatar-grid" id="team-grid">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=alahlyegypt.com" class="avatar-btn selected" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="الأهلي المصري">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=zamaleksc.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="الزمالك المصري">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=alhilal.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="الهلال السعودي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=alnassr.sa" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="النصر السعودي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=ittihadclub.sa" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="الاتحاد السعودي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=alainclub.ae" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="العين الإماراتي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=alwaslsc.ae" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="الوصل الإماراتي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=shababalahli.ae" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="شباب الأهلي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=realmadrid.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="ريال مدريد">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=fcbarcelona.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="برشلونة">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=mancity.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="مانشستر سيتي">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=liverpoolfc.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="ليفربول">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=juventus.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="يوفنتوس">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=psg.fr" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="باريس سان جيرمان">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=manutd.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="مان يونايتد">
+                <img src="https://www.google.com/s2/favicons?sz=128&domain=chelseafc.com" class="avatar-btn" style="padding: 5px; background: #fff; object-fit: contain;" onclick="selectTeam(this, this.src)" title="تشيلسي">
+            </div>
+        </div>
+        
+        <div class="guide-box">
+            <details>
+                <summary>💡 دليلك السريع لمعاني الرموز وأنواع التحديات (اضغط هنا)</summary>
+                <div class="guide-content">
+                    <h4>📌 أولاً: ماذا تعني الرموز؟</h4>
+                    <ul>
+                        <li><span class="code-hl">G</span> تعني الصف (Grade) ➔ مثال: G4 = الصف الرابع.</li>
+                        <li><span class="code-hl">T</span> تعني الفصل (Term) ➔ مثال: T1 = الفصل الأول.</li>
+                        <li><span class="code-hl">U</span> تعني الوحدة (Unit) ➔ مثال: U1 = الوحدة الأولى.</li>
+                        <li><span class="code-hl">L</span> تعني الدرس (Lesson) ➔ مثال: L1 = الدرس الأول.</li>
+                    </ul>
+                    <h4>🎮 ثانياً: كيف تختار نوع التحدي؟</h4>
+                    <ul>
+                        <li><strong>🎯 تدريب فردي:</strong> العب وحدك وتدرب على أسئلة الدرس براحتك.</li>
+                        <li><strong>⚔️ مواجهة ثنائية:</strong> أنشئ غرفة، وانسخ الكود وأعطه لصديقك ليدخل وتتحداه وجهاً لوجه!</li>
+                        <li><strong>🌍 تحدي عشوائي:</strong> ابحث عن منافس أونلاين جاهز الآن من نفس صفك!</li>
+                        <li><strong>👥 تحدي جماعي:</strong> (مخصص للمعلمين) لإنشاء مسابقة للفصل بالكامل مع لوحة تحكم للتحذير والطرد.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+        <div style="background: rgba(231, 76, 60, 0.15); border: 1px dashed #e74c3c; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: right;">
+            <h4 style="color: #ff6b6b; margin-bottom: 5px;">⚠️ تنبيه هام لاختيار الدرس:</h4>
+            <p style="font-size: 0.95rem; color: #ecf0f1; line-height: 1.6;">
+                لن يظهر لك اسم الدرس ولن تتمكن من الدخول إليه إلا إذا قمت باختيار <strong>(الفصل)</strong> و <strong>(الوحدة)</strong> الصحيحين أولاً. يرجى التأكد من اختياراتك لتجنب رسالة الخطأ.
+            </p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <h3 style="margin-bottom: 10px; font-size: 1.1rem;">إعدادات التحدي:</h3>
+            
+            <button id="guide-trigger-inline" style="background: #27ae60; color: #fff; margin-bottom: 15px; border: 2px solid #dcfd8b; width: 100%; border-radius: 10px; padding: 10px; font-weight: bold; cursor: pointer;">
+                🔍 ابحث عن درسك في الدليل المصور أولاً
+            </button>
+
+            <div style="margin-bottom: 15px; text-align: right;">
+                <label style="font-size: 0.9rem; color: #ddd; margin-bottom: 5px; display: block; font-weight: bold;">نوع التحدي:</label>
+                <select id="sel-mode" style="background: #e74c3c; border-color: #c0392b; font-weight: bold;">
+                    <option value="single">تدريب فردي (اختبار تدريبي)</option>
+                    <option value="1v1">مواجهة ثنائية (1 ضد 1 مع صديق)</option>
+                    <option value="matchmaking">تحدي عشوائي أونلاين 🌍 </option>
+                    <option value="group">تحدي جماعي (حتى 30 طالب)</option>
+                </select>
+            </div>
+
+            <div class="lesson-selectors">
+                <div><label>الصف</label><select id="sel-grade"><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="G7">G7</option><option value="G8">G8</option><option value="G9">G9</option><option value="G10">G10</option><option value="G11">G11</option><option value="G12">G12</option></select></div>
+                <div><label>الفصل</label><select id="sel-term"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div>
+                <div><label>الوحدة</label><select id="sel-unit"><option value="U1">U1</option><option value="U2">U2</option><option value="U3">U3</option><option value="U4">U4</option><option value="U5">U5</option><option value="U6">U6</option></select></div>
+                <div><label>الدرس</label><select id="sel-lesson"></select></div>
+            </div>
+            
+            <div style="margin-top: 15px; margin-bottom: 15px; text-align: right; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+                <label style="font-size: 0.9rem; color: #f1c40f; margin-bottom: 5px; display: block; font-weight: bold;">كود المعلم (لإرسال النتيجة لسجله):</label>
+                <input type="text" id="input-teacher-code" placeholder="أدخل الكود هنا (اختياري)..." style="background: rgba(0, 0, 0, 0.4); border: 1px solid #f1c40f;">
+            </div>
+
+            <button id="btn-create-room" style="background: #2980b9;">بدء الاختبار 🚀</button>
+        </div>
+
+        <button id="btn-show-join">الانضمام بالكود لصديق</button>
+    </div>
+
+    <div id="host-waiting-screen" class="glass-panel hidden">
+        <h2 id="host-title">أنت مدير الغرفة 👑</h2>
+        <div style="font-size: 3.5rem; font-weight: bold; letter-spacing: 10px; margin: 10px 0; color: #dcfd8b;" id="display-code">----</div>
+        <button id="btn-start-game" class="hidden" style="background: #27ae60;">🚀 ابدأ التحدي!</button>
+        <button id="btn-cancel-create" style="background: rgba(255,0,0,0.3);">إلغاء</button>
+    </div>
+
+    <div id="student-waiting-screen" class="glass-panel hidden">
+        <h2 id="wait-title">تم الانضمام! ✅</h2>
+        <p id="student-wait-msg">أنت الآن داخل الغرفة، في انتظار بدء التحدي...</p>
+        <div class="loader"></div>
+    </div>
+
+    <div id="join-screen" class="glass-panel hidden">
+        <h2>الانضمام لتحدي</h2>
+        <input type="text" id="input-room-code" maxlength="4" placeholder="الكود...">
+        <button id="btn-join-room">دخول</button>
+        <button id="btn-back-menu" style="background: rgba(0,0,0,0.3);">رجوع</button>
+    </div>
+
+    <div class="news-ticker">
+        <div class="ticker-content" id="live-feed">جاري التحميل...</div>
+    </div>
+
+    <div id="ai-chat-container" style="position: fixed; bottom: 80px; left: 20px; z-index: 9999; direction: rtl;">
+        <button id="chat-toggle-btn" style="background: #f1c40f; border: none; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 30px; display: flex; align-items: center; justify-content: center;">🤖</button>
+        
+        <div id="chat-window" class="hidden" style="position: absolute; bottom: 70px; left: 0; width: 320px; height: 450px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 15px; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.3); overflow: hidden; transition: 0.3s; border: 2px solid #f1c40f;">
+            <div style="background: #1a2a6c; color: white; padding: 15px; font-weight: bold; text-align: center; border-bottom: 2px solid #f1c40f;">مساعد بروج الذكي ✨</div>
+            <div id="chat-messages" style="flex: 1; padding: 10px; overflow-y: auto; color: #333; font-size: 0.95rem; display: flex; flex-direction: column; gap: 10px; background: #f8f9fa;">
+<div class="chat-bubble-ai">أهلاً بك في ركن المذاكرة الذكي ✨.. اختر درسك واسألني عن أي شيء يصعب عليك فهمه! 📖</div>            </div>
+            <div style="padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; background: #fff;">
+                <input type="text" id="chat-input" placeholder="اكتب سؤالك هنا..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; outline: none; color: #000; font-size: 0.9rem; margin-bottom: 0;">
+                <button id="send-chat-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 0; width: auto;">إرسال</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .chat-bubble-user { background: #dcfd8b; padding: 10px; border-radius: 15px 15px 0 15px; align-self: flex-end; max-width: 85%; border: 1px solid #c5e1a5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .chat-bubble-ai { background: #e1f5fe; padding: 10px; border-radius: 15px 15px 15px 0; align-self: flex-start; max-width: 85%; line-height: 1.5; border: 1px solid #b3e5fc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .chat-typing { font-style: italic; color: #888; font-size: 0.85rem; align-self: flex-start; }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, orderBy, limit, where, getDocs, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+        let currentRoomCode = null;
+        
+        let selectedAvatar = '😎';
+        let selectedTeam = 'https://www.google.com/s2/favicons?sz=128&domain=alahlyegypt.com';
+
+        const lessonMap = {
+            "G1": {
+                "T1": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                }
+            },
+            "G2": {
+                "T1": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                }
+            },
+            "G3": {
+                "T1": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                }
+            },
+            "G4": {
+                "T1": {
+                    "U1": {
+                        "L1": "آداب الدخول والخروج من المنزل",
+                        "L2": "سورة البروج",
+                        "L3": "من أحكام التجويد",
+                        "L4": "المؤمن القوي",
+                        "L5": "بدء الدعوة للإسلام",
+                        "L6": "السيدة زينب بنت خزيمة",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "الإيمان بالكتب السماوية",
+                        "L2": "سورة الطارق",
+                        "L3": "التثبت من الأخبار",
+                        "L4": "أهمية الصلاة المفروضة وآدابها",
+                        "L5": "أحسنكم أخلاقا",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "السنن الرواتب",
+                        "L2": "الهجرة إلى الحبشة",
+                        "L3": "سورة الأعلى",
+                        "L4": "صلاة الجماعة",
+                        "L5": "صلاة الجماعة",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "سورة الغاشية",
+                        "L2": "البحث والتفكير العلمي",
+                        "L3": "حمد الله عز وجل على نعمه",
+                        "L4": "عام الحزن",
+                        "L5": "أخلاق المتقين",
+                        "L6": "صبر النبي صلى الله عليه وسلم",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "سورة الانشقاق",
+                        "L2": "المرافق العامة",
+                        "L3": "الرفق",
+                        "L4": "صيامي لربي",
+                        "L5": "في ظل صدقتي",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "سورة المطففين",
+                        "L2": "الكرم",
+                        "L3": "من كمال الإيمان",
+                        "L4": "بيئتي مسؤوليتي",
+                        "L5": "ذو النوريين سيدنا عثمان",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G5": {
+                "T1": {
+                    "U1": {
+                        "L1": "سورة الانفطار",
+                        "L2": "المفلس الحقيقي",
+                        "L3": "أحب الأعمال إلى الله",
+                        "L4": "محبة الله تعالى",
+                        "L5": "دعوة أهل الطائف",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "سورة التكوير",
+                        "L2": "الإحسان إلى الناس",
+                        "L3": "الإيمان باليوم الآخر",
+                        "L4": "صلاة الجماعة",
+                        "L5": "الإسراء والمعراج",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "سورة عبس",
+                        "L2": "القلقلة",
+                        "L3": "القرآن شفيعي",
+                        "L4": "آداب ركوب وسائل النقل",
+                        "L5": "فاطمة بنت عبد الملك",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "سورة النازعات",
+                        "L2": "القلب الرحيم حديث شريف",
+                        "L3": "الرفق خير",
+                        "L4": "يسروا ولا تعسروا حديث شريف",
+                        "L5": "الهجرة إلى المدينة",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "الله القادر ( سورة النبأ 1-16)",
+                        "L2": "الطريق إلى الجنة",
+                        "L3": "نعمة العقل",
+                        "L4": "آداب الطريق",
+                        "L5": "صلاة الجمعة وصلاة العيدين",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "الله الحكم العدل سورة النبأ 17-40",
+                        "L2": "مع رسولي صلى الله عليه وسلم في الجنة",
+                        "L3": "الشجاعة",
+                        "L4": "سيدنا عمر بن الخطاب رضي الله عنه",
+                        "L5": "الإنسان والكون",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G6": {
+                "T1": {
+                    "U1": {
+                        "L1": "الكتاب الحق ( سورة السجدة 1-12)",
+                        "L2": "من وصايا الرسول صلى الله عليه وسلم",
+                        "L3": "التطوع عبادة وانتماء",
+                        "L4": "حرمة المسلم",
+                        "L5": "فرائض الصلاة وسننها ومكروهاتها",
+                        "L6": "الإمارات في خدمة العالم",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "صفات المؤمنين وجزاؤهم ( السجدة 13-22)",
+                        "L2": "أحكام النون الساكنة والتنوين ( الإظهار الحلقي )",
+                        "L3": "حاسبو أنفسكم",
+                        "L4": "آداب المسجد",
+                        "L5": "الحياة في المدينة المنورة بعد الهجرة",
+                        "L6": "سجود السهو وسجود التلاوة",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "الصبر واليقين ( السجدة 23-30)",
+                        "L2": "حكم الإدغام",
+                        "L3": "المؤمن بين الشكر والصبر",
+                        "L4": "من علامات الساعة",
+                        "L5": "الإمام مالك بن أنس رحمه الله تعالى ",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "سبيل الهداية  ( سورة الملك 1-14 )",
+                        "L2": "الإقلاب",
+                        "L3": "أخلاق حميدة",
+                        "L4": "أنا متسامح",
+                        "L5": "غزوة بدر الكبرى",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "قدرة الله تعالى ( سورة الملك 15-24)",
+                        "L2": "الإخفاء الحقيقي",
+                        "L3": "اختيار الجليس",
+                        "L4": "التفكير العلمي",
+                        "L5": "غزوة أحد",
+                        "L6": "بيئتي أمانة",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "دروس وعبر ( سورة الملك 25-30)",
+                        "L2": "يُسر الإسلام",
+                        "L3": "آداب الدعاء",
+                        "L4": "صيام التطوع",
+                        "L5": "السيدة عائشة أم المؤمنين رضي الله عنها",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G7": {
+                "T1": {
+                    "U1": {
+                        "L1": "البعث والنشور",
+                        "L2": "المستظلون في ظل الرحمن",
+                        "L3": "من بشائر المصلين",
+                        "L4": "أدلة وحدانية الله تعالى",
+                        "L5": "مراقبة الله تعالى",
+                        "L6": "سنن الفطرة",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "الخلاق العليم",
+                        "L2": "التوبة فرصة العمر",
+                        "L3": "المغيث الحليم جل جلاله",
+                        "L4": "الغُسل",
+                        "L5": "التيمم والمسح على الخفين",
+                        "L6": "غزوة الأحزاب",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "بشارة ومواساه",
+                        "L2": "أحكام الميم الساكنة",
+                        "L3": "الاعتدال في الإنفاق",
+                        "L4": "الإمام أبو حنيفة النعمان رحمه الله تعالى ",
+                        "L5": "الحضارة العربية الإسلامية",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "سورة الرحمن",
+                        "L2": "القلب وصلاح الإنسان",
+                        "L3": "الدين يُسر",
+                        "L4": "التفكر في الإسلام",
+                        "L5": "العمل عبادة وحضارة",
+                        "L6": "صلاة المسافر وصلاة المريض",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "نعيمُ الحياة",
+                        "L2": "كفالة اليتيم",
+                        "L3": "التواضع",
+                        "L4": "صلاة التطوع الضحى والليل",
+                        "L5": "الفتح المبين",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "جزاء الإحسان",
+                        "L2": "التعايش بين الناس",
+                        "L3": "المجالس وآدابها",
+                        "L4": "السيدة روفيدة الأسلمية ( رائدة العمل التطوعي )",
+                        "L5": "مشكلة الفقر في العالم الإسلامي",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G8": {
+                "T1": {
+                    "U1": {
+                        "L1": "صدق الرسول صلى اله عليه وسلم سورة يس 1-12",
+                        "L2": "أحكام المد: المد الأصلي",
+                        "L3": "الأعمال بالنيات",
+                        "L4": "الإخلاص ",
+                        "L5": "الكسب الطيب",
+                        "L6": "نعمة الأمن",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "أصحاب القرية سورة يس 13-19",
+                        "L2": "التقرب إلى الله تعالى",
+                        "L3": "الإيمان بالقضاء والقدر",
+                        "L4": "الصلوات ذاتُ الأسباب الكسوف والاستسقاء والاستخارة",
+                        "L5": "الشفاء بنت عبد الله العدوية رضي الله عنها",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "قصة مؤمن آل يس سورة (يس 20-32)",
+                        "L2": "أقدس المساجد",
+                        "L3": "فتح مكة",
+                        "L4": "آداب السفر",
+                        "L5": "أحكام العمرة",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "قدرة الله تعالى ( سورة يس 33-54",
+                        "L2": "المد الفرعي",
+                        "L3": "فضائل المؤمن",
+                        "L4": "تلاحم المجتمع",
+                        "L5": "حرمة ترويع الإنسان",
+                        "L6": "أنا خيركم لأهلي",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "الطريق إلى الجنة سورة يس 55-68",
+                        "L2": "الاقتداء في الخير",
+                        "L3": "الأيمان والنذور",
+                        "L4": "غزوة حُنين",
+                        "L5": "صحتي مسؤوليتي",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "أدلة وحدانية اله تعالى سورة يس 69-83",
+                        "L2": "صلة الأرحام",
+                        "L3": "العلم نور ورفعة",
+                        "L4": "أقرأ باسم ربي",
+                        "L5": "الإمام الشافعي",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G9": {
+                "T1": {
+                    "U1": {
+                        "L1": "مع الله ورسوله وولي الأمر",
+                        "L2": "السبع الموبقات",
+                        "L3": "الغفور العدل سبحانه",
+                        "L4": "التناصح في الإسلام",
+                        "L5": "الزكاة في الإسلام",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U2": {
+                        "L1": "سلامة المجتمع ووحدة أبنائه",
+                        "L2": "الحلال بيَن",
+                        "L3": "الدين النصيحة",
+                        "L4": "الحج",
+                        "L5": "حجة الوداع ووفاة النبي صلى الله عليه وسلم",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": {
+                        "L1": "الإيمان فضل من الله تعالى ",
+                        "L2": "للمجتمع رجاله ونسائه",
+                        "L3": "العدل في الإسلام",
+                        "L4": "ما يحل وما يحرم من الطعام والشراب",
+                        "L5": "الإمام مسلم رحمه الله تعالى",
+                        "L6": "الأمن والأمان",
+                        "L7": ""
+                    },
+                    "U4": {
+                        "L1": "سورة الواقعة 1-26",
+                        "L2": "سورة الواقعة 27-56",
+                        "L3": "تبشير وتحذير",
+                        "L4": "لا...للانتحار",
+                        "L5": "المنهج النبوي في تربية الجيل",
+                        "L6": "",
+                        "L7": ""
+                    },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": {
+                        "L1": "سورة الواقعة 57-74",
+                        "L2": "أحكام الراء",
+                        "L3": "لا ضرر ولا ضرار",
+                        "L4": "السنن الاجتماعية في القرآن الكريم",
+                        "L5": "التسامح الفكري",
+                        "L6": "الحكم الشرعي",
+                        "L7": ""
+                    },
+                    "U6": {
+                        "L1": "سورة الواقعة 75-96",
+                        "L2": "حق المسلم على المسلم",
+                        "L3": "آداب السوق والمرافق العامة",
+                        "L4": "الإمام أحمد بن حنبل رحمه ا",
+                        "L5": "التقليد الأعمى",
+                        "L6": "",
+                        "L7": ""
+                    }
+                }
+            },
+            "G10": {
+                "T1": {
+                    "U1": { "L1": "سورة الكهف 1-8", "L2": "القرآن المكي والمدني", "L3": "العقل في الإسلام", "L4": "المدارس الفقهية", "L5": "سكينة بنت الحسين", "L6": "", "L7": "" },
+                    "U2": { "L1": "أصحاب الكهف", "L2": "مراحل جمع القرآن", "L3": "منهجية التفكير في الإسلام", "L4": "الوقف عطاء ونماء", "L5": "التنمية البشرية في الإسلام", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "صاحب الجنتين", "L2": "السُنة النبوية", "L3": "آداب اللباس", "L4": "اختلاف الفقهاء", "L5": "منهج النبي صلى الله عليه وسلم في الدعوة", "L6": "", "L7": "" },
+                    "U4": { "L1": "الدنيا دار عمل", "L2": "تدوين السنة", "L3": "العفة", "L4": "أحكام الزواج", "L5": "رعاية الرسول صلى الله عليه وسلم لأهل بيته", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "موسى نبي الله عليه السلام", "L2": "جهود العلماء في حفظ السُنة", "L3": "الإيمان بالغيب", "L4": "طاعة ولي الأمر", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "ذو القرنين الرجل الصالح", "L2": "التسامح", "L3": "الجهاد في سبيل الله تعالى (1)", "L4": "الجهاد في سبيل الله تعالى  ( 2)", "L5": "الشيخ أحمد بن عبد العزيز آل مبارك", "L6": "", "L7": "" }
+                }
+            },
+            "G11": {
+                "T1": {
+                    "U1": { "L1": "الثبات على الحق", "L2": "العقل والنقل", "L3": "الاستعفاف", "L4": "العقود المالية في الإسلام", "L5": "اللغة والثقافة العربية", "L6": "", "L7": "" },
+                    "U2": { "L1": "غزوة الأحزاب", "L2": "القرآن الكريم والإعجاز العلمي", "L3": "أدب الحوار", "L4": "مصادر التشريع الإسلامي", "L5": "معالم التخطيط في سيرة الرسول صلى الله عليه وسلم", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "الاقتداء برسول الله صلى الله عليه وسلم", "L2": "أقسام الحديث الشريف", "L3": "منهج الإسلام في بناء الأسرة", "L4": "أم سلمة رضي الله عنها", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "وصايا وتوجيهات أخلاقية", "L2": "أقسام الحديث الشريف", "L3": "الشورى في الإسلام", "L4": "القواعد الفقهية", "L5": "الاستدامة في المنهج الإسلامي", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "رسول الله صلى الله عليه وسلم وخاتم النبيين", "L2": "أحكام وآداب بيت النبوة", "L3": "الإنصاف في الإسلام", "L4": "المحرمات من النساء", "L5": "من معالم الرسول صلى الله عليه وسلم", "L6": "", "L7": "" },
+                    "U6": { "L1": "ضوابط اجتماعية", "L2": "الإنسان والأمانة", "L3": "منهج التفكير في الإسلام", "L4": "الإسلام والتواصل الاجتماعي", "L5": "الإمام البخاري أمير المؤمنين في الحديث", "L6": "", "L7": "" }
+                }
+            },
+            "G12": {
+                "T1": {
+                    "U1": { "L1": "وقاية المجتمع من الجرائم الأخلاقية", "L2": "مناهج المفسرين", "L3": "الإسلام ينبذ التطرف", "L4": "الفراق بين الزوجين", "L5": "رسول اله صلى الله عليه وسلم والحياة الاجتماعية", "L6": "", "L7": "" },
+                    "U2": { "L1": "حديث الإفك - عظة وعبرة", "L2": "السُنن الربانية", "L3": "المسؤولية في الإٍسلام", "L4": "مقاصد التشريع الخمسة", "L5": "الشيخة فاطمة بنت مبارك - حفظها الله تعالى", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T2": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "التواصل الاجتماعي - سلوك وآداب", "L2": "المنهج النبوي في الرعاية الصحية", "L3": "البيوع المحرمة", "L4": "الخدمة الوطنية واجب شرعي ومطلب وطني", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "الزواج طريق الاستعفاف", "L2": "التفكير الابداعي في الإسلام", "L3": "فقه ترتيب الأعمال بحسب مقاصدها", "L4": "العولمة", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U6": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" }
+                },
+                "T3": {
+                    "U1": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U2": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U3": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U4": { "L1": "", "L2": "", "L3": "", "L4": "", "L5": "", "L6": "", "L7": "" },
+                    "U5": { "L1": "الله نور السموات والأرض - سورة النور 35-45", "L2": "الطاعة والامتثال طريق الإيمان - سورة النو 46-57", "L3": "التسامح مع المخالفين في العقيدة", "L4": "آداب الإسلام في الرؤى والأحلام", "L5": "النظام الاقتصادي في الإسلام", "L6": "", "L7": "" },
+                    "U6": { "L1": "بيوت طاهرة - مجتمع نقي سورة النور 58-61", "L2": "الأدب مع الرسول صلى الله عليه وسلم - سورة النور 62-64", "L3": "الاتباع والتقليد", "L4": "الشيخ زايد بن سلطان رحمه الله تعالى ", "L5": "الإسلام واقتصاد المعرفة", "L6": "", "L7": "" }
+                }
+            }
+        };
+
+        function populateLessons() {
+            const grade = document.getElementById('sel-grade').value;
+            const term = document.getElementById('sel-term').value;
+            const unit = document.getElementById('sel-unit').value;
+            const lessonSelect = document.getElementById('sel-lesson');
+            
+            lessonSelect.innerHTML = ''; 
+            
+            const defaultLessons = ["L1", "L2", "L3", "L4", "L5", "L6", "L7"];
+            const namedLessons = (lessonMap[grade] && lessonMap[grade][term] && lessonMap[grade][term][unit]) ? lessonMap[grade][term][unit] : {};
+
+            defaultLessons.forEach(lCode => {
+                const option = document.createElement('option');
+                option.value = lCode;
+                const name = namedLessons[lCode] ? ` - ${namedLessons[lCode]}` : "";
+                option.textContent = lCode + name; 
+                lessonSelect.appendChild(option);
+            });
+        }
+
+        ['sel-grade', 'sel-term', 'sel-unit'].forEach(id => {
+            document.getElementById(id).addEventListener('change', populateLessons);
+        });
+
+        populateLessons();
+
+        window.selectTeam = function(element, teamUrl) {
+            document.getElementById('team-grid').querySelectorAll('.avatar-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedTeam = teamUrl;
+            sessionStorage.setItem('myTeam', teamUrl);
+        };
+
+        window.selectAvatar = function(element, avatar) {
+            document.querySelectorAll('#avatar-grid .avatar-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedAvatar = avatar;
+            sessionStorage.setItem('myAvatar', avatar);
+        };
+
+        const sideGuide = document.getElementById('side-guide');
+        document.getElementById('open-guide-btn').onclick = () => sideGuide.style.right = '0';
+        document.getElementById('guide-trigger-inline').onclick = () => sideGuide.style.right = '0';
+        document.getElementById('close-guide-btn').onclick = () => sideGuide.style.right = '-400px';
+
+        document.querySelectorAll('.carousel-container').forEach(container => {
+            const slides = container.querySelectorAll('.carousel-slide');
+            const counter = container.querySelector('.image-counter');
+            let current = 0;
+            if(slides.length > 1) {
+                const update = () => {
+                    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+                    if(counter) counter.textContent = `${current + 1} / ${slides.length}`;
+                };
+                container.querySelector('.next').onclick = () => { current = (current + 1) % slides.length; update(); };
+                container.querySelector('.prev').onclick = () => { current = (current - 1 + slides.length) % slides.length; update(); };
+            }
+        });
+
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('fullImage');
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('carousel-slide')) {
+                modal.style.display = "block";
+                modalImg.src = e.target.src;
+            }
+        });
+        document.getElementById('closeImageModal').onclick = () => modal.style.display = "none";
+        window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; }
+
+        const feedQuery = query(collection(db, "global_feed"), orderBy("createdAt", "desc"), limit(5));
+        onSnapshot(feedQuery, (snap) => {
+            const feedContainer = document.getElementById('live-feed');
+            feedContainer.innerHTML = '';
+            if(!snap.empty) {
+                snap.forEach((doc) => {
+                    const item = document.createElement('span');
+                    item.className = 'ticker-item';
+                    item.innerHTML = `⭐ <span>${doc.data().message}</span>`;
+                    feedContainer.appendChild(item);
+                });
+            } else {
+                feedContainer.innerHTML = '<span class="ticker-item">⭐ <span>كن أول بطل يُكتب اسمه في لوحة الشرف! العب الآن!</span></span>';
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                let realName = userDoc.exists() && userDoc.data().name ? userDoc.data().name : "بطل";
+                sessionStorage.setItem('myAvatar', selectedAvatar); 
+                sessionStorage.setItem('myTeam', selectedTeam); 
+                currentUser = { uid: user.uid, displayName: realName, score: 0 };
+                sessionStorage.setItem('myUid', user.uid);
+                sessionStorage.setItem('myName', realName);
+                document.getElementById('welcome-text').textContent = `مرحباً بك: ${realName} 🏆`;
+                document.getElementById('auth-check').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        function showScreen(id) {
+            ['main-menu', 'host-waiting-screen', 'student-waiting-screen', 'join-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        document.getElementById('btn-create-room').addEventListener('click', async () => {
+            const grade = document.getElementById('sel-grade').value;
+            const term = document.getElementById('sel-term').value;
+            const unit = document.getElementById('sel-unit').value;
+            const lessonCode = document.getElementById('sel-lesson').value;
+
+            const namedLessons = (lessonMap[grade] && lessonMap[grade][term] && lessonMap[grade][term][unit]) ? lessonMap[grade][term][unit] : {};
+            const lessonName = namedLessons[lessonCode];
+
+            if (!lessonName || lessonName.trim() === "") {
+                alert("⚠️ عذراً! هذا الدرس غير متوفر.\n\nيرجى التأكد من اختيار (الفصل) و (الوحدة) الصحيحين أولاً حتى يظهر لك اسم الدرس وتتمكن من الدخول.");
+                return; 
+            }
+
+            const lessonId = `Islamic_${grade}_${term}_${unit}_${lessonCode}`;
+            sessionStorage.setItem('lastLessonId', lessonId); // حفظ الـ LessonId عشان الشات بوت
+            
+            const mode = document.getElementById('sel-mode').value;
+            const teacherCode = document.getElementById('input-teacher-code').value.trim();
+            sessionStorage.setItem('teacherCode', teacherCode);
+
+            currentUser.avatar = sessionStorage.getItem('myAvatar') || '😎';
+            currentUser.team = sessionStorage.getItem('myTeam') || selectedTeam;
+
+            document.getElementById('btn-create-room').disabled = true;
+
+            try {
+                if (mode === 'single') {
+                    // 🔧 إصلاح: كان يستخدم currentRoomCode وهو ما زال null لأن
+                    // توليد الرقم يحدث في الفروع التالية فقط، فيفشل بناء مسار
+                    // المستند بخطأ "Cannot read properties of null (reading 'indexOf')"
+                    // وكان التدريب الفردي معطّلاً تماماً لكل الطلاب.
+                    currentRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+                    await setDoc(doc(db, 'rooms', currentRoomCode), { roomId: currentRoomCode, status: 'playing', currentQuestionIndex: 0, lessonId, hostUid: currentUser.uid, mode, players: { [currentUser.uid]: currentUser } });
+                    window.location.href = `academic-localized-engine.html?roomId=${currentRoomCode}`;
+                    return;
+                }
+
+                if (mode === 'matchmaking') {
+                    showScreen('student-waiting-screen');
+                    document.getElementById('wait-title').innerHTML = "البحث عن خصم 🌍";
+                    document.getElementById('student-wait-msg').innerHTML = "نبحث الآن عن لاعب في نفس مستواك ونفس الدرس... ⏳<br><small>استعد للمعركة!</small>";
+                    
+                    const poolRef = collection(db, "matchmaking_pool");
+                    const qMatch = query(poolRef, where("lessonId", "==", lessonId), limit(1));
+                    const matchSnap = await getDocs(qMatch);
+
+                    if (!matchSnap.empty) {
+                        const matchData = matchSnap.docs[0].data();
+                        currentRoomCode = matchData.roomId;
+                        const roomRef = doc(db, 'rooms', currentRoomCode);
+                        const roomSnap = await getDoc(roomRef);
+                        
+                        if (roomSnap.exists()) {
+                            const players = { ...roomSnap.data().players, [currentUser.uid]: currentUser };
+                            await updateDoc(roomRef, { players, status: 'playing' });
+                            await deleteDoc(doc(db, "matchmaking_pool", matchSnap.docs[0].id));
+                            window.location.href = `live-quiz.html?roomId=${currentRoomCode}`;
+                        }
+                    } else {
+                        currentRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
+                        await setDoc(doc(db, 'rooms', currentRoomCode), { roomId: currentRoomCode, status: 'waiting', currentQuestionIndex: 0, lessonId, hostUid: currentUser.uid, mode: 'matchmaking', players: { [currentUser.uid]: currentUser } });
+                        await addDoc(collection(db, "matchmaking_pool"), { lessonId: lessonId, roomId: currentRoomCode, createdAt: new Date() });
+                        listenToRoom(currentRoomCode);
+                    }
+                    document.getElementById('btn-create-room').disabled = false;
+                    return;
+                }
+
+                currentRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
+                await setDoc(doc(db, 'rooms', currentRoomCode), { roomId: currentRoomCode, status: 'waiting', currentQuestionIndex: 0, lessonId, hostUid: currentUser.uid, mode, players: { [currentUser.uid]: currentUser } });
+                document.getElementById('display-code').textContent = currentRoomCode;
+                document.getElementById('btn-start-game').className = mode === 'group' ? '' : 'hidden';
+                showScreen('host-waiting-screen');
+                listenToRoom(currentRoomCode);
+
+            } catch (error) { 
+                alert("توقف التحميل بسبب خطأ تقني: \n\n" + error.message); 
+                console.log(error); 
+                showScreen('main-menu'); 
+            } 
+            finally { document.getElementById('btn-create-room').disabled = false; }
+        });
+
+        function listenToRoom(code) {
+            unsubscribeSnapshot = onSnapshot(doc(db, 'rooms', code), (snap) => {
+                if (!snap.exists()) return;
+                const data = snap.data();
+                if ((data.mode === '1v1' || data.mode === 'matchmaking') && Object.keys(data.players).length === 2 && data.status === 'waiting' && data.hostUid === currentUser.uid) {
+                    updateDoc(doc(db, 'rooms', code), { status: 'playing' });
+                }
+                if (data.status === 'playing') window.location.href = `live-quiz.html?roomId=${code}`;
+            });
+        }
+
+        document.getElementById('btn-show-join').addEventListener('click', () => showScreen('join-screen'));
+        document.getElementById('btn-join-room').addEventListener('click', async () => {
+            const code = document.getElementById('input-room-code').value.trim();
+            const teacherCode = document.getElementById('input-teacher-code').value.trim();
+            sessionStorage.setItem('teacherCode', teacherCode);
+            
+            currentUser.avatar = sessionStorage.getItem('myAvatar') || '😎';
+            currentUser.team = sessionStorage.getItem('myTeam') || selectedTeam;
+
+            const snap = await getDoc(doc(db, 'rooms', code));
+            if (snap.exists() && snap.data().status === 'waiting') {
+                const players = { ...snap.data().players, [currentUser.uid]: currentUser };
+                await updateDoc(doc(db, 'rooms', code), { players });
+                
+                // حفظ رقم الدرس للشات بوت أيضاً لمن ينضم للغرفة
+                sessionStorage.setItem('lastLessonId', snap.data().lessonId);
+
+                showScreen('student-waiting-screen');
+                listenToRoom(code);
+            }
+        });
+        document.getElementById('btn-start-game').onclick = () => updateDoc(doc(db, 'rooms', currentRoomCode), { status: 'playing' });
+
+        // ==========================================
+        // 🤖 نظام الشات بوت الذكي (AI Study Buddy) 🤖
+        // ==========================================
+        const chatToggle = document.getElementById('chat-toggle-btn');
+        const chatWindow = document.getElementById('chat-window');
+        chatToggle.onclick = () => chatWindow.classList.toggle('hidden');
+
+        // إضافة ميزة الإرسال عند الضغط على زر Enter من الكيبورد
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('send-chat-btn').click();
+            }
+        });
+
+        // 1️⃣ دالة البحث في الدرر السنية (API)
+        async function fetchDorarAPI(query) {
+            try {
+                const apiUrl = `https://dorar.net/dorar_api.json?skey=${encodeURIComponent(query)}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                const dorarData = JSON.parse(data.contents);
+                
+                if (dorarData && dorarData.ahadith) {
+                    let cleanText = dorarData.ahadith.replace(/<[^>]*>?/gm, ' | '); 
+                    return cleanText.substring(0, 1000); 
+                }
+                return "لم يتم العثور على نتائج في الدرر السنية.";
+            } catch (error) {
+                console.error("خطأ في الاتصال بالدرر السنية:", error);
+                return "تعذر الوصول لموسوعة الدرر السنية حالياً.";
+            }
+        }
+
+        // 2️⃣ دالة إرسال الرسالة (تجمع بين الدرس والدرر السنية)
+        document.getElementById('send-chat-btn').onclick = async function() {
+            const input = document.getElementById('chat-input');
+            const userMsg = input.value.trim();
+            if(!userMsg) return;
+
+            appendMessage(userMsg, 'user');
+            input.value = '';
+
+            const typingMsg = document.createElement('div');
+            typingMsg.className = 'chat-typing';
+            typingMsg.textContent = 'المساعد يفكر... 🤔';
+            document.getElementById('chat-messages').appendChild(typingMsg);
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+
+            try {
+                // سحب بيانات الدرس المختار حالياً
+                const grade = document.getElementById('sel-grade').value;
+                const term = document.getElementById('sel-term').value;
+                const unit = document.getElementById('sel-unit').value;
+                const lessonCode = document.getElementById('sel-lesson').value;
+                const currentLessonId = `Islamic_${grade}_${term}_${unit}_${lessonCode}`;
+
+                let finalContext = await fetchLessonData(currentLessonId);
+
+                // الذكاء: إذا اكتشف أن السؤال عن حديث، يبحث في الدرر أولاً!
+                const hadithKeywords = ["حديث", "صحة", "راوي", "قال رسول", "تخريج", "صحح"];
+                const isHadithQuery = hadithKeywords.some(word => userMsg.includes(word));
+
+                if (isHadithQuery) {
+                    typingMsg.textContent = 'أبحث في الموسوعة الحديثية (الدرر السنية)... 📚';
+                    const dorarResult = await fetchDorarAPI(userMsg);
+                    finalContext += `\n\n⚠️ معلومات إضافية من موقع الدرر السنية:\n"${dorarResult}"\nبناءً على هذه النتيجة، أجب الطالب بأسلوب مبسط.`;
+                    typingMsg.textContent = 'المساعد يصيغ الإجابة... ✍️';
+                }
+
+                // إرسال السؤال لـ Gemini
+                const aiResponse = await askGemini(userMsg, finalContext);
+                
+                typingMsg.remove();
+                appendMessage(aiResponse, 'ai');
+            } catch (err) {
+                typingMsg.remove();
+                appendMessage("عذراً، حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.", 'ai');
+            }
+        };
+
+        // 3️⃣ دوال العرض وجلب البيانات والتواصل مع جوجل
+        function appendMessage(text, side) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = side === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai';
+            msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+            document.getElementById('chat-messages').appendChild(msgDiv);
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+
+        async function fetchLessonData(id) {
+            if (!id || id.includes('undefined')) return "لم يقم الطالب باختيار درس محدد بعد.";
+            const docRef = doc(db, 'question_banks', id);
+            const snap = await getDoc(docRef);
+            if(snap.exists()) {
+                return JSON.stringify(snap.data().questions);
+            }
+            return "لا توجد أسئلة مسجلة لهذا الدرس في قاعدة البيانات.";
+        }
+
+        async function askGemini(question, context) {
+            const API_KEY = "AIzaSyCE4rg3C1NF-KYgr1U1s-bJYpwX2Lbzehk"; // مفتاحك الحالي
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
+            
+            const prompt = `
+            أنت "مساعد بروج الذكي"، خبير تربوي ومعلم لغة عربية وتربية إسلامية شامل.
+            
+            رسالتك:
+            1. الإجابة على أي سؤال يطرحه الطالب سواء كان متعلقاً بالدرس المختار أو معلومات عامة.
+            2. إذا كان سؤال الطالب يتعلق ببيانات الدرس المزودة أدناه، فاجعل إجابتك مطابقة لما ورد في المنهج.
+            3. إذا سأل الطالب عن حديث وتم تزويدك بنتيجة من "الدرر السنية"، اشرح له النتيجة بأسلوب مبسط.
+            
+            أسلوبك:
+            - ودود، مشجع، ومختصر.
+            - استخدم الرموز التعبيرية (Emojis).
+            - ابدأ الإجابة مباشرة دون مقدمات مكررة.
+
+            بيانات الدرس الحالي والمرجع الإضافي: ${context}
+            سؤال الطالب: "${question}"
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (response.status === 429 || (data.error && data.error.message.includes("quota"))) {
+                        return "⏳ زملائي الطلاب يسألونني أسئلة كثيرة جداً في نفس الوقت! أعطني 30 ثانية فقط لألتقط أنفاسي ثم أرسل سؤالك مجدداً 😅";
+                    }
+                    return "🚨 عذراً يا بطل، واجهت مشكلة تقنية بسيطة. حاول مرة أخرى!";
+                }
+
+                return data.candidates[0].content.parts[0].text;
+
+            } catch (e) {
+                return "⚠️ حدث خطأ في الاتصال. تأكد من الإنترنت يا بطل!";
+            }
+        }
+    </script>
+</body>
+</html>
+   </script>
+</body>
+</html>

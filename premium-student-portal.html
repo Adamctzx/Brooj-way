@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة المصادقة الأكاديمية | Student Premium Portal</title>
+    <style>
+        :root { --primary: #003366; --secondary: #196f3d; --bg: #f8f9fa; --text: #333; --border: #ced4da; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; background-image: radial-gradient(#ced4da 1px, transparent 1px); background-size: 20px 20px; }
+        
+        .auth-container { background: white; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); padding: 40px; text-align: center; margin: 20px; position: relative; overflow: hidden; }
+        
+        .auth-container::before { content: '🎓'; position: absolute; font-size: 120px; opacity: 0.03; top: -20px; left: -20px; transform: rotate(-15deg); }
+        
+        .system-title { font-size: 1.6rem; color: var(--primary); margin-bottom: 10px; font-weight: 800; }
+        .system-desc { color: #666; font-size: 1rem; margin-bottom: 30px; line-height: 1.6; }
+        
+        .form-control { width: 100%; padding: 15px; font-size: 1.2rem; text-align: center; border: 2px solid var(--border); border-radius: 8px; margin-bottom: 20px; outline: none; letter-spacing: 2px; font-weight: bold; color: var(--primary); transition: 0.3s; }
+        .form-control:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(25, 111, 61, 0.1); }
+        select.form-control { text-align: right; font-size: 1rem; letter-spacing: normal; font-weight: normal; color: #333; cursor: pointer; }
+        
+        .btn { background-color: var(--primary); color: white; border: none; padding: 15px; width: 100%; font-size: 1.15rem; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.2); }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 51, 102, 0.3); }
+        .btn-success { background-color: var(--secondary); box-shadow: 0 4px 15px rgba(25, 111, 61, 0.2); }
+        .btn-success:hover:not(:disabled) { background-color: #145a32; box-shadow: 0 6px 20px rgba(25, 111, 61, 0.3); }
+        .btn:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .error-message { background: #fce8e6; color: #c0392b; padding: 12px; border-radius: 6px; font-size: 0.95rem; margin-bottom: 20px; font-weight: bold; display: none; border: 1px solid #f5c6cb; }
+        
+        /* القسم الخاص باختيار المقرر بعد المصادقة */
+        #lesson-selection { display: none; text-align: right; }
+        .student-info-card { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--border); position: relative; }
+        .student-info-card .tag { position: absolute; top: -12px; right: 20px; background: var(--secondary); color: white; padding: 4px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        .info-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 1.05rem; }
+        .info-row strong { color: var(--primary); min-width: 80px; }
+        
+        .form-label { display: block; margin-bottom: 8px; font-weight: bold; color: #2c3e50; font-size: 0.95rem; }
+        .selectors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        
+        @media(max-width: 480px) {
+            .selectors-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container" id="auth-box">
+        <div class="system-title">بوابة التقييم الأكاديمي للطلاب</div>
+        <div class="system-desc">الرجاء إدخال المُعرّف الأكاديمي الآمن (PRM) المطبوع على بطاقتك أو المقدم لك من إدارة المدرسة للبدء.</div>
+        
+        <div class="error-message" id="error-msg">الرقم الأكاديمي غير صالح، يرجى التأكد من كتابته بشكل صحيح.</div>
+        <input type="text" id="access-code" class="form-control" placeholder="PRM-XXXXXX" autocomplete="off" style="text-transform: uppercase;">
+        <button class="btn" id="btn-verify" onclick="verifyAccess()">مُصادقة الدخول والتحقق 🔒</button>
+    </div>
+
+    <div class="auth-container" id="lesson-selection">
+        <div class="system-title">تحديد مسار التقييم</div>
+        <div class="system-desc" style="margin-bottom: 20px;">قم باختيار الدرس المقرر لك لاختبار مهاراتك فيه.</div>
+        
+        <div class="student-info-card" id="student-details">
+            </div>
+        
+        <div class="selectors-grid">
+            <div>
+                <label class="form-label">المرحلة الدراسية</label>
+                <select id="sel-grade" class="form-control">
+                    <option value="G4">الصف الرابع</option><option value="G5">الصف الخامس</option><option value="G6">الصف السادس</option>
+                    <option value="G7">الصف السابع</option><option value="G8">الصف الثامن</option><option value="G9">الصف التاسع</option>
+                    <option value="G10">الصف العاشر</option><option value="G11">الصف الحادي عشر</option><option value="G12">الصف الثاني عشر</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">الفصل الدراسي</label>
+                <select id="sel-term" class="form-control">
+                    <option value="T1">الفصل الأول</option><option value="T2">الفصل الثاني</option><option value="T3">الفصل الثالث</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">الوحدة الدراسية</label>
+                <select id="sel-unit" class="form-control">
+                    <option value="U1">الوحدة الأولى</option><option value="U2">الوحدة الثانية</option><option value="U3">الوحدة الثالثة</option>
+                    <option value="U4">الوحدة الرابعة</option><option value="U5">الوحدة الخامسة</option><option value="U6">الوحدة السادسة</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">المقرر (الدرس)</label>
+                <select id="sel-lesson" class="form-control">
+                    </select>
+            </div>
+        </div>
+        <button class="btn btn-success" onclick="startAssessment()">بدء التقييم المعتمد 🚀</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ==========================================
+        // 📚 خريطة الدروس الذكية لربط القوائم
+        // ==========================================
+        const lessonMap = {
+            "G4": {
+                "T1": {
+                    "U1": {"L1": "آداب الدخول والخروج من المنزل", "L2": "سورة البروج", "L3": "من أحكام التجويد", "L4": "المؤمن القوي", "L5": "بدء الدعوة للإسلام", "L6": "السيدة زينب بنت خزيمة", "L7": ""},
+                    "U2": {"L1": "الإيمان بالكتب السماوية", "L2": "سورة الطارق", "L3": "التثبت من الأخبار", "L4": "أهمية الصلاة المفروضة وآدابها", "L5": "أحسنكم أخلاقا", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "السنن الرواتب", "L2": "الهجرة إلى الحبشة", "L3": "سورة الأعلى", "L4": "صلاة الجماعة", "L5": "صلاة الجماعة", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة الغاشية", "L2": "البحث والتفكير العلمي", "L3": "حمد الله عز وجل على نعمه", "L4": "عام الحزن", "L5": "أخلاق المتقين", "L6": "صبر النبي صلى الله عليه وسلم", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "سورة الانشقاق", "L2": "المرافق العامة", "L3": "الرفق", "L4": "صيامي لربي", "L5": "في ظل صدقتي", "L6": "", "L7": ""},
+                    "U6": {"L1": "سورة المطففين", "L2": "الكرم", "L3": "من كمال الإيمان", "L4": "بيئتي مسؤوليتي", "L5": "ذو النوريين سيدنا عثمان", "L6": "", "L7": ""}
+                }
+            },
+            "G5": {
+                "T1": {
+                    "U1": {"L1": "سورة الانفطار", "L2": "المفلس الحقيقي", "L3": "أحب الأعمال إلى الله", "L4": "محبة الله تعالى", "L5": "دعوة أهل الطائف", "L6": "", "L7": ""},
+                    "U2": {"L1": "سورة التكوير", "L2": "الإحسان إلى الناس", "L3": "الإيمان باليوم الآخر", "L4": "صلاة الجماعة", "L5": "الإسراء والمعراج", "L6": "", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "سورة عبس", "L2": "القلقلة", "L3": "القرآن شفيعي", "L4": "آداب ركوب وسائل النقل", "L5": "فاطمة بنت عبد الملك", "L6": "", "L7": ""},
+                    "U4": {"L1": "سورة النازعات", "L2": "القلب الرحيم", "L3": "الرفق خير", "L4": "يسروا ولا تعسروا", "L5": "الهجرة إلى المدينة", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "الله القادر (سورة النبأ)", "L2": "الطريق إلى الجنة", "L3": "نعمة العقل", "L4": "آداب الطريق", "L5": "صلاة الجمعة وصلاة العيدين", "L6": "", "L7": ""},
+                    "U6": {"L1": "الله الحكم العدل", "L2": "مع رسولي في الجنة", "L3": "الشجاعة", "L4": "سيدنا عمر بن الخطاب", "L5": "الإنسان والكون", "L6": "", "L7": ""}
+                }
+            },
+            "G6": {
+                "T1": {
+                    "U1": {"L1": "الكتاب الحق (السجدة)", "L2": "من وصايا الرسول", "L3": "التطوع عبادة وانتماء", "L4": "حرمة المسلم", "L5": "فرائض الصلاة", "L6": "الإمارات في خدمة العالم", "L7": ""},
+                    "U2": {"L1": "صفات المؤمنين وجزاؤهم", "L2": "أحكام النون الساكنة", "L3": "حاسبو أنفسكم", "L4": "آداب المسجد", "L5": "الحياة في المدينة المنورة", "L6": "سجود السهو والتلاوة", "L7": ""}
+                },
+                "T2": {
+                    "U3": {"L1": "الصبر واليقين", "L2": "حكم الإدغام", "L3": "المؤمن بين الشكر والصبر", "L4": "من علامات الساعة", "L5": "الإمام مالك بن أنس", "L6": "", "L7": ""},
+                    "U4": {"L1": "سبيل الهداية (الملك)", "L2": "الإقلاب", "L3": "أخلاق حميدة", "L4": "أنا متسامح", "L5": "غزوة بدر الكبرى", "L6": "", "L7": ""}
+                },
+                "T3": {
+                    "U5": {"L1": "قدرة الله تعالى (الملك)", "L2": "الإخفاء الحقيقي", "L3": "اختيار الجليس", "L4": "التفكير العلمي", "L5": "غزوة أحد", "L6": "بيئتي أمانة", "L7": ""},
+                    "U6": {"L1": "دروس وعبر (الملك)", "L2": "يُسر الإسلام", "L3": "آداب الدعاء", "L4": "صيام التطوع", "L5": "السيدة عائشة أم المؤمنين", "L6": "", "L7": ""}
+                }
+            },
+            "G7": {
+                "T1": {
+                    "U1": {"L1": "البعث والنشور", "L2": "المستظلون في ظل الرحمن", "L3": "من بشائر المصلين", "L4": "أدلة وحدانية الله تعالى", "L5": "مراقبة الله تعالى", "L6": "سنن الفطرة", "L7": ""},
+                    "U2": {"L1": "الخلاق العليم", "L2": "التوبة فرصة العمر", "L3": "المغيث الحليم", "L4": "الغُسل", "L5": "التيمم والمسح على الخفين", "L6": "غزوة الأحزاب", "L7": ""}
+                }
+            },
+            "G8": {
+                "T1": {
+                    "U1": {"L1": "صدق الرسول (سورة يس)", "L2": "المد الأصلي", "L3": "الأعمال بالنيات", "L4": "الإخلاص", "L5": "الكسب الطيب", "L6": "نعمة الأمن", "L7": ""},
+                    "U2": {"L1": "أصحاب القرية (سورة يس)", "L2": "التقرب إلى الله تعالى", "L3": "الإيمان بالقضاء والقدر", "L4": "الصلوات ذات الأسباب", "L5": "الشفاء بنت عبد الله", "L6": "", "L7": ""}
+                }
+            },
+            "G9": {
+                "T1": {
+                    "U1": {"L1": "مع الله ورسوله وولي الأمر", "L2": "السبع الموبقات", "L3": "الغفور العدل", "L4": "التناصح في الإسلام", "L5": "الزكاة في الإسلام", "L6": "", "L7": ""},
+                    "U2": {"L1": "سلامة المجتمع ووحدة أبنائه", "L2": "الحلال بيَن", "L3": "الدين النصيحة", "L4": "الحج", "L5": "حجة الوداع", "L6": "", "L7": ""}
+                }
+            },
+            "G10": {
+                "T1": {
+                    "U1": { "L1": "سورة الكهف 1-8", "L2": "القرآن المكي والمدني", "L3": "العقل في الإسلام", "L4": "المدارس الفقهية", "L5": "سكينة بنت الحسين", "L6": "", "L7": "" },
+                    "U2": { "L1": "أصحاب الكهف", "L2": "مراحل جمع القرآن", "L3": "منهجية التفكير في الإسلام", "L4": "الوقف عطاء ونماء", "L5": "التنمية البشرية في الإسلام", "L6": "", "L7": "" }
+                }
+            },
+            "G11": {
+                "T1": {
+                    "U1": { "L1": "الثبات على الحق", "L2": "العقل والنقل", "L3": "الاستعفاف", "L4": "العقود المالية في الإسلام", "L5": "اللغة والثقافة العربية", "L6": "", "L7": "" },
+                    "U2": { "L1": "غزوة الأحزاب", "L2": "القرآن الكريم والإعجاز العلمي", "L3": "أدب الحوار", "L4": "مصادر التشريع الإسلامي", "L5": "معالم التخطيط", "L6": "", "L7": "" }
+                }
+            },
+            "G12": {
+                "T1": {
+                    "U1": { "L1": "وقاية المجتمع من الجرائم الأخلاقية", "L2": "مناهج المفسرين", "L3": "الإسلام ينبذ التطرف", "L4": "الفراق بين الزوجين", "L5": "رسول الله والحياة الاجتماعية", "L6": "", "L7": "" },
+                    "U2": { "L1": "حديث الإفك", "L2": "السُنن الربانية", "L3": "المسؤولية في الإسلام", "L4": "مقاصد التشريع الخمسة", "L5": "الشيخة فاطمة بنت مبارك", "L6": "", "L7": "" }
+                }
+            }
+        };
+
+        function populateLessons() {
+            const grade = document.getElementById('sel-grade').value;
+            const term = document.getElementById('sel-term').value;
+            const unit = document.getElementById('sel-unit').value;
+            const lessonSelect = document.getElementById('sel-lesson');
+            
+            lessonSelect.innerHTML = ''; 
+            const defaultLessons = ["L1", "L2", "L3", "L4", "L5", "L6", "L7"];
+            const namedLessons = (lessonMap[grade] && lessonMap[grade][term] && lessonMap[grade][term][unit]) ? lessonMap[grade][term][unit] : {};
+
+            defaultLessons.forEach(lCode => {
+                const option = document.createElement('option');
+                option.value = lCode;
+                const name = namedLessons[lCode] ? ` - ${namedLessons[lCode]}` : "";
+                option.textContent = lCode + name; 
+                lessonSelect.appendChild(option);
+            });
+        }
+
+        ['sel-grade', 'sel-term', 'sel-unit'].forEach(id => {
+            document.getElementById(id).addEventListener('change', populateLessons);
+        });
+        populateLessons(); // التهيئة الأولى
+
+        // ==========================================
+        // 🔒 آلية المصادقة والتحقق من الفايربيز
+        // ==========================================
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                document.getElementById('access-code').value = code;
+                verifyAccess();
+            }
+        };
+
+        window.verifyAccess = async function() {
+            let codeInput = document.getElementById('access-code').value.trim().toUpperCase();
+            
+            // إضافة البادئة تلقائياً إذا نسيها الطالب
+            if(!codeInput.startsWith('PRM-') && codeInput.length > 5) {
+                codeInput = 'PRM-' + codeInput;
+            }
+
+            const btn = document.getElementById('btn-verify');
+            const errorMsg = document.getElementById('error-msg');
+
+            if (!codeInput) return;
+
+            btn.disabled = true;
+            btn.textContent = "جاري التحقق الآمن...";
+            errorMsg.style.display = "none";
+
+            try {
+                const docRef = doc(db, "premium_codes", codeInput);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists() && docSnap.data().isActive) {
+                    const data = docSnap.data();
+                    
+                    // حفظ البيانات في الجلسة لترثها صفحة محرك الاختبار
+                    sessionStorage.setItem('premium_access_code', data.code);
+                    sessionStorage.setItem('premium_student_name', data.studentName);
+                    sessionStorage.setItem('premium_school', data.school);
+                    sessionStorage.setItem('premium_schoolId', data.schoolStudentId);
+                    sessionStorage.setItem('premium_teacherUid', data.teacherUid); // 💡 السطر الأهم لإرسال النتيجة للمعلم
+                    sessionStorage.setItem('premium_subjectType', data.subjectType);
+                    
+                    // عرض بيانات الطالب بأسلوب احترافي
+                    document.getElementById('student-details').innerHTML = `
+                        <div class="tag">هوية أكاديمية موثقة ✓</div>
+                        <div class="info-row"><strong>اسم الطالب:</strong> ${data.studentName}</div>
+                        <div class="info-row"><strong>المدرسة:</strong> ${data.school}</div>
+                        <div class="info-row"><strong>المنهج:</strong> تربية إسلامية (${data.subjectType})</div>
+                    `;
+                    
+                    document.getElementById('auth-box').style.display = "none";
+                    document.getElementById('lesson-selection').style.display = "block";
+                    
+                } else {
+                    errorMsg.style.display = "block";
+                    btn.disabled = false;
+                    btn.textContent = "مُصادقة الدخول والتحقق 🔒";
+                }
+            } catch (error) {
+                console.error(error);
+                errorMsg.textContent = "حدث خطأ في الاتصال بالشبكة، يرجى المحاولة مرة أخرى.";
+                errorMsg.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "مُصادقة الدخول والتحقق 🔒";
+            }
+        };
+
+        window.startAssessment = function() {
+            const grade = document.getElementById('sel-grade').value;
+            const term = document.getElementById('sel-term').value;
+            const unit = document.getElementById('sel-unit').value;
+            const lesson = document.getElementById('sel-lesson').value;
+            
+            const fullLessonId = `Islamic_${grade}_${term}_${unit}_${lesson}`;
+            
+            // توجيه الطالب للمحرك القديم مع تفعيل وضع المدفوع (Premium Mode)
+            window.location.href = `academic-localized-engine.html?premiumMode=true&lessonId=${fullLessonId}`;
+        };
+    </script>
+</body>
+</html>

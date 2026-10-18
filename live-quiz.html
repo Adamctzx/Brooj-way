@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- كاشف فتح الصفحة بالنقر المزدوج (يجب أن يسبق أي سكربت module) -->
+    <script src="file-protocol-check.js"></script>
+
+    <!-- 🔑 محرك التحدي المباشر: لا يدخلها الطالب إلا بكود دخول فعّال -->
+    <script type="module" src="auth-guard.js" data-require-role="student" data-require-access="true"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ساحة المعركة - Live Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; color: #fff; padding: 20px; overflow-x: hidden; animation: gradientBG 15s ease infinite; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 30px; width: 100%; max-width: 800px; text-align: center; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); margin-bottom: 20px; position: relative; }
+        .hidden { display: none !important; }
+        
+        /* 🔴 تصميم نظام الحماس (Streaks) 🔴 */
+        .streak-badge { background: linear-gradient(45deg, #e74c3c, #f1c40f); padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #fff; font-size: 1.2rem; display: inline-block; margin-bottom: 15px; box-shadow: 0 0 15px rgba(231, 76, 60, 0.6); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .scoreboard-1v1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; }
+        .player-info { display: flex; flex-direction: column; align-items: center; width: 40%; }
+        .player-name { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .player-score { font-size: 2.5rem; color: #fdbb2d; font-weight: bold; }
+        .vs-badge { background: rgba(255,0,0,0.5); padding: 10px 15px; border-radius: 50%; font-weight: bold; font-style: italic; }
+
+        .leaderboard-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .player-badge { background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 15px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .player-badge.me { background: rgba(39, 174, 96, 0.4); border-color: #2ecc71; }
+        .player-badge .score { color: #fdbb2d; font-size: 1.2rem; }
+
+        #timer-container { width: 100%; background: rgba(0,0,0,0.4); border-radius: 10px; height: 12px; margin: 15px 0 25px; overflow: hidden; position: relative; }
+        #timer-bar { height: 100%; background: #2ecc71; width: 100%; transition: width 1s linear, background 0.3s; }
+        #timer-text { font-weight: bold; font-size: 1.3rem; color: #fdbb2d; margin-bottom: 5px; }
+
+        .question-text { font-size: 1.5rem; margin-bottom: 10px; line-height: 1.5; }
+        .question-text-en { font-size: 1.2rem; color: #d1d8e0; margin-bottom: 30px; direction: ltr; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        /* 🔴 تصميم الأزرار ثلاثية الأبعاد الملموسة + توحيد الحجم لمنع الغش 🔴 */
+        .option-btn { 
+            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 15px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px 0px rgba(0,0,0,0.3); 
+            min-height: 110px; /* توحيد الطول لإخفاء التمييز البصري للإجابات الطويلة */
+        }
+        .option-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); transform: translateY(3px) !important; box-shadow: 0 3px 0px rgba(0,0,0,0.3); }
+        .option-btn:active:not(:disabled) { transform: translateY(6px) !important; box-shadow: 0 0px 0px rgba(0,0,0,0.3); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.9 !important; }
+        .option-btn.correct { background: #27ae60 !important; border-color: #2ecc71 !important; box-shadow: 0 6px 0px #1e8449 !important; }
+        .option-btn.wrong { background: #c0392b !important; border-color: #e74c3c !important; box-shadow: 0 6px 0px #922b21 !important; }
+        
+        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; text-decoration: none; display: inline-block; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4); transition: 0.3s; }
+        .btn-whatsapp:hover { background: #1ebe57; transform: scale(1.02); }
+        .btn-academic { background: #3498db; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4); transition: 0.3s; }
+        .btn-academic:hover { background: #2980b9; transform: scale(1.02); }
+
+        #emoji-toggle-btn { position: fixed; bottom: 20px; left: 20px; background: #fdbb2d; color: #fff; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2001; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        #emoji-toggle-btn:hover { transform: scale(1.1); background: #f39c12; }
+        
+        #emoji-panel { position: fixed; bottom: 90px; left: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 15px; padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 2000; width: 300px; transform-origin: bottom left; transition: 0.3s; }
+        #emoji-panel.closed { transform: scale(0); opacity: 0; pointer-events: none; }
+        
+        .emoji-item { font-size: 1.8rem; background: #f1f2f6; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; padding: 10px 0; text-align: center; transition: 0.2s; }
+        .emoji-item:hover { background: #dfe4ea; transform: scale(1.1); }
+        .emoji-text-item { grid-column: span 2; font-size: 1.1rem; background: #3498db; color: white; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; padding: 10px 5px; transition: 0.2s; }
+        .emoji-text-item:hover { background: #2980b9; transform: scale(1.05); }
+
+        #live-emojis-container { position: fixed; bottom: 100px; left: 30px; width: 300px; z-index: 1999; pointer-events: none; display: flex; flex-direction: column-reverse; gap: 10px; }
+        
+        @keyframes floatUpFade { 0% { opacity: 0; transform: translateY(20px) scale(0.8); } 15% { opacity: 1; transform: translateY(0) scale(1.1); } 30% { opacity: 1; transform: translateY(0) scale(1); } 80% { opacity: 1; transform: translateY(-40px); } 100% { opacity: 0; transform: translateY(-60px); } }
+        .floating-emoji { background: rgba(0,0,0,0.7); color: white; padding: 10px 15px; border-radius: 20px; font-weight: bold; animation: floatUpFade 3.5s forwards; display: inline-flex; align-items: center; gap: 8px; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); width: fit-content; }
+        .floating-emoji .sender-name { color: #fdbb2d; font-size: 0.9rem; margin-left: 5px; }
+
+        /* أكواد لوحة تحكم المعلم ورسالة التحذير */
+        #admin-dashboard { width: 100%; }
+        .admin-console { background: rgba(0, 0, 0, 0.6); border-radius: 15px; padding: 20px; text-align: right; width: 100%; }
+        .student-list { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        .student-list th, .student-list td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        .btn-kick { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-warn { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; margin-left: 5px; transition: 0.2s; }
+        .btn-kick:hover, .btn-warn:hover { transform: scale(1.1); }
+        
+        #warning-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e74c3c; color: white; padding: 20px 40px; border-radius: 15px; font-size: 1.5rem; font-weight: bold; z-index: 5000; display: none; animation: shake 0.5s; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        @keyframes shake { 0%, 100% { transform: translate(-50%, -50%); } 25% { transform: translate(-55%, -50%); } 75% { transform: translate(-45%, -50%); } }
+    </style>
+</head>
+<body>
+    
+    <div id="warning-overlay">⚠️ انتبه يا بطل وركز في التحدي!</div>
+
+    <script>
+        const darkLuxuriousBackgrounds = [
+            "linear-gradient(45deg, #0f2027, #203a43, #2c5364)", 
+            "linear-gradient(45deg, #141E30, #243B55)",         
+            "linear-gradient(45deg, #0f0c29, #302b63, #24243e)", 
+            "linear-gradient(45deg, #000000, #434343)",         
+            "linear-gradient(45deg, #1a2a6c, #112240, #0a1128)", 
+            "linear-gradient(45deg, #2b1055, #4b192e)",         
+            "linear-gradient(45deg, #190A05, #4a0000)",         
+            "linear-gradient(45deg, #001524, #002c47)",         
+            "linear-gradient(45deg, #16222A, #3A6073)",         
+            "linear-gradient(45deg, #200122, #6f0000)"          
+        ];
+        document.body.style.background = darkLuxuriousBackgrounds[Math.floor(Math.random() * darkLuxuriousBackgrounds.length)];
+        document.body.style.backgroundSize = "400% 400%";
+    </script>
+
+<div id="google_translate_element" style="position: absolute; top: 20px; left: 20px; z-index: 9999; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3);"></div>
+    
+    <button id="emoji-toggle-btn">💬</button>
+    <div id="emoji-panel" class="closed">
+        <div class="emoji-item action-msg">😂</div>
+        <div class="emoji-item action-msg">😡</div>
+        <div class="emoji-item action-msg">👏</div>
+        <div class="emoji-item action-msg">😎</div>
+        <div class="emoji-item action-msg">🔥</div>
+        <div class="emoji-item action-msg">😭</div>
+        <div class="emoji-item action-msg">👍</div>
+        <div class="emoji-item action-msg">👎</div>
+        <div class="emoji-item action-msg">🤔</div>
+        <div class="emoji-item action-msg">💪</div>
+        <div class="emoji-item action-msg">🎉</div>
+        <div class="emoji-item action-msg">😱</div>
+        <button class="emoji-text-item action-msg">أحسنت! 🌟</button>
+        <button class="emoji-text-item action-msg">أسرع قليلاً! ⏱️</button>
+        <button class="emoji-text-item action-msg">حظ أوفر 💔</button>
+        <button class="emoji-text-item action-msg">سأفوز! 🚀</button>
+        <button class="emoji-text-item action-msg">ركز جيداً 🧐</button>
+        <button class="emoji-text-item action-msg">سؤال صعب! 🤯</button>
+    </div>
+    
+    <div id="live-emojis-container"></div>
+    <div id="loading-screen" class="glass-panel">
+        <h2 id="loading-text" style="font-size: 1.5rem; margin: 20px 0;">جاري تجهيز ساحة المعركة...</h2>
+        <div id="spinner" style="border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #fff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto;"></div>
+    </div>
+
+    <div id="quiz-screen" class="glass-panel hidden">
+        
+        <div id="admin-dashboard" class="hidden">
+            <h2 style="color: #f1c40f; margin-bottom: 15px;">🎮 لوحة تحكم القائد (المعلم)</h2>
+            <div class="admin-console">
+                <button id="btn-admin-force-next" style="background: #27ae60; color: white; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.2rem; cursor: pointer; border: none; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.4);">
+                    إطلاق السؤال التالي لجميع الطلاب ⏭️
+                </button>
+                <h3 style="margin-bottom: 10px;">👥 الطلاب المسجلون ونقاطهم:</h3>
+                <table class="student-list">
+                    <thead><tr><th>الطالب</th><th>النقاط</th><th>الإجراء</th></tr></thead>
+                    <tbody id="admin-student-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="streak-indicator" class="streak-badge hidden">🔥 متتالية: <span id="streak-count">0</span></div>
+
+        <div class="scoreboard-1v1 hidden" id="ui-single" style="justify-content: center;"><div class="player-info" style="width: 100%;"><span class="player-name" id="single-name">أنت</span><span class="player-score" id="single-score">0</span></div></div>
+        <div class="scoreboard-1v1 hidden" id="ui-1v1"><div class="player-info"><span class="player-name" id="my-name">أنت</span><span class="player-score" id="my-score">0</span></div><div class="vs-badge">VS</div><div class="player-info"><span class="player-name" id="opponent-name">الخصم</span><span class="player-score" id="opponent-score">0</span></div></div>
+        <div class="leaderboard-group hidden" id="ui-group"></div>
+        
+        <div id="timer-text">⏳ 30 ثانية</div>
+        <div id="timer-container"><div id="timer-bar"></div></div>
+
+        <div id="question-container">
+            <p id="question-indicator" style="color: #aaa; margin-bottom: 10px;">سؤال 1</p>
+            <h2 class="question-text" id="q-text-ar">سؤال</h2>
+            <h3 class="question-text-en" id="q-text-en">Question</h3>
+            <div class="options-grid" id="options-container"></div>
+        </div>
+        
+        <div id="waiting-opponent" class="hidden" style="margin-top: 20px; color: #f1c40f; font-weight:bold; font-size: 1.2rem; transition: 0.3s;"><p>تمت الإجابة!</p></div>
+    </div>
+
+    <div id="result-screen" class="glass-panel hidden">
+        <h1 id="final-title" style="font-size: 3rem; color: #fdbb2d; margin-bottom: 20px;">🏆 النتيجة النهائية 🏆</h1>
+        <div id="final-leaderboard" style="display: flex; flex-direction: column; gap: 10px; font-size: 1.5rem; margin-bottom: 20px;"></div>
+        <div id="teacher-share-section" class="hidden" style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">
+            <p style="font-size: 1.1rem; margin-bottom: 10px;">أخبر معلمك ببطولتك وإنجازك! 🎓</p>
+            <button id="btn-submit-academic" class="btn-academic">📤 تسليم النتيجة لسجل المعلم إلكترونياً</button>
+            <button id="btn-send-whatsapp" class="btn-whatsapp">📲 إرسال النتيجة لمعلمك عبر الواتساب</button>
+        </div>
+        <button onclick="window.location.href='lobby.html'" style="margin-top: 20px; padding: 12px 25px; background: rgba(0,0,0,0.3); border: 1px solid #fff; color: #fff; cursor: pointer; border-radius:10px; font-weight:bold; width: 100%;">العودة للوبي</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, getDoc, addDoc, collection, deleteField } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQLfeZ232YVe6oY1omNOyrA_FzbNu8c_U",
+            authDomain: "education-bazaar-ee0a5.firebaseapp.com",
+            projectId: "education-bazaar-ee0a5",
+            storageBucket: "education-bazaar-ee0a5.firebasestorage.app",
+            messagingSenderId: "737041495961",
+            appId: "1:737041495961:web:ae22fc0aaff4f1f9ff8508"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomId');
+
+        const myUid = sessionStorage.getItem('myUid');
+        const myName = sessionStorage.getItem('myName');
+        const myAvatar = sessionStorage.getItem('myAvatar') || '👤'; 
+        
+        let quizzes = []; 
+        let currentQIdx = -1;
+        let myScore = 0;
+        let hasAnswered = false;
+        let isHost = false;
+        let gameMode = '1v1';
+        let opponentUid = null;
+        let isTransitioning = false;
+        
+        let questionTimerInterval; 
+        let lastSeenMessageTime = 0;
+        let currentStreak = 0; 
+
+        const soundCorrect = new Audio('https://www.myinstants.com/media/sounds/stadium-cheer.mp3');
+        const soundWrong = new Audio('https://www.myinstants.com/media/sounds/crowd-groan.mp3');        
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if(type === 'correct') { 
+                soundCorrect.currentTime = 0; 
+                let playPromise = soundCorrect.play();
+                if (playPromise !== undefined) playPromise.catch(e => console.log(e));
+                setTimeout(() => { soundCorrect.pause(); soundCorrect.currentTime = 0; }, 2000);
+            } else if(type === 'wrong') { 
+                soundWrong.currentTime = 0;
+                let playPromise = soundWrong.play();
+                if (playPromise !== undefined) playPromise.catch(e => console.log(e));
+                setTimeout(() => { soundWrong.pause(); soundWrong.currentTime = 0; }, 1500);
+            } else if(type === 'tick') { 
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode); 
+                gainNode.connect(audioCtx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start(); 
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        async function postToFeed(msg) {
+            try { await addDoc(collection(db, "global_feed"), { message: msg, createdAt: new Date() }); } 
+            catch(e) { console.error("Feed error: ", e); }
+        }
+
+        const emojiBtn = document.getElementById('emoji-toggle-btn');
+        const emojiPanel = document.getElementById('emoji-panel');
+        emojiBtn.onclick = () => emojiPanel.classList.toggle('closed');
+        document.addEventListener('click', (e) => {
+            if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('closed');
+        });
+
+        document.querySelectorAll('.action-msg').forEach(btn => {
+            btn.onclick = async () => {
+                const msgContent = btn.textContent;
+                emojiPanel.classList.add('closed');
+                try {
+                    await updateDoc(doc(db, 'rooms', roomId), {
+                        lastLiveMessage: { uid: myUid, name: myName, text: msgContent, time: Date.now() }
+                    });
+                } catch(e) { console.log("خطأ في الإرسال"); }
+            };
+        });
+
+        function showFloatingMessage(senderName, text) {
+            const container = document.getElementById('live-emojis-container');
+            const bubble = document.createElement('div');
+            bubble.className = 'floating-emoji';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'sender-name';
+            nameSpan.textContent = senderName + ": ";
+            const messageText = document.createTextNode(" " + text.substring(0, 50)); 
+            bubble.appendChild(nameSpan);
+            bubble.appendChild(messageText);
+            container.appendChild(bubble);
+            setTimeout(() => { if (container.contains(bubble)) container.removeChild(bubble); }, 3500);
+        }
+
+        function getTeamHtml(teamData, size) {
+            if (!teamData) return '';
+            if (teamData.startsWith('http')) {
+                return `<img src="${teamData}" style="width:${size}px; height:${size}px; object-fit:contain; vertical-align:middle; background:#fff; border-radius:4px; padding:1px; margin-left:5px;">`;
+            } else {
+                return `<span style="margin-left:5px; font-size:${size === 20 ? '1.2rem' : '1.5rem'}; vertical-align:middle;">${teamData}</span>`;
+            }
+        }
+
+        async function initBattle() {
+            try {
+                const roomRef = doc(db, 'rooms', roomId);
+                const roomSnap = await getDoc(roomRef);
+                if (!roomSnap.exists()) { window.location.href = 'lobby.html'; return; }
+                
+                const roomData = roomSnap.data();
+                isHost = roomData.hostUid === myUid;
+                gameMode = roomData.mode || '1v1';
+                window.lessonTitleForMsg = roomData.lessonId;
+
+                if (roomData.lessonId) {
+                    const bankSnap = await getDoc(doc(db, 'question_banks', roomData.lessonId));
+                    if (bankSnap.exists() && bankSnap.data().questions) {
+                        quizzes = bankSnap.data().questions.map(q => ({
+                            ar: q.textAr, en: q.textEn,
+                            options: q.options.map((opt, idx) => ({ ar: opt.ar, en: opt.en, correct: idx === q.correctAnswerIndex }))
+                        }));
+                    } else {
+                        alert("لا توجد أسئلة مسجلة لهذا الدرس في بنك الأسئلة!"); 
+                        window.location.href = 'lobby.html'; 
+                        return;
+                    }
+                }
+
+                if (isHost && gameMode === 'group') {
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('timer-text').style.display = 'none';
+                    document.getElementById('timer-container').style.display = 'none';
+                    document.getElementById('question-container').style.display = 'none';
+                    document.getElementById('emoji-toggle-btn').style.display = 'none';
+                } else {
+                    if(gameMode === 'single') document.getElementById('ui-single').classList.remove('hidden');
+                    else if(gameMode === '1v1' || gameMode === 'matchmaking') document.getElementById('ui-1v1').classList.remove('hidden');
+                    else document.getElementById('ui-group').classList.remove('hidden');
+                }
+
+                onSnapshot(roomRef, (docSnap) => {
+                    const data = docSnap.data();
+                    if (!data) return;
+                    const playersKeys = Object.keys(data.players || {});
+
+                    if (data.players && !data.players[myUid] && !(isHost && gameMode==='group')) {
+                        alert("لقد تم استبعادك من التحدي بواسطة المعلم.");
+                        window.location.href = 'lobby.html';
+                        return;
+                    }
+
+                    if (data.lastWarning && data.lastWarning.targetUid === myUid && data.lastWarning.time > (sessionStorage.getItem('lastWarn') || 0)) {
+                        const overlay = document.getElementById('warning-overlay');
+                        overlay.style.display = 'block';
+                        setTimeout(() => overlay.style.display = 'none', 4000);
+                        sessionStorage.setItem('lastWarn', data.lastWarning.time);
+                        playSound('wrong');
+                    }
+
+                    if (isHost && gameMode === 'group') {
+                        const table = document.getElementById('admin-student-table');
+                        table.innerHTML = '';
+                        Object.values(data.players || {}).forEach(p => {
+                            if(p.uid === myUid) return; 
+                            const pTeamStrTable = getTeamHtml(p.team, 20);
+                            table.innerHTML += `<tr>
+                                <td>${pTeamStrTable} ${p.avatar || '👤'} ${p.displayName}</td>
+                                <td><span style="color:#fdbb2d; font-weight:bold;">${p.score || 0}</span></td>
+                                <td>
+                                    <button class="btn-warn" onclick="warnStudent('${p.uid}')">⚠️ تحذير</button>
+                                    <button class="btn-kick" onclick="kickStudent('${p.uid}')">❌ طرد</button>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                    
+                    if (data.lastLiveMessage && data.lastLiveMessage.time > lastSeenMessageTime) {
+                        lastSeenMessageTime = data.lastLiveMessage.time;
+                        if (data.lastLiveMessage.uid !== myUid || gameMode === 'single') {
+                            showFloatingMessage(data.lastLiveMessage.name, data.lastLiveMessage.text);
+                        }
+                    }
+
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('quiz-screen').classList.remove('hidden');
+
+                    if (gameMode === 'single') {
+                        const myTeamStr = getTeamHtml(data.players[myUid] && data.players[myUid].team, 25);
+                        document.getElementById('single-name').innerHTML = `${myTeamStr} ${data.players[myUid].avatar || '👤'} ${myName}`;
+                        document.getElementById('single-score').textContent = (data.players && data.players[myUid] ? data.players[myUid].score : 0);
+                    } else if (gameMode === '1v1' || gameMode === 'matchmaking') {
+                        opponentUid = playersKeys.find(id => id !== myUid) || null;
+                        
+                        const myTeamStr = getTeamHtml(data.players[myUid] && data.players[myUid].team, 25);
+                        document.getElementById('my-name').innerHTML = `${myTeamStr} ${data.players[myUid].avatar || '👤'} ${myName}`;
+                        document.getElementById('my-score').textContent = (data.players && data.players[myUid] ? data.players[myUid].score : 0);
+                        
+                        if(opponentUid && data.players[opponentUid]) {
+                            const oppTeamStr = getTeamHtml(data.players[opponentUid] && data.players[opponentUid].team, 25);
+                            document.getElementById('opponent-name').innerHTML = `${oppTeamStr} ${data.players[opponentUid].avatar || '👤'} ${data.players[opponentUid].displayName}`;
+                            document.getElementById('opponent-score').textContent = data.players[opponentUid].score || 0;
+                        }
+                    } else {
+                        const playersArray = Object.values(data.players || {}).sort((a,b) => b.score - a.score);
+                        const uiGroup = document.getElementById('ui-group');
+                        uiGroup.innerHTML = '';
+                        playersArray.forEach(p => {
+                            if(p.uid === myUid && isHost) return; 
+                            const isMe = p.uid === myUid;
+                            const pTeamStr = getTeamHtml(p.team, 20);
+                            uiGroup.innerHTML += `<div class="player-badge ${isMe ? 'me' : ''}"><span>${pTeamStr} ${p.avatar || '👤'} ${p.displayName}</span><span class="score">${p.score || 0}</span></div>`;
+                        });
+                    }
+
+                    const roomQIdx = data.currentQuestionIndex || 0;
+                    if(roomQIdx >= quizzes.length) { endGame(data); return; }
+
+                    if(currentQIdx !== roomQIdx) {
+                        currentQIdx = roomQIdx;
+                        hasAnswered = false;
+                        isTransitioning = false;
+                        document.getElementById('waiting-opponent').classList.add('hidden');
+                        renderQuestion(quizzes[currentQIdx], currentQIdx);
+                    }
+
+                    if (gameMode === 'single') {
+                        const myAns = data.players && data.players[myUid] && data.players[myUid].answers && data.players[myUid].answers[`q_${roomQIdx}`];
+                        if(myAns && !isTransitioning) {
+                            isTransitioning = true; 
+                            document.getElementById('waiting-opponent').innerHTML = "✅ جاري الانتقال للسؤال التالي...";
+                            setTimeout(() => updateDoc(roomRef, { currentQuestionIndex: roomQIdx + 1 }), 2000);
+                        }
+                    }
+
+                    if ((gameMode === '1v1' || gameMode === 'matchmaking') && opponentUid) {
+                        const myAns = data.players && data.players[myUid] && data.players[myUid].answers && data.players[myUid].answers[`q_${roomQIdx}`];
+                        const oppAns = data.players && data.players[opponentUid] && data.players[opponentUid].answers && data.players[opponentUid].answers[`q_${roomQIdx}`];
+                        if(myAns && oppAns && !isTransitioning) {
+                            isTransitioning = true; 
+                            document.getElementById('waiting-opponent').innerHTML = "✅ اكتملت الإجابات! جاري الانتقال...";
+                            if(isHost) setTimeout(() => updateDoc(roomRef, { currentQuestionIndex: roomQIdx + 1 }), 2500);
+                        }
+                    }
+                });
+
+            } catch (error) { 
+                console.error(error); 
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('loading-text').innerHTML = `<span style="color:#e74c3c;">توقف التحميل بسبب خطأ تقني:</span> <br><br><small style="font-size:1rem;">${error.message}</small> <br><br><button onclick="window.location.href='lobby.html'" style="padding:10px 20px; background:#f1c40f; color:#000; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">العودة للوبي</button>`;
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 🔴 دالة عرض السؤال مع نظام الغمامة (وقت القراءة الإجباري) 🔴
+        function renderQuestion(q, idx) {
+            if (isHost && gameMode === 'group') return; 
+
+            document.getElementById('question-indicator').textContent = `سؤال ${idx + 1} من ${quizzes.length}`;
+            document.getElementById('q-text-ar').textContent = q.ar;
+            document.getElementById('q-text-en').textContent = q.en;
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            const shuffledOptions = shuffleArray([...q.options]);
+
+            let timeLeft = 20; // إجمالي وقت السؤال
+            let readingTime = 7; // وقت القراءة الإجباري (الغمامة)
+            let canClick = false;
+
+            const timerText = document.getElementById('timer-text');
+            const timerBar = document.getElementById('timer-bar');
+            
+            timerText.textContent = `⏳ ${timeLeft} ثانية`;
+            timerBar.style.width = '100%';
+            timerBar.style.background = '#2ecc71';
+
+            // إظهار رسالة وقت القراءة
+            const waitMsg = document.getElementById('waiting-opponent');
+            waitMsg.classList.remove('hidden');
+            waitMsg.style.color = "#fdbb2d";
+            waitMsg.innerHTML = `⏳ اقرأ السؤال بتركيز... ستظهر الإجابات بعد <span id="read-timer" style="font-size:1.6rem; font-weight:bold; color:#fff;">${readingTime}</span> ثوانٍ`;
+
+            clearInterval(questionTimerInterval); 
+            
+            const buttons = [];
+            
+            // إنشاء الأزرار وإخفائها في البداية
+            shuffledOptions.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.dataset.correct = opt.correct;
+                
+                btn.innerHTML = `<span>${opt.ar}</span> <br><small style="color:#ccc;">${opt.en}</small>`;
+                
+                // الغمامة (إخفاء الأزرار)
+                btn.style.opacity = "0";
+                btn.style.transform = "translateY(20px)";
+                btn.style.pointerEvents = "none";
+                
+                btn.onclick = () => {
+                    if(!canClick || hasAnswered) return;
+                    hasAnswered = true;
+                    clearInterval(questionTimerInterval); 
+                    
+                    const allBtns = container.querySelectorAll('.option-btn');
+                    allBtns.forEach(b => {
+                        b.disabled = true;
+                        if(b.dataset.correct === 'true') {
+                            b.classList.add('correct');
+                        }
+                    });
+                    
+                    if (!opt.correct) {
+                        btn.classList.add('wrong');
+                        currentStreak = 0; 
+                        document.getElementById('streak-indicator').classList.add('hidden');
+                        playSound('wrong');
+                    } else {
+                        currentStreak++;
+                        let points = 10;
+                        if(currentStreak >= 3) {
+                            points = 15;
+                            document.getElementById('streak-indicator').classList.remove('hidden');
+                            document.getElementById('streak-count').textContent = currentStreak;
+                        }
+                        myScore += points;
+                        playSound('correct');
+                    }
+                    
+                    document.getElementById('waiting-opponent').classList.remove('hidden');
+                    document.getElementById('waiting-opponent').style.color = "#f1c40f";
+                    
+                    if (gameMode === 'single') {
+                        document.getElementById('waiting-opponent').innerHTML = "✅ تمت الإجابة!";
+                    } else if (gameMode === '1v1' || gameMode === 'matchmaking') {
+                        document.getElementById('waiting-opponent').innerHTML = "في انتظار إجابة الخصم أو انتهاء وقته...";
+                    } else if (gameMode === 'group' && isHost) {
+                        document.getElementById('waiting-opponent').innerHTML = "بصفتك المدير: اضغط 'انتقال' حينما يكتمل الوقت.";
+                        document.getElementById('btn-next-q').style.display = 'block';
+                    } else {
+                        document.getElementById('waiting-opponent').innerHTML = "في انتظار المعلم للانتقال للسؤال التالي...";
+                    }
+                    
+                    updateDoc(doc(db,'rooms',roomId), {
+                        [`players.${myUid}.answers.q_${idx}`]: true, 
+                        [`players.${myUid}.score`]: myScore
+                    });
+                };
+                buttons.push(btn);
+                container.appendChild(btn);
+            });
+
+            // بدء العداد التنازلي والمراحل
+            questionTimerInterval = setInterval(() => {
+                if (hasAnswered) { clearInterval(questionTimerInterval); return; }
+                
+                // 1. مرحلة القراءة (الغمامة)
+                if (readingTime > 0) {
+                    readingTime--;
+                    const readTimerEl = document.getElementById('read-timer');
+                    if (readTimerEl) readTimerEl.textContent = readingTime;
+
+                    // انتهاء وقت القراءة وبدء ظهور الإجابات
+                    if (readingTime === 0) {
+                        document.getElementById('waiting-opponent').innerHTML = "🔥 اختر الإجابة الصحيحة الآن! 🔥";
+                        
+                        // ظهور الأزرار تدريجياً (إجابة تلو الأخرى)
+                        buttons.forEach((btn, index) => {
+                            setTimeout(() => {
+                                btn.style.opacity = "1";
+                                btn.style.transform = "translateY(0)";
+                            }, index * 400); // تأخير 400 مللي ثانية بين كل زر
+                        });
+
+                        // السماح بالضغط بعد ظهور كل الأزرار
+                        setTimeout(() => {
+                            canClick = true;
+                            buttons.forEach(b => b.style.pointerEvents = "auto");
+                        }, buttons.length * 400);
+                    }
+                }
+
+                // العداد الأصلي مستمر في النزول
+                timeLeft--;
+                timerText.textContent = `⏳ ${timeLeft} ثانية`;
+                timerBar.style.width = `${(timeLeft / 30) * 100}%`;
+
+                if (timeLeft <= 10) timerBar.style.background = '#e74c3c';
+                if (timeLeft <= 5 && timeLeft > 0) playSound('tick');
+
+                if (timeLeft <= 0) {
+                    clearInterval(questionTimerInterval);
+                    hasAnswered = true;
+                    canClick = false;
+                    
+                    currentStreak = 0;
+                    document.getElementById('streak-indicator').classList.add('hidden');
+                    playSound('wrong');
+                    
+                    const allBtns = container.querySelectorAll('.option-btn');
+                    allBtns.forEach(b => {
+                        b.style.pointerEvents = "none";
+                        if(b.dataset.correct === 'true') b.classList.add('correct');
+                    });
+                    
+                    document.getElementById('waiting-opponent').classList.remove('hidden');
+                    document.getElementById('waiting-opponent').innerHTML = "⏰ انتهى الوقت! (إجابة ضائعة)";
+                    document.getElementById('waiting-opponent').style.color = "#e74c3c";
+                    
+                    updateDoc(doc(db,'rooms',roomId), {
+                        [`players.${myUid}.answers.q_${idx}`]: true, 
+                        [`players.${myUid}.score`]: myScore
+                    });
+                }
+            }, 1000);
+        }
+
+        function endGame(data) {
+            clearInterval(questionTimerInterval); 
+            
+            document.getElementById('emoji-toggle-btn').style.display = 'none';
+            document.getElementById('emoji-panel').classList.add('closed');
+            
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            
+            const finalLb = document.getElementById('final-leaderboard');
+            finalLb.innerHTML = '';
+
+            let resultMessageForTeacher = "";
+
+            if (gameMode === 'single') {
+                document.getElementById('final-title').textContent = "🎉 تدريب رائع!";
+                finalLb.innerHTML = `<div>نتيجتك النهائية: <span style="color:#fdbb2d">${myScore}</span> نقطة</div>`;
+                if(myScore > 0 && isHost) postToFeed(`الطالب ${myName} أكمل تدريباً فردياً وحصل على ${myScore} نقطة! 👏`);
+                
+                resultMessageForTeacher = `مرحباً معلمي! 🎓\nأنا الطالب: *${myName}*\nلقد أتممت التدريب الفردي للدرس وحصلت على نتيجة: *${myScore}* نقطة! 🏆\n(عبر منصة Borooj Way) 🚀`;
+                document.getElementById('teacher-share-section').classList.remove('hidden');
+
+            } else if (gameMode === '1v1' || gameMode === 'matchmaking') {
+                const oppScore = data.players[opponentUid] ? data.players[opponentUid].score : 0;
+                const oppName = data.players[opponentUid] ? data.players[opponentUid].displayName : "الخصم";
+                document.getElementById('final-title').textContent = myScore > oppScore ? "🏆 فزت!" : (myScore < oppScore ? "💔 خسرت" : "🤝 تعادل");
+                finalLb.innerHTML = `<div>أنت: ${myScore}</div><div>الخصم: ${oppScore}</div>`;
+                
+                if(isHost) {
+                    if(myScore > oppScore) postToFeed(`عاجل 🚨: البطل ${myName} هزم ${oppName} بنتيجة ${myScore} - ${oppScore} 🔥`);
+                    else if (myScore < oppScore) postToFeed(`عاجل 🚨: البطل ${oppName} هزم ${myName} بنتيجة ${oppScore} - ${myScore} 🔥`);
+                    else postToFeed(`تعادل مثير بين ${myName} و ${oppName} بنتيجة ${myScore} لكل منهما 🤝`);
+                }
+
+                resultMessageForTeacher = `مرحباً معلمي! 🎓\nأنا الطالب: *${myName}*\nلقد لعبت تحدياً مباشراً وحصلت على: *${myScore}* نقطة، بينما حصل خصمي على: *${oppScore}* نقطة! ⚔️\n(عبر منصة Borooj Way) 🚀`;
+                document.getElementById('teacher-share-section').classList.remove('hidden');
+
+            } else {
+                document.getElementById('final-title').textContent = "🏆 الترتيب النهائي 🏆";
+                const playersArray = Object.values(data.players || {}).sort((a,b) => b.score - a.score);
+                playersArray.forEach((p, index) => {
+                    if(p.uid === data.hostUid) return; 
+                    let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : '🔸'));
+                    const pTeamStrFinal = getTeamHtml(p.team, 25);
+                    finalLb.innerHTML += `<div>${medal} ${pTeamStrFinal} ${p.avatar || '👤'} ${p.displayName}: <span style="color:#fdbb2d">${p.score} نقطة</span></div>`;
+                });
+                
+                if(isHost && playersArray.length > 0) {
+                    const topPlayer = playersArray[0];
+                    if (topPlayer.uid !== data.hostUid) postToFeed(`عاجل 🚨: ${topPlayer.displayName} اكتسح التحدي الجماعي واحتل المركز الأول بـ ${topPlayer.score} نقطة! 👑`);
+                }
+            }
+
+            document.getElementById('btn-submit-academic').onclick = async () => {
+                const teacherId = sessionStorage.getItem('teacherCode');
+                const btn = document.getElementById('btn-submit-academic');
+                btn.disabled = true;
+                btn.textContent = "جاري الإرسال... ⏳";
+                
+                try {
+                    await addDoc(collection(db, "academic_results"), {
+                        studentName: myName,
+                        studentUid: myUid,
+                        score: myScore,
+                        lessonId: window.lessonTitleForMsg || "درس غير محدد",
+                        teacherId: teacherId || "بدون كود",
+                        timestamp: new Date(),
+                        mode: gameMode
+                    });
+                    btn.textContent = "تم تسليم النتيجة لمعلمك بنجاح ✅";
+                    btn.style.background = "#27ae60";
+                } catch (e) { 
+                    console.error(e);
+                    btn.textContent = "خطأ في الإرسال، حاول مرة أخرى";
+                    btn.disabled = false;
+                }
+            };
+
+            document.getElementById('btn-send-whatsapp').onclick = () => {
+                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(resultMessageForTeacher)}`;
+                window.open(whatsappUrl, '_blank');
+            };
+            
+            if(typeof confetti === "function") {
+                setTimeout(() => { confetti({ particleCount: 300, spread: 100, origin: { y: 0.5 } }); }, 500);
+            }
+        }
+
+        window.kickStudent = async (uid) => {
+            if(confirm("هل أنت متأكد من طرد هذا الطالب نهائياً من الغرفة؟")) {
+                await updateDoc(doc(db, 'rooms', roomId), { [`players.${uid}`]: deleteField() });
+            }
+        };
+
+        window.warnStudent = async (uid) => {
+            await updateDoc(doc(db, 'rooms', roomId), { lastWarning: { targetUid: uid, time: Date.now() } });
+        };
+
+        const btnForceNext = document.getElementById('btn-admin-force-next');
+        if(btnForceNext) {
+            btnForceNext.onclick = async () => {
+                await updateDoc(doc(db, 'rooms', roomId), { currentQuestionIndex: currentQIdx + 1 });
+            };
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) initBattle();
+            else window.location.href = "login.html";
+        });
+    </script>
+    <script type="text/javascript">
+        function googleTranslateElementInit() { 
+            new google.translate.TranslateElement({ 
+                pageLanguage: 'ar', 
+                includedLanguages: 'ar,en,fr,ur,hi,tl,ml,es,zh-CN,zh-TW,ru,tr,de,it,ja,ko',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE 
+            }, 'google_translate_element'); 
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
